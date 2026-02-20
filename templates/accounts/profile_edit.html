@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Редагування профілю — MicroVolunteer{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+
+      <h2 class="mb-4">
+        <i class="bi bi-pencil-square me-2"></i>Редагування профілю
+      </h2>
+
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        <!-- Core user fields -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-person-vcard me-1"></i>Особиста інформація
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">{{ form.first_name|as_crispy_field }}</div>
+              <div class="col-md-6">{{ form.last_name|as_crispy_field }}</div>
+            </div>
+
+            {{ form.email|as_crispy_field }}
+
+            <div class="row">
+              <div class="col-md-6">{{ form.phone|as_crispy_field }}</div>
+              <div class="col-md-6">{{ form.date_of_birth|as_crispy_field }}</div>
+            </div>
+
+            {{ form.address|as_crispy_field }}
+
+            <div class="row">
+              <div class="col-md-6">{{ form.latitude|as_crispy_field }}</div>
+              <div class="col-md-6">{{ form.longitude|as_crispy_field }}</div>
+            </div>
+
+            {{ form.avatar|as_crispy_field }}
+            {% if user.avatar %}
+            <div class="mb-3">
+              <small class="text-muted">Поточне фото:</small><br>
+              <img src="{{ user.avatar.url }}" alt="Аватар"
+                   class="rounded mt-1" width="100" height="100" style="object-fit:cover;">
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Role-specific fields -->
+        {% if role_form %}
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-light fw-semibold">
+            {% if user.is_volunteer %}
+              <i class="bi bi-hand-thumbs-up me-1"></i>Налаштування волонтера
+            {% else %}
+              <i class="bi bi-heart me-1"></i>Додаткова інформація
+            {% endif %}
+          </div>
+          <div class="card-body">
+            {{ role_form|crispy }}
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>Зберегти
+          </button>
+          <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">
+            Скасувати
+          </a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

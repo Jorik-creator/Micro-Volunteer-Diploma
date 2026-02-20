@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Профіль — MicroVolunteer{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Header row -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <div class="d-flex align-items-center gap-3">
+        {% if profile_user.avatar %}
+          <img src="{{ profile_user.avatar.url }}"
+               alt="Аватар" class="rounded-circle"
+               width="80" height="80" style="object-fit:cover;">
+        {% else %}
+          <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+               style="width:80px;height:80px;font-size:2rem;">
+            {{ profile_user.first_name|first|upper }}{{ profile_user.last_name|first|upper }}
+          </div>
+        {% endif %}
+
+        <div>
+          <h2 class="mb-0">{{ profile_user.get_full_name }}</h2>
+          <span class="badge bg-{% if profile_user.is_volunteer %}success{% else %}info{% endif %}">
+            {{ profile_user.get_user_type_display }}
+          </span>
+          {% if avg_rating %}
+          <span class="ms-2 text-warning">
+            {% for i in "12345" %}
+              {% if forloop.counter <= avg_rating %}
+                <i class="bi bi-star-fill"></i>
+              {% else %}
+                <i class="bi bi-star"></i>
+              {% endif %}
+            {% endfor %}
+            <small class="text-muted">({{ avg_rating }}/5, {{ review_count }} відгуків)</small>
+          </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+      <a href="{% url 'accounts:profile-edit' %}" class="btn btn-outline-primary">
+        <i class="bi bi-pencil-square me-1"></i>Редагувати
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left column — info -->
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-light fw-semibold">
+          <i class="bi bi-person-vcard me-1"></i>Особиста інформація
+        </div>
+        <div class="card-body">
+          <table class="table table-borderless mb-0">
+            <tr>
+              <th class="text-muted" style="width:40%">Email</th>
+              <td>{{ profile_user.email }}</td>
+            </tr>
+            {% if profile_user.phone %}
+            <tr>
+              <th class="text-muted">Телефон</th>
+              <td>{{ profile_user.phone }}</td>
+            </tr>
+            {% endif %}
+            {% if profile_user.address %}
+            <tr>
+              <th class="text-muted">Адреса</th>
+              <td>{{ profile_user.address }}</td>
+            </tr>
+            {% endif %}
+            {% if profile_user.date_of_birth %}
+            <tr>
+              <th class="text-muted">Дата народження</th>
+              <td>{{ profile_user.date_of_birth|date:"d.m.Y" }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+              <th class="text-muted">Дата реєстрації</th>
+              <td>{{ profile_user.created_at|date:"d.m.Y" }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column — role-specific -->
+    <div class="col-md-6">
+      {% if profile_user.is_volunteer and volunteer_profile %}
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-light fw-semibold">
+          <i class="bi bi-hand-thumbs-up me-1"></i>Профіль волонтера
+        </div>
+        <div class="card-body">
+          <table class="table table-borderless mb-0">
+            <tr>
+              <th class="text-muted" style="width:40%">Статус</th>
+              <td>
+                {% if volunteer_profile.is_available %}
+                  <span class="badge bg-success">Доступний</span>
+                {% else %}
+                  <span class="badge bg-secondary">Недоступний</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <th class="text-muted">Радіус</th>
+              <td>{{ volunteer_profile.get_radius_km_display }}</td>
+            </tr>
+            {% if volunteer_profile.bio %}
+            <tr>
+              <th class="text-muted">Про себе</th>
+              <td>{{ volunteer_profile.bio }}</td>
+            </tr>
+            {% endif %}
+            {% if volunteer_profile.categories.exists %}
+            <tr>
+              <th class="text-muted">Категорії</th>
+              <td>
+                {% for cat in volunteer_profile.categories.all %}
+                  <span class="badge bg-primary me-1">{{ cat.name }}</span>
+                {% endfor %}
+              </td>
+            </tr>
+            {% endif %}
+          </table>
+
+          <hr>
+          <div class="row text-center">
+            <div class="col-6">
+              <h4 class="mb-0">{{ responses_count }}</h4>
+              <small class="text-muted">Відгуків</small>
+            </div>
+            <div class="col-6">
+              <h4 class="mb-0">{{ accepted_count }}</h4>
+              <small class="text-muted">Прийнято</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% elif profile_user.is_recipient and recipient_profile %}
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-light fw-semibold">
+          <i class="bi bi-heart me-1"></i>Профіль отримувача
+        </div>
+        <div class="card-body">
+          <table class="table table-borderless mb-0">
+            {% if recipient_profile.situation_type %}
+            <tr>
+              <th class="text-muted" style="width:40%">Ситуація</th>
+              <td>{{ recipient_profile.get_situation_type_display }}</td>
+            </tr>
+            {% endif %}
+            {% if recipient_profile.emergency_contact_name %}
+            <tr>
+              <th class="text-muted">Контактна особа</th>
+              <td>
+                {{ recipient_profile.emergency_contact_name }}
+                {% if recipient_profile.emergency_contact_phone %}
+                  <br><small class="text-muted">{{ recipient_profile.emergency_contact_phone }}</small>
+                {% endif %}
+              </td>
+            </tr>
+            {% endif %}
+          </table>
+
+          <hr>
+          <div class="row text-center">
+            <div class="col-6">
+              <h4 class="mb-0">{{ requests_count }}</h4>
+              <small class="text-muted">Запитів</small>
+            </div>
+            <div class="col-6">
+              <h4 class="mb-0">{{ completed_count }}</h4>
+              <small class="text-muted">Виконано</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Reviews section -->
+  {% if reviews %}
+  <div class="card shadow-sm mt-4">
+    <div class="card-header bg-light fw-semibold">
+      <i class="bi bi-chat-quote me-1"></i>Останні відгуки
+    </div>
+    <div class="card-body">
+      {% for review in reviews %}
+      <div class="d-flex gap-3 {% if not forloop.last %}mb-3 pb-3 border-bottom{% endif %}">
+        <div>
+          <div class="text-warning">
+            {% for i in "12345" %}
+              {% if forloop.counter <= review.rating %}
+                <i class="bi bi-star-fill"></i>
+              {% else %}
+                <i class="bi bi-star"></i>
+              {% endif %}
+            {% endfor %}
+          </div>
+          <small class="text-muted">{{ review.created_at|date:"d.m.Y" }}</small>
+        </div>
+        <div>
+          <strong>{{ review.author.get_full_name }}</strong>
+          <p class="mb-0">{{ review.comment }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

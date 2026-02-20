@@ -1,0 +1,10 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+.env
+.tmp/
+.opencode/
+media/
+*.md
+!README.md

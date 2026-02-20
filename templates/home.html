@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}MicroVolunteer — Платформа мікро-волонтерства{% endblock %}
+
+{% block content %}
+
+<!-- Hero section -->
+<section class="bg-primary text-white py-5">
+  <div class="container text-center py-4">
+    <h1 class="display-5 fw-bold mb-3">
+      Допомога поруч
+    </h1>
+    <p class="lead mb-4 col-lg-8 mx-auto">
+      MicroVolunteer з'єднує людей, що потребують допомоги у повсякденних справах,
+      з волонтерами, готовими надати швидку локальну підтримку.
+    </p>
+    {% if not user.is_authenticated %}
+    <div class="d-flex justify-content-center gap-3">
+      <a href="{% url 'accounts:register' %}" class="btn btn-light btn-lg">
+        <i class="bi bi-heart-pulse me-1"></i>Знайти допомогу
+      </a>
+      <a href="{% url 'accounts:register' %}" class="btn btn-outline-light btn-lg">
+        <i class="bi bi-hand-thumbs-up me-1"></i>Стати волонтером
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="py-5">
+  <div class="container">
+    <h2 class="text-center mb-5">Як це працює</h2>
+    <div class="row g-4 text-center">
+      <div class="col-md-3">
+        <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3"
+             style="width:80px;height:80px;">
+          <i class="bi bi-person-plus fs-2 text-primary"></i>
+        </div>
+        <h5>1. Реєстрація</h5>
+        <p class="text-muted">Створіть акаунт як отримувач допомоги або волонтер.</p>
+      </div>
+      <div class="col-md-3">
+        <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3"
+             style="width:80px;height:80px;">
+          <i class="bi bi-pencil-square fs-2 text-primary"></i>
+        </div>
+        <h5>2. Створіть запит</h5>
+        <p class="text-muted">Опишіть, яка допомога потрібна, де і коли.</p>
+      </div>
+      <div class="col-md-3">
+        <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3"
+             style="width:80px;height:80px;">
+          <i class="bi bi-geo-alt fs-2 text-primary"></i>
+        </div>
+        <h5>3. Знайдіть волонтера</h5>
+        <p class="text-muted">Волонтери поблизу побачать ваш запит на карті.</p>
+      </div>
+      <div class="col-md-3">
+        <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3"
+             style="width:80px;height:80px;">
+          <i class="bi bi-check-circle fs-2 text-primary"></i>
+        </div>
+        <h5>4. Отримайте допомогу</h5>
+        <p class="text-muted">Волонтер відгукнеться, і ви зможете координувати допомогу.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Statistics -->
+<section class="bg-light py-5">
+  <div class="container">
+    <h2 class="text-center mb-5">Платформа в цифрах</h2>
+    <div class="row g-4 text-center">
+      <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body py-4">
+            <i class="bi bi-people fs-1 text-primary"></i>
+            <h3 class="mt-2 mb-0">{{ total_users }}</h3>
+            <p class="text-muted mb-0">Користувачів</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body py-4">
+            <i class="bi bi-hand-thumbs-up fs-1 text-success"></i>
+            <h3 class="mt-2 mb-0">{{ total_volunteers }}</h3>
+            <p class="text-muted mb-0">Волонтерів</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body py-4">
+            <i class="bi bi-heart fs-1 text-danger"></i>
+            <h3 class="mt-2 mb-0">{{ total_recipients }}</h3>
+            <p class="text-muted mb-0">Отримувачів допомоги</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+{% if not user.is_authenticated %}
+<section class="py-5">
+  <div class="container text-center">
+    <h2 class="mb-3">Готові допомагати?</h2>
+    <p class="lead text-muted mb-4">
+      Приєднуйтесь до спільноти мікро-волонтерів вже сьогодні.
+    </p>
+    <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg">
+      <i class="bi bi-rocket-takeoff me-1"></i>Зареєструватися
+    </a>
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

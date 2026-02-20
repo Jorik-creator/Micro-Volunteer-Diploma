@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Вхід — MicroVolunteer{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <h2 class="card-title text-center mb-4">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Вхід
+          </h2>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            {{ form|crispy }}
+
+            <button type="submit" class="btn btn-primary w-100 mt-3">
+              <i class="bi bi-door-open me-1"></i>Увійти
+            </button>
+          </form>
+
+          <p class="text-center mt-3 mb-0">
+            Немає акаунту?
+            <a href="{% url 'accounts:register' %}">Зареєструватися</a>
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

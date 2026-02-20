@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Реєстрація — MicroVolunteer{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <h2 class="card-title text-center mb-4">
+            <i class="bi bi-person-plus me-2"></i>Реєстрація
+          </h2>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            {{ form.username|as_crispy_field }}
+            {{ form.email|as_crispy_field }}
+
+            <div class="row">
+              <div class="col-md-6">{{ form.first_name|as_crispy_field }}</div>
+              <div class="col-md-6">{{ form.last_name|as_crispy_field }}</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">{{ form.user_type.label }}</label>
+              <div class="d-flex gap-4">
+                {% for radio in form.user_type %}
+                <div class="form-check">
+                  {{ radio.tag }}
+                  <label class="form-check-label" for="{{ radio.id_for_label }}">
+                    {{ radio.choice_label }}
+                  </label>
+                </div>
+                {% endfor %}
+              </div>
+              {% if form.user_type.errors %}
+              <div class="invalid-feedback d-block">
+                {% for error in form.user_type.errors %}{{ error }}{% endfor %}
+              </div>
+              {% endif %}
+            </div>
+
+            {{ form.password1|as_crispy_field }}
+            {{ form.password2|as_crispy_field }}
+
+            <button type="submit" class="btn btn-primary w-100 mt-3">
+              <i class="bi bi-check-circle me-1"></i>Зареєструватися
+            </button>
+          </form>
+
+          <p class="text-center mt-3 mb-0">
+            Вже маєте акаунт?
+            <a href="{% url 'accounts:login' %}">Увійти</a>
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

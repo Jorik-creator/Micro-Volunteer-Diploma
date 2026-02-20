@@ -1,0 +1,24 @@
+# MicroVolunteer — Python Dependencies
+# Django & Core
+Django>=5.0,<6.0
+psycopg2-binary>=2.9,<3.0
+gunicorn>=21.2,<23.0
+
+# Media & Images
+Pillow>=10.0,<11.0
+
+# Security
+django-axes>=6.0,<7.0
+
+# Forms & UI
+django-crispy-forms>=2.0,<3.0
+crispy-bootstrap5>=2024.2
+
+# Configuration
+python-decouple>=3.8,<4.0
+
+# Testing
+pytest>=8.0,<9.0
+pytest-django>=4.8,<5.0
+factory-boy>=3.3,<4.0
+coverage>=7.0,<8.0
