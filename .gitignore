@@ -26,7 +26,10 @@ htmlcov/
 .vscode/
 *.swp
 *.swo
+
+# Local tooling and private docs
 .opencode/
+docs/
 
 # Project tooling
 .tmp/
