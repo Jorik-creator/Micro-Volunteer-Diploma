@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Мої запити — MicroVolunteer{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-lines-fill me-2"></i>Мої запити</h2>
+    <a href="{% url 'requests:create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i>Новий запит
+    </a>
+  </div>
+
+  <!-- Stats row -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4">
+      <div class="card text-center border-primary">
+        <div class="card-body py-2">
+          <div class="fs-3 fw-bold text-primary">{{ active_count }}</div>
+          <small class="text-muted">Активних</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card text-center border-warning">
+        <div class="card-body py-2">
+          <div class="fs-3 fw-bold text-warning">{{ in_progress_count }}</div>
+          <small class="text-muted">В процесі</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card text-center border-success">
+        <div class="card-body py-2">
+          <div class="fs-3 fw-bold text-success">{{ completed_count }}</div>
+          <small class="text-muted">Виконано</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if requests %}
+  <div class="list-group shadow-sm">
+    {% for hr in requests %}
+    <div class="list-group-item list-group-item-action">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <a href="{% url 'requests:detail' hr.pk %}" class="fw-semibold text-decoration-none text-dark">
+            {{ hr.title }}
+          </a>
+          <div class="mt-1">
+            <span class="badge
+              {% if hr.status == 'active' %}bg-primary
+              {% elif hr.status == 'in_progress' %}bg-warning text-dark
+              {% elif hr.status == 'completed' %}bg-success
+              {% elif hr.status == 'cancelled' %}bg-secondary
+              {% else %}bg-danger
+              {% endif %} me-1">
+              {{ hr.get_status_display }}
+            </span>
+            <span class="badge
+              {% if hr.urgency == 'critical' %}bg-danger
+              {% elif hr.urgency == 'high' %}bg-warning text-dark
+              {% elif hr.urgency == 'medium' %}bg-info text-dark
+              {% else %}bg-success
+              {% endif %}">
+              {{ hr.get_urgency_display }}
+            </span>
+            {% if hr.category %}
+            <small class="text-muted ms-2">{{ hr.category.name }}</small>
+            {% endif %}
+          </div>
+          <small class="text-muted">
+            <i class="bi bi-calendar-event me-1"></i>{{ hr.needed_date|date:"d.m.Y H:i" }}
+            &nbsp;|&nbsp;
+            <i class="bi bi-clock me-1"></i>{{ hr.get_duration_display }}
+          </small>
+        </div>
+        <div class="text-end text-nowrap ms-3">
+          <small class="text-muted d-block">{{ hr.created_at|date:"d.m.Y" }}</small>
+          {% if hr.status == 'active' %}
+          <a href="{% url 'requests:edit' hr.pk %}" class="btn btn-outline-secondary btn-sm mt-1">
+            <i class="bi bi-pencil"></i>
+          </a>
+          {% endif %}
+          <a href="{% url 'requests:detail' hr.pk %}" class="btn btn-outline-primary btn-sm mt-1">
+            <i class="bi bi-eye"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if is_paginated %}
+  <nav class="mt-4">
+    <ul class="pagination justify-content-center">
+      {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a>
+      </li>
+      {% endif %}
+      <li class="page-item disabled">
+        <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      </li>
+      {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox display-4 d-block mb-3"></i>
+    <p>У вас поки немає запитів.</p>
+    <a href="{% url 'requests:create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i>Створити перший запит
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

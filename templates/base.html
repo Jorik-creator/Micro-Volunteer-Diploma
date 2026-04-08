@@ -45,13 +45,21 @@
             </a>
           </li>
           {% if user.is_authenticated %}
+          {% if user.is_recipient %}
           <li class="nav-item">
-            <a class="nav-link" href="#">
+            <a class="nav-link" href="{% url 'requests:my-requests' %}">
+              <i class="bi bi-list-check me-1"></i>Мої запити
+            </a>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'requests:list' %}">
               <i class="bi bi-list-check me-1"></i>Запити
             </a>
           </li>
+          {% endif %}
           <li class="nav-item">
-            <a class="nav-link" href="#">
+            <a class="nav-link" href="{% url 'requests:map' %}">
               <i class="bi bi-map me-1"></i>Карта
             </a>
           </li>

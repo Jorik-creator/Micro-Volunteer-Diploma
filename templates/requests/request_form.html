@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ form_title }} — MicroVolunteer{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+
+      <h2 class="mb-4">
+        <i class="bi bi-pencil-square me-2"></i>{{ form_title }}
+      </h2>
+
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            {{ form.title|as_crispy_field }}
+            {{ form.description|as_crispy_field }}
+
+            <div class="row">
+              <div class="col-md-6">{{ form.category|as_crispy_field }}</div>
+              <div class="col-md-6">{{ form.urgency|as_crispy_field }}</div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">{{ form.needed_date|as_crispy_field }}</div>
+              <div class="col-md-6">{{ form.duration|as_crispy_field }}</div>
+            </div>
+
+            {{ form.volunteers_needed|as_crispy_field }}
+            {{ form.address|as_crispy_field }}
+
+            <div class="row">
+              <div class="col-md-6">{{ form.latitude|as_crispy_field }}</div>
+              <div class="col-md-6">{{ form.longitude|as_crispy_field }}</div>
+            </div>
+
+            {{ form.photo|as_crispy_field }}
+
+            <div class="d-flex gap-2 mt-3">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>{{ submit_label }}
+              </button>
+              <a href="{% url 'requests:my-requests' %}" class="btn btn-outline-secondary">
+                Скасувати
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

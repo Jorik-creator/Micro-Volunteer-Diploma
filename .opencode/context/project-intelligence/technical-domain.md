@@ -1,9 +1,9 @@
-<!-- Context: project-intelligence/technical | Priority: critical | Version: 1.2 | Updated: 2026-02-20 -->
+<!-- Context: project-intelligence/technical | Priority: critical | Version: 1.3 | Updated: 2026-04-08 -->
 
 # Technical Domain
 
 **Purpose**: Tech stack, architecture, and development patterns for MicroVolunteer platform.
-**Last Updated**: 2026-02-20
+**Last Updated**: 2026-04-08
 
 ## Quick Reference
 **Update Triggers**: Tech stack changes | New patterns | Architecture decisions
@@ -49,9 +49,10 @@ microvolunteer/
 │   │   ├── decorators.py signals.py admin.py
 │   │   ├── tests.py            # 26 tests (models, signals, forms, views, decorators)
 │   │   └── migrations/         # 0001_initial, 0002_initial
-│   ├── requests/               # HelpRequest, Response, Category, map
-│   │   ├── models.py utils.py admin.py
-│   │   ├── tests.py            # 17 tests (models, haversine, offset_coordinates)
+│   ├── requests/               # HelpRequest, Response, Category, map — Phase 1 complete
+│   │   ├── models.py utils.py admin.py forms.py views.py urls.py
+│   │   ├── management/commands/expire_requests.py
+│   │   ├── tests.py            # 63 tests (models, forms, views, management, map)
 │   │   └── migrations/         # 0001_initial
 │   ├── reviews/                # Review (ratings 1-5, comments)
 │   │   ├── models.py admin.py
@@ -59,19 +60,21 @@ microvolunteer/
 │   │   └── migrations/         # 0001_initial
 │   ├── notifications/          # In-app notifications (bell icon, signals)
 │   │   ├── models.py admin.py
-│   │   ├── tests.py            # 5 tests (str, default, ordering, types)
+│   │   ├── tests.py            # 6 tests (str, default, ordering×2, types)
 │   │   └── migrations/         # 0001_initial
 │   └── stats/                  # Dashboard, Chart.js graphs (placeholder)
 │       └── migrations/         # 0001_initial (empty)
 ├── templates/
 │   ├── base.html               # Bootstrap 5 layout, navbar, footer, messages
 │   ├── home.html               # Landing page with stats
-│   └── accounts/               # register, login, profile, profile_edit, password_change
+│   ├── accounts/               # register, login, profile, profile_edit, password_change
+│   └── requests/               # request_list, request_detail, request_form, my_requests, map
 ├── static/css/style.css        # Custom styles (card hover, alert animation)
 ├── media/                      # User uploads (avatars, request photos)
 ├── .env                        # Local secrets (gitignored)
 ├── .env.example                # Template for .env
-└── db.sqlite3                  # Local dev database (gitignored)
+├── db.sqlite3                  # Local dev database (gitignored)
+└── docs/                       # Reference only — NOT part of the codebase
 ```
 
 ## Code Patterns
@@ -168,6 +171,12 @@ class RegisterForm(UserCreationForm):
 | Templates | snake_case in app dirs | `templates/accounts/profile_edit.html` |
 | URL namespaces | app_name in urls.py | `accounts:profile`, `accounts:login` |
 
+## docs/ Folder Rule
+
+> **Agent instruction**: The `docs/` folder contains only reference materials for the user's questions (specifications, decisions, notes). It does NOT contain source code, templates, migrations, or any files relevant to development.
+> - **Skip `docs/` by default** — do not read, reference, or suggest files from it during coding tasks.
+> - **Read `docs/` only when** the user explicitly asks about functionality, feature decisions, or project requirements.
+
 ## Code Standards
 - Django CBV preferred (CreateView, ListView, DetailView, UpdateView)
 - `LoginRequiredMixin` on all protected views (first in MRO)
@@ -181,13 +190,14 @@ class RegisterForm(UserCreationForm):
 - Management commands for scheduled tasks (`expire_requests`)
 - Context processors for global template data (`unread_count`)
 - Templates extend `base.html`, use `{% block content %}`, `{% load crispy_forms_tags %}`
-- Testing: `pytest` + `pytest-django` + `factory_boy` (54 tests, see § Testing Architecture)
+- Testing: `pytest` + `pytest-django` + `factory_boy` (101 tests, see § Testing Architecture)
+- `ordering = ['-created_at', '-id']` — обов'язковий tie-breaker у моделях з auto_now_add
 
 ## Testing Architecture
 
 ### Overview
-- **54 tests total** across 4 apps (accounts: 26, requests: 17, reviews: 6, notifications: 5)
-- **Runtime**: ~3s on SQLite in-memory
+- **101 tests total** across 4 apps (accounts: 26, requests: 63, reviews: 6, notifications: 6)
+- **Runtime**: ~2s on SQLite in-memory
 - **Framework**: pytest + pytest-django + factory_boy
 - **Settings**: `config/settings/testing.py` (inherits from `base.py`)
 
@@ -223,9 +233,9 @@ NotificationFactory  # Links to UserFactory
 | App | Tests | Covers |
 |-----|-------|--------|
 | accounts | 26 | Models (5), Signals (3), Forms (5), Views (8), Decorators (4), Profile auto-create (1) |
-| requests | 17 | Category (3), HelpRequest (5), Response (3), haversine_distance (4), offset_coordinates (2) |
+| requests | 63 | Models (11), Forms (5), Views (37: list/detail/create/update/respond/accept/reject/complete/cancel/my), Management (5), MapData (3), Utils (6) |
 | reviews | 6 | str (1), ordering (1), unique_together (1), rating min/max validation (2), creation (1) |
-| notifications | 5 | str read/unread (2), default unread (1), ordering (1), notification types (1) |
+| notifications | 6 | str read/unread (2), default unread (1), ordering (1), ordering same-timestamp (1), types (1) |
 
 ### Running Tests
 ```bash
