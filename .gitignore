@@ -26,9 +26,13 @@ htmlcov/
 .vscode/
 *.swp
 *.swo
+.opencode/
 
 # Project tooling
 .tmp/
 
 # Windows reserved names
 nul
+
+# My stuff
+.docs/
