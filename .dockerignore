@@ -7,4 +7,5 @@ __pycache__
 .opencode/
 media/
 *.md
+.docs/
 !README.md

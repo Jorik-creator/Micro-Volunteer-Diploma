@@ -14,7 +14,7 @@ venv/
 # Django
 db.sqlite3
 media/
-static/
+staticfiles/
 
 # Testing
 .coverage
