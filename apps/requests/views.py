@@ -28,9 +28,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
+from django.db.models import Case, Count, IntegerField, Value, When
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic import (
     CreateView,
     DetailView,
@@ -75,16 +76,22 @@ class HelpRequestListView(LoginRequiredMixin, ListView):
     paginate_by = 12
 
     def get_queryset(self):
+        # W5: правильний порядок пріоритетів — не алфавітний, а за важливістю
+        urgency_order = Case(
+            When(urgency="critical", then=Value(0)),
+            When(urgency="high", then=Value(1)),
+            When(urgency="medium", then=Value(2)),
+            When(urgency="low", then=Value(3)),
+            default=Value(4),
+            output_field=IntegerField(),
+        )
         qs = (
             HelpRequest.objects.filter(
                 status=HelpRequest.Status.ACTIVE,
             )
             .select_related("recipient", "category")
-            .order_by(
-                # Critical first, then by date
-                "urgency",
-                "needed_date",
-            )
+            .annotate(urgency_order=urgency_order)
+            .order_by("urgency_order", "needed_date")
         )
         form = FilterForm(self.request.GET)
         if form.is_valid():
@@ -139,7 +146,7 @@ def map_data(request):
                 "duration": hr.get_duration_display(),
                 "lat": lat,
                 "lon": lon,
-                "url": f"/requests/{hr.pk}/",
+                "url": reverse("requests:detail", kwargs={"pk": hr.pk}),
             }
         )
 
@@ -260,7 +267,9 @@ class HelpRequestUpdateView(LoginRequiredMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect("accounts:login")
-        obj = self.get_object()
+        # W4: кешуємо об'єкт, щоб UpdateView не робив другий DB-запит
+        self.object = self.get_object()
+        obj = self.object
         if obj.recipient != request.user:
             messages.error(request, "У вас немає доступу до цього запиту.")
             return redirect("home")
@@ -316,14 +325,16 @@ class MyRequestsView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        qs = self.get_queryset()
-        context["active_count"] = qs.filter(status=HelpRequest.Status.ACTIVE).count()
-        context["in_progress_count"] = qs.filter(
-            status=HelpRequest.Status.IN_PROGRESS
-        ).count()
-        context["completed_count"] = qs.filter(
-            status=HelpRequest.Status.COMPLETED
-        ).count()
+        # W2: один агрегований запит замість 3 окремих (усуваємо N+1)
+        counts = (
+            HelpRequest.objects.filter(recipient=self.request.user)
+            .values("status")
+            .annotate(count=Count("id"))
+        )
+        count_map = {row["status"]: row["count"] for row in counts}
+        context["active_count"] = count_map.get(HelpRequest.Status.ACTIVE, 0)
+        context["in_progress_count"] = count_map.get(HelpRequest.Status.IN_PROGRESS, 0)
+        context["completed_count"] = count_map.get(HelpRequest.Status.COMPLETED, 0)
         return context
 
 

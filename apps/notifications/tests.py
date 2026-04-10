@@ -67,3 +67,106 @@ class TestNotificationModel:
         assert "request_completed" in valid_types
         assert "new_review" in valid_types
         assert "new_nearby_request" in valid_types
+
+
+# ===================================================================
+# NOTIFICATION VIEWS TESTS
+# ===================================================================
+
+
+class TestNotificationViews:
+    """Tests for NotificationListView, mark_read, and mark_all_read views."""
+
+    @pytest.mark.django_db
+    def test_notification_list_shows_own_only(
+        self, client_logged_in_volunteer, volunteer
+    ):
+        """Notification list returns only the current user's notifications."""
+        # Arrange — 2 notifications for the logged-in volunteer, 1 for another user
+        n1 = NotificationFactory(user=volunteer)
+        n2 = NotificationFactory(user=volunteer)
+        other_user = RecipientFactory()
+        NotificationFactory(user=other_user)
+
+        # Act
+        response = client_logged_in_volunteer.get("/notifications/")
+
+        # Assert — 200 OK and only the 2 own notifications in context
+        assert response.status_code == 200
+        context_notifications = list(response.context["notifications"])
+        assert len(context_notifications) == 2
+        assert n1 in context_notifications
+        assert n2 in context_notifications
+
+    @pytest.mark.django_db
+    def test_mark_read(self, client_logged_in_volunteer, volunteer):
+        """POST to mark-read sets is_read=True and redirects to notifications list."""
+        # Arrange — unread notification belonging to the logged-in volunteer
+        notif = NotificationFactory(user=volunteer, is_read=False)
+
+        # Act
+        response = client_logged_in_volunteer.post(
+            f"/notifications/mark-read/{notif.pk}/"
+        )
+
+        # Assert — notification is now read and response is a redirect
+        notif.refresh_from_db()
+        assert notif.is_read is True
+        assert response.status_code == 302
+
+    @pytest.mark.django_db
+    def test_mark_read_other_user(self, client_logged_in_volunteer):
+        """POST to mark-read for another user's notification returns 404."""
+        # Arrange — notification belonging to a different user
+        other_user = RecipientFactory()
+        notif = NotificationFactory(user=other_user, is_read=False)
+
+        # Act
+        response = client_logged_in_volunteer.post(
+            f"/notifications/mark-read/{notif.pk}/"
+        )
+
+        # Assert — 404 because the notification does not belong to the requester
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_mark_all_read(self, client_logged_in_volunteer, volunteer):
+        """POST to mark-all-read sets is_read=True on all own unread notifications."""
+        # Arrange — 3 unread notifications for the volunteer, 1 for another user
+        n1 = NotificationFactory(user=volunteer, is_read=False)
+        n2 = NotificationFactory(user=volunteer, is_read=False)
+        n3 = NotificationFactory(user=volunteer, is_read=False)
+        other_user = RecipientFactory()
+        other_notif = NotificationFactory(user=other_user, is_read=False)
+
+        # Act
+        response = client_logged_in_volunteer.post("/notifications/mark-all-read/")
+
+        # Assert — all 3 own notifications are now read
+        n1.refresh_from_db()
+        n2.refresh_from_db()
+        n3.refresh_from_db()
+        assert n1.is_read is True
+        assert n2.is_read is True
+        assert n3.is_read is True
+
+        # Other user's notification must remain unchanged
+        other_notif.refresh_from_db()
+        assert other_notif.is_read is False
+
+        assert response.status_code == 302
+
+    @pytest.mark.django_db
+    def test_unauthenticated_redirect(self):
+        """Unauthenticated GET to /notifications/ redirects to login."""
+        from django.test import Client
+
+        # Arrange — anonymous client (no session)
+        anon_client = Client()
+
+        # Act
+        response = anon_client.get("/notifications/")
+
+        # Assert — 302 redirect pointing to the login page
+        assert response.status_code == 302
+        assert "login" in response.url or "accounts" in response.url

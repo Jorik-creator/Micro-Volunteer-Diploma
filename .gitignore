@@ -29,6 +29,7 @@ htmlcov/
 
 # Local tooling and private docs
 .opencode/
+opencode.json
 docs/
 
 # Project tooling

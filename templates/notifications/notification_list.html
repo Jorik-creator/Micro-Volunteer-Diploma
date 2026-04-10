@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Сповіщення — MicroVolunteer{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Page heading + unread badge -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+      <i class="bi bi-bell me-2"></i>Сповіщення
+      {% if unread_count > 0 %}
+      <span class="badge bg-danger ms-1">{{ unread_count }}</span>
+      {% endif %}
+    </h2>
+
+    <!-- "Mark all as read" — shown only when there are unread notifications -->
+    {% if unread_count > 0 %}
+    <form method="post" action="/notifications/mark-all-read/">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-check2-all me-1"></i>Позначити всі як прочитані
+      </button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if notifications %}
+  <div class="list-group shadow-sm">
+    {% for notification in notifications %}
+
+    <!-- Unread: highlighted with left primary border + bold; read: plain -->
+    <div class="list-group-item
+      {% if not notification.is_read %}bg-light fw-bold border-start border-primary border-3{% endif %}
+      py-3">
+
+      <div class="d-flex justify-content-between align-items-start gap-3">
+
+        <!-- Left: icon + content -->
+        <div class="flex-grow-1">
+
+          <!-- Notification type icon -->
+          <div class="d-flex align-items-center gap-2 mb-1">
+            {% if notification.type == "new_response" %}
+              <i class="bi bi-chat-dots text-primary"></i>
+            {% elif notification.type == "request_accepted" %}
+              <i class="bi bi-check-circle text-success"></i>
+            {% elif notification.type == "request_rejected" %}
+              <i class="bi bi-x-circle text-danger"></i>
+            {% elif notification.type == "request_completed" %}
+              <i class="bi bi-trophy text-warning"></i>
+            {% elif notification.type == "new_review" %}
+              <i class="bi bi-star text-warning"></i>
+            {% elif notification.type == "new_nearby_request" %}
+              <i class="bi bi-geo-alt text-info"></i>
+            {% else %}
+              <i class="bi bi-bell text-secondary"></i>
+            {% endif %}
+
+            <!-- Title -->
+            <span class="{% if not notification.is_read %}fw-bold{% else %}fw-semibold{% endif %}">
+              {{ notification.title }}
+            </span>
+          </div>
+
+          <!-- Message body -->
+          <p class="mb-1 {% if notification.is_read %}text-muted{% endif %} small">
+            {{ notification.message }}
+          </p>
+
+          <!-- Timestamp + optional link to related request -->
+          <div class="d-flex align-items-center gap-3 mt-1">
+            <small class="text-muted">
+              <i class="bi bi-clock me-1"></i>{{ notification.created_at|date:"d.m.Y H:i" }}
+            </small>
+
+            {% if notification.related_request %}
+            <a href="/requests/{{ notification.related_request.pk }}/"
+               class="small text-decoration-none">
+              <i class="bi bi-box-arrow-up-right me-1"></i>Переглянути запит
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Right: "Mark as read" button for unread notifications -->
+        {% if not notification.is_read %}
+        <div class="flex-shrink-0">
+          <form method="post" action="/notifications/mark-read/{{ notification.pk }}/">
+            {% csrf_token %}
+            <button type="submit"
+                    class="btn btn-outline-primary btn-sm"
+                    title="Позначити як прочитане">
+              <i class="bi bi-check2 me-1"></i>Прочитано
+            </button>
+          </form>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if is_paginated %}
+  <nav class="mt-4" aria-label="Навігація по сторінках">
+    <ul class="pagination justify-content-center">
+      {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a>
+      </li>
+      {% endif %}
+      <li class="page-item disabled">
+        <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      </li>
+      {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <!-- Empty state -->
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-bell-slash display-4 d-block mb-3"></i>
+    <p class="mb-0">У вас немає сповіщень</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
