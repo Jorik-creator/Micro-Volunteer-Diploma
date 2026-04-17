@@ -516,3 +516,18 @@ def cancel_request(request, pk):
 
     messages.warning(request, "Запит скасовано.")
     return redirect("requests:my-requests")
+
+
+# ---------------------------------------------------------------------------
+# JSON: статус запиту (для polling на сторінці деталі)
+# ---------------------------------------------------------------------------
+
+
+@login_required
+def request_status(request, pk):
+    """Повертає поточний статус запиту у форматі JSON для polling."""
+    help_request = get_object_or_404(HelpRequest, pk=pk)
+    return JsonResponse({
+        "status": help_request.status,
+        "status_display": help_request.get_status_display(),
+    })

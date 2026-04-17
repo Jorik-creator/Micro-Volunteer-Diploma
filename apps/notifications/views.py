@@ -12,7 +12,7 @@ Views для застосунку notifications.
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponseNotAllowed
+from django.http import HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import ListView
 
@@ -83,3 +83,15 @@ def mark_all_read(request):
 
     messages.success(request, "Всі сповіщення позначено як прочитані")
     return redirect("notifications:notification-list")
+
+
+# ---------------------------------------------------------------------------
+# JSON: кількість непрочитаних сповіщень (для polling)
+# ---------------------------------------------------------------------------
+
+
+@login_required
+def notification_count(request):
+    """Повертає кількість непрочитаних сповіщень у форматі JSON для polling."""
+    count = Notification.objects.filter(user=request.user, is_read=False).count()
+    return JsonResponse({"count": count})

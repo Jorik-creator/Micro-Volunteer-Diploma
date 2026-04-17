@@ -15,6 +15,8 @@ urlpatterns = [
     # Detail & edit
     path("<int:pk>/", views.HelpRequestDetailView.as_view(), name="detail"),
     path("<int:pk>/edit/", views.HelpRequestUpdateView.as_view(), name="edit"),
+    # JSON endpoints
+    path("<int:pk>/status/", views.request_status, name="status"),
     # Actions
     path("<int:pk>/cancel/", views.cancel_request, name="cancel"),
     path("<int:pk>/complete/", views.complete_request, name="complete"),

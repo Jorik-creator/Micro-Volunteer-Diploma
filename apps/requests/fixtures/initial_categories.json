@@ -1,0 +1,82 @@
+[
+  {
+    "model": "requests.category",
+    "pk": 1,
+    "fields": {
+      "name": "Продукти та харчування",
+      "slug": "produkty-ta-kharchuvannia",
+      "icon": "bi-basket",
+      "description": "Допомога з покупкою або доставкою продуктів харчування"
+    }
+  },
+  {
+    "model": "requests.category",
+    "pk": 2,
+    "fields": {
+      "name": "Медична допомога",
+      "slug": "medychna-dopomoha",
+      "icon": "bi-heart-pulse",
+      "description": "Допомога з ліками, медичними процедурами, транспортуванням до лікаря"
+    }
+  },
+  {
+    "model": "requests.category",
+    "pk": 3,
+    "fields": {
+      "name": "Транспорт і пересування",
+      "slug": "transport-i-peresuvannia",
+      "icon": "bi-car-front",
+      "description": "Допомога з транспортуванням, поїздками, перевезенням речей"
+    }
+  },
+  {
+    "model": "requests.category",
+    "pk": 4,
+    "fields": {
+      "name": "Прибирання та побут",
+      "slug": "prybyrannia-ta-pobut",
+      "icon": "bi-house-heart",
+      "description": "Допомога з прибиранням, побутовими справами, дрібним ремонтом"
+    }
+  },
+  {
+    "model": "requests.category",
+    "pk": 5,
+    "fields": {
+      "name": "Технічна допомога",
+      "slug": "tekhnichna-dopomoha",
+      "icon": "bi-tools",
+      "description": "Допомога з технікою, комп'ютерами, налаштуванням пристроїв"
+    }
+  },
+  {
+    "model": "requests.category",
+    "pk": 6,
+    "fields": {
+      "name": "Навчання та консультації",
+      "slug": "navchannia-ta-konsultatsii",
+      "icon": "bi-mortarboard",
+      "description": "Допомога з навчанням, консультуванням, перекладом документів"
+    }
+  },
+  {
+    "model": "requests.category",
+    "pk": 7,
+    "fields": {
+      "name": "Тварини",
+      "slug": "tvaryny",
+      "icon": "bi-piggy-bank",
+      "description": "Допомога з доглядом за тваринами, годівлею, ветеринарією"
+    }
+  },
+  {
+    "model": "requests.category",
+    "pk": 8,
+    "fields": {
+      "name": "Інше",
+      "slug": "inshe",
+      "icon": "bi-three-dots",
+      "description": "Інші види допомоги, що не підходять до жодної категорії"
+    }
+  }
+]

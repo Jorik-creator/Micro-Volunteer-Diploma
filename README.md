@@ -44,9 +44,10 @@
    docker-compose up --build
    ```
 
-4. Виконайте міграції:
+4. Виконайте міграції та завантажте початкові дані:
    ```bash
    docker-compose exec web python manage.py migrate
+   docker-compose exec web python manage.py loaddata apps/requests/fixtures/initial_categories.json
    ```
 
 5. Створіть суперкористувача:
@@ -72,9 +73,10 @@
 
 3. Створіть `.env` та налаштуйте підключення до БД
 
-4. Виконайте міграції та запустіть сервер:
+4. Виконайте міграції, завантажте початкові дані та запустіть сервер:
    ```bash
    python manage.py migrate
+   python manage.py loaddata apps/requests/fixtures/initial_categories.json
    python manage.py runserver
    ```
 

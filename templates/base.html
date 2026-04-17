@@ -70,11 +70,11 @@
 
             <!-- Notifications bell -->
             <li class="nav-item">
-              <a class="nav-link position-relative" href="#" title="Сповіщення">
+              <a class="nav-link position-relative" href="{% url 'notifications:notification-list' %}" title="Сповіщення">
                 <i class="bi bi-bell" style="font-size:1.1rem;color:var(--mv-gray-500);"></i>
                 <span id="notification-badge"
-                      class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
-                  0
+                      class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger{% if not unread_count %} d-none{% endif %}">
+                  {{ unread_count|default:0 }}
                 </span>
               </a>
             </li>
@@ -102,6 +102,13 @@
                     <i class="bi bi-key me-2 text-primary"></i>Змінити пароль
                   </a>
                 </li>
+                {% if user.is_staff %}
+                <li>
+                  <a class="dropdown-item py-2" href="{% url 'stats:dashboard' %}">
+                    <i class="bi bi-bar-chart-line me-2 text-primary"></i>Статистика
+                  </a>
+                </li>
+                {% endif %}
                 <li><hr class="dropdown-divider my-1"></li>
                 <li>
                   <a class="dropdown-item py-2 text-danger" href="{% url 'accounts:logout' %}">
@@ -215,5 +222,34 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   {% block extra_js %}{% endblock %}
+
+  {% if user.is_authenticated %}
+  <!-- Notification polling: оновлення badge кожні 30 секунд -->
+  <script>
+  (function () {
+    const badge = document.getElementById('notification-badge');
+    if (!badge) return;
+
+    function updateBadge(count) {
+      badge.textContent = count;
+      if (count > 0) {
+        badge.classList.remove('d-none');
+      } else {
+        badge.classList.add('d-none');
+      }
+    }
+
+    function poll() {
+      fetch('{% url "notifications:notification-count" %}', { credentials: 'same-origin' })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data) updateBadge(data.count); })
+        .catch(() => {});
+    }
+
+    // Перший виклик через 30с, потім кожні 30с
+    setInterval(poll, 30000);
+  })();
+  </script>
+  {% endif %}
 </body>
 </html>

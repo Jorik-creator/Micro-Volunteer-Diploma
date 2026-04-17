@@ -3,6 +3,49 @@
 
 {% block title %}{{ help_request.title }} — MicroVolunteer{% endblock %}
 
+{% block extra_js %}
+<script>
+(function () {
+  // Polling статусу запиту кожні 30 секунд для волонтерів та власника
+  const currentStatus = "{{ help_request.status }}";
+  const statusUrl = "{% url 'requests:status' help_request.pk %}";
+
+  function poll() {
+    fetch(statusUrl, { credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && data.status !== currentStatus) {
+          // Статус змінився — показуємо тост і перезавантажуємо сторінку
+          showStatusToast(data.status_display);
+          setTimeout(() => location.reload(), 2500);
+        }
+      })
+      .catch(() => {});
+  }
+
+  function showStatusToast(newStatus) {
+    // Bootstrap Toast
+    const toastHtml = `
+      <div id="status-toast" class="toast align-items-center text-bg-info border-0 position-fixed bottom-0 end-0 m-3"
+           role="alert" aria-live="polite" style="z-index:1100;">
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="bi bi-arrow-repeat me-2"></i>
+            Статус оновлено: <strong>${newStatus}</strong>. Оновлення сторінки…
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', toastHtml);
+    const el = document.getElementById('status-toast');
+    new bootstrap.Toast(el, { delay: 3000 }).show();
+  }
+
+  setInterval(poll, 30000);
+})();
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
   <div class="row">
