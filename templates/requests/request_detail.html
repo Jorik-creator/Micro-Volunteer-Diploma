@@ -44,6 +44,43 @@
   setInterval(poll, 30000);
 })();
 </script>
+
+<script>
+function copyAddress() {
+  const address = document.getElementById('address-text').textContent.trim();
+  const btn = document.getElementById('copy-address-btn');
+  const icon = document.getElementById('copy-icon');
+
+  function showSuccess() {
+    icon.className = 'bi bi-check-lg text-success';
+    btn.title = 'Скопійовано!';
+    setTimeout(() => {
+      icon.className = 'bi bi-clipboard';
+      btn.title = 'Скопіювати адресу';
+    }, 2000);
+  }
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(address).then(showSuccess).catch(() => {
+      fallbackCopy(address);
+      showSuccess();
+    });
+  } else {
+    fallbackCopy(address);
+    showSuccess();
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch (_) {}
+  document.body.removeChild(ta);
+}
+</script>
 {% endblock %}
 
 {% block content %}
@@ -112,7 +149,14 @@
               <i class="bi bi-geo-alt me-1"></i>
               <strong>Адреса:</strong>
               {% if is_accepted or is_owner %}
-                {{ help_request.address }}
+                <span id="address-text">{{ help_request.address }}</span>
+                <button type="button"
+                        id="copy-address-btn"
+                        class="btn btn-link btn-sm p-0 ms-2"
+                        title="Скопіювати адресу"
+                        onclick="copyAddress()">
+                  <i class="bi bi-clipboard" id="copy-icon"></i>
+                </button>
               {% else %}
                 <span class="text-muted fst-italic">Доступно після підтвердження</span>
               {% endif %}

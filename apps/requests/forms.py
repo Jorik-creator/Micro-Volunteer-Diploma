@@ -41,12 +41,8 @@ class HelpRequestForm(forms.ModelForm):
         ]
         widgets = {
             "description": forms.Textarea(attrs={"rows": 4}),
-            "latitude": forms.NumberInput(
-                attrs={"step": "0.000001", "placeholder": "50.4501"}
-            ),
-            "longitude": forms.NumberInput(
-                attrs={"step": "0.000001", "placeholder": "30.5234"}
-            ),
+            "latitude": forms.HiddenInput(),
+            "longitude": forms.HiddenInput(),
         }
         labels = {
             "title": "Заголовок",
@@ -98,6 +94,12 @@ class FilterForm(forms.Form):
         label="Тривалість",
         choices=[("", "Будь-яка")] + HelpRequest.Duration.choices,
         required=False,
+    )
+    city = forms.CharField(
+        label="Місто",
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": "Київ, Львів..."}),
     )
     date_from = forms.DateField(
         label="Дата від",

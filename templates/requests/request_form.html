@@ -31,11 +31,29 @@
             </div>
 
             {{ form.volunteers_needed|as_crispy_field }}
-            {{ form.address|as_crispy_field }}
 
-            <div class="row">
-              <div class="col-md-6">{{ form.latitude|as_crispy_field }}</div>
-              <div class="col-md-6">{{ form.longitude|as_crispy_field }}</div>
+            <!-- Address with Nominatim autocomplete -->
+            <div class="mb-3 position-relative" id="address-wrapper">
+              {{ form.address|as_crispy_field }}
+              <div id="address-suggestions"
+                   style="position:absolute;z-index:1000;width:100%;background:#fff;
+                          border:1px solid #dee2e6;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);
+                          display:none;max-height:220px;overflow-y:auto;top:100%;left:0;"></div>
+            </div>
+            {{ form.latitude }}
+            {{ form.longitude }}
+            <div class="mb-3 text-muted small">
+              <i class="bi bi-info-circle me-1"></i>
+              Почніть вводити адресу — з'являться підказки для вибору точного місця
+            </div>
+
+            <!-- Leaflet mini-map: shown after a suggestion is selected -->
+            <div id="map-container" class="mb-3" style="display:none;">
+              <div id="mini-map" style="height:220px;border-radius:8px;border:1px solid #dee2e6;"></div>
+              <div class="text-muted small mt-1">
+                <i class="bi bi-arrows-move me-1"></i>
+                Перетягніть маркер для уточнення координат
+              </div>
             </div>
 
             {{ form.photo|as_crispy_field }}
@@ -55,4 +73,123 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet CSS/JS for the mini-map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLs=" crossorigin=""></script>
+
+<script>
+(function () {
+  const addressInput = document.getElementById('id_address');
+  const latInput     = document.getElementById('id_latitude');
+  const lonInput     = document.getElementById('id_longitude');
+  const suggestionsBox = document.getElementById('address-suggestions');
+  const mapContainer   = document.getElementById('map-container');
+
+  if (!addressInput) return;
+
+  // ── Leaflet mini-map (lazy-initialised on first suggestion pick) ──
+  let map    = null;
+  let marker = null;
+
+  function initMap(lat, lon) {
+    if (!map) {
+      map = L.map('mini-map').setView([lat, lon], 15);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19,
+      }).addTo(map);
+
+      marker = L.marker([lat, lon], { draggable: true }).addTo(map);
+
+      // Update hidden fields when the marker is dragged
+      marker.on('dragend', function () {
+        const pos = marker.getLatLng();
+        if (latInput) latInput.value = pos.lat.toFixed(6);
+        if (lonInput) lonInput.value = pos.lng.toFixed(6);
+      });
+    } else {
+      map.setView([lat, lon], 15);
+      marker.setLatLng([lat, lon]);
+    }
+    mapContainer.style.display = 'block';
+    // Leaflet needs a size recalc after the container becomes visible
+    setTimeout(() => map.invalidateSize(), 50);
+  }
+
+  // ── Nominatim autocomplete ──
+  let debounceTimer = null;
+
+  addressInput.addEventListener('input', function () {
+    clearTimeout(debounceTimer);
+    const query = this.value.trim();
+    if (query.length < 3) {
+      suggestionsBox.style.display = 'none';
+      return;
+    }
+    debounceTimer = setTimeout(() => fetchSuggestions(query), 400);
+  });
+
+  function fetchSuggestions(query) {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=ua&format=json&limit=5&addressdetails=1`;
+    fetch(url, { headers: { 'Accept-Language': 'uk' } })
+      .then(r => r.json())
+      .then(results => renderSuggestions(results))
+      .catch(() => {});
+  }
+
+  function renderSuggestions(results) {
+    suggestionsBox.innerHTML = '';
+    if (!results.length) {
+      suggestionsBox.style.display = 'none';
+      return;
+    }
+    results.forEach(item => {
+      const div = document.createElement('div');
+      div.style.cssText = 'padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:14px;';
+      div.textContent = item.display_name;
+      div.addEventListener('mouseenter', () => div.style.background = '#f8f9ff');
+      div.addEventListener('mouseleave', () => div.style.background = '');
+      div.addEventListener('click',      () => selectSuggestion(item));
+      suggestionsBox.appendChild(div);
+    });
+    suggestionsBox.style.display = 'block';
+  }
+
+  function selectSuggestion(item) {
+    const lat = parseFloat(item.lat);
+    const lon = parseFloat(item.lon);
+
+    addressInput.value = item.display_name;
+    if (latInput) latInput.value = lat.toFixed(6);
+    if (lonInput) lonInput.value = lon.toFixed(6);
+    suggestionsBox.style.display = 'none';
+
+    // Show / update the mini-map
+    initMap(lat, lon);
+  }
+
+  // ── If coordinates are already populated (edit form), show the map immediately ──
+  window.addEventListener('DOMContentLoaded', function () {
+    const existingLat = latInput && latInput.value ? parseFloat(latInput.value) : null;
+    const existingLon = lonInput && lonInput.value ? parseFloat(lonInput.value) : null;
+    if (existingLat && existingLon) {
+      initMap(existingLat, existingLon);
+    }
+  });
+
+  // ── Close suggestions when clicking outside the address wrapper ──
+  document.addEventListener('click', function (e) {
+    const wrapper = document.getElementById('address-wrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+      suggestionsBox.style.display = 'none';
+    }
+  });
+})();
+</script>
 {% endblock %}
