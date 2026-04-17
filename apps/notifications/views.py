@@ -7,12 +7,18 @@ Views для застосунку notifications.
 Дії зі сповіщеннями:
   mark_read      — позначити одне сповіщення як прочитане (POST)
   mark_all_read  — позначити всі непрочитані сповіщення як прочитані (POST)
+
+SSE потік:
+  notification_stream — Server-Sent Events потік кількості непрочитаних сповіщень
 """
+
+import json
+import time
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponseNotAllowed, JsonResponse
+from django.http import HttpResponseNotAllowed, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import ListView
 
@@ -95,3 +101,42 @@ def notification_count(request):
     """Повертає кількість непрочитаних сповіщень у форматі JSON для polling."""
     count = Notification.objects.filter(user=request.user, is_read=False).count()
     return JsonResponse({"count": count})
+
+
+# ---------------------------------------------------------------------------
+# SSE: потік кількості непрочитаних сповіщень (Server-Sent Events)
+# ---------------------------------------------------------------------------
+
+
+@login_required
+def notification_stream(request):
+    """
+    Server-Sent Events потік, що кожні 15 секунд надсилає кількість
+    непрочитаних сповіщень поточного користувача.
+
+    Клієнт підключається одноразово; з'єднання закривається браузером при
+    навігації або явним викликом EventSource.close().  GeneratorExit
+    перехоплюється для коректного завершення генератора.
+    """
+    user = request.user
+
+    def event_generator():
+        # Надсилаємо перший event одразу, щоб клієнт не чекав 15 секунд
+        try:
+            while True:
+                count = Notification.objects.filter(
+                    user=user, is_read=False
+                ).count()
+                yield f"data: {json.dumps({'count': count})}\n\n"
+                time.sleep(15)
+        except GeneratorExit:
+            # Клієнт від'єднався — виходимо чисто без виключення
+            return
+
+    response = StreamingHttpResponse(
+        event_generator(), content_type="text/event-stream"
+    )
+    # Вимикаємо буферизацію на рівні nginx та браузера
+    response["X-Accel-Buffering"] = "no"
+    response["Cache-Control"] = "no-cache"
+    return response

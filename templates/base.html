@@ -224,7 +224,7 @@
   {% block extra_js %}{% endblock %}
 
   {% if user.is_authenticated %}
-  <!-- Notification polling: оновлення badge кожні 30 секунд -->
+  <!-- Real-time сповіщення через Server-Sent Events -->
   <script>
   (function () {
     const badge = document.getElementById('notification-badge');
@@ -239,15 +239,50 @@
       }
     }
 
-    function poll() {
-      fetch('{% url "notifications:notification-count" %}', { credentials: 'same-origin' })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => { if (data) updateBadge(data.count); })
-        .catch(() => {});
+    function showNotificationToast(count) {
+      const existing = document.getElementById('notif-toast');
+      if (existing) existing.remove();
+      const html = `
+        <div id="notif-toast" class="toast align-items-center text-bg-primary border-0 position-fixed bottom-0 end-0 m-3"
+             role="alert" aria-live="polite" style="z-index:1100;">
+          <div class="d-flex">
+            <div class="toast-body">
+              <i class="bi bi-bell-fill me-2"></i>
+              У вас ${count} непрочитаних сповіщень
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          </div>
+        </div>`;
+      document.body.insertAdjacentHTML('beforeend', html);
+      new bootstrap.Toast(document.getElementById('notif-toast'), { delay: 4000 }).show();
     }
 
-    // Перший виклик через 30с, потім кожні 30с
-    setInterval(poll, 30000);
+    let previousCount = parseInt(badge.textContent, 10) || 0;
+    let source = null;
+
+    function connect() {
+      source = new EventSource('{% url "notifications:notification-stream-sse" %}');
+
+      source.onmessage = function (e) {
+        try {
+          const data = JSON.parse(e.data);
+          const newCount = data.count;
+          if (newCount > previousCount) {
+            showNotificationToast(newCount);
+          }
+          previousCount = newCount;
+          updateBadge(newCount);
+        } catch (_) {}
+      };
+
+      source.onerror = function () {
+        source.close();
+        // Перепідключення через 30с при розриві з'єднання
+        setTimeout(connect, 30000);
+      };
+    }
+
+    connect();
   })();
   </script>
   {% endif %}

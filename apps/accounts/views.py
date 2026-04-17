@@ -7,6 +7,7 @@ from django.contrib.auth.views import (
     PasswordChangeView,
 )
 from django.db.models import Avg, Count
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, UpdateView, TemplateView
@@ -42,6 +43,31 @@ class HomeView(TemplateView):
             user_type=User.UserType.RECIPIENT,
         ).count()
         return context
+
+
+# ---------------------------------------------------------------------------
+# Live stats JSON endpoint (public, no login required)
+# ---------------------------------------------------------------------------
+
+
+def live_stats(request):
+    """JSON endpoint: live platform statistics for home page polling."""
+    from apps.requests.models import HelpRequest  # local import to avoid circular
+
+    return JsonResponse(
+        {
+            "total_users": User.objects.count(),
+            "total_volunteers": User.objects.filter(
+                user_type=User.UserType.VOLUNTEER,
+            ).count(),
+            "total_recipients": User.objects.filter(
+                user_type=User.UserType.RECIPIENT,
+            ).count(),
+            "active_requests": HelpRequest.objects.filter(
+                status=HelpRequest.Status.ACTIVE,
+            ).count(),
+        }
+    )
 
 
 # ---------------------------------------------------------------------------

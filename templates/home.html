@@ -2,6 +2,10 @@
 
 {% block title %}MicroVolunteer — Платформа мікро-волонтерства{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock %}
+
 {% block content %}
 
 <!-- ═══════════════════════════════════════════════
@@ -94,22 +98,22 @@
     <div class="d-flex flex-wrap h-100 align-items-center">
 
       <div class="stat-item">
-        <div class="stat-number">{{ total_volunteers }}+</div>
+        <div class="stat-number" id="stat-volunteers">{{ total_volunteers }}+</div>
         <div class="stat-label">Активних волонтерів</div>
       </div>
 
       <div class="stat-item">
-        <div class="stat-number">{{ total_users }}+</div>
+        <div class="stat-number" id="stat-users">{{ total_users }}+</div>
         <div class="stat-label">Учасників платформи</div>
       </div>
 
       <div class="stat-item">
-        <div class="stat-number">14</div>
+        <div class="stat-number" id="stat-cities">14</div>
         <div class="stat-label">Міст охоплено</div>
       </div>
 
       <div class="stat-item">
-        <div class="stat-number">98%</div>
+        <div class="stat-number" id="stat-satisfaction">98%</div>
         <div class="stat-label">Задоволених отримувачів</div>
       </div>
 
@@ -324,46 +328,9 @@
         </a>
       </div>
 
-      <!-- Right: Map placeholder -->
+      <!-- Right: Interactive Leaflet map -->
       <div class="col-lg-7">
-        <div class="map-placeholder">
-
-          <!-- Background hint -->
-          <div class="text-center" style="position:relative;z-index:1;">
-            <i class="bi bi-map" style="font-size:4.5rem;color:#93C5FD;opacity:0.7;"></i>
-            <div class="mt-2" style="font-size:13px;font-weight:500;color:#2563EB;">
-              Інтерактивна карта запитів
-            </div>
-          </div>
-
-          <!-- City markers -->
-          <!-- Kyiv -->
-          <div class="position-absolute" style="top:32%;left:57%;">
-            <div class="map-pin-dot"></div>
-            <div class="map-city-popup">📍 Київ — 47 запитів</div>
-          </div>
-          <!-- Lviv -->
-          <div class="map-pin-dot position-absolute" style="top:28%;left:18%;"></div>
-          <!-- Kharkiv -->
-          <div class="map-pin-dot position-absolute" style="top:26%;left:78%;"></div>
-          <!-- Odesa -->
-          <div class="map-pin-dot position-absolute" style="top:68%;left:48%;"></div>
-          <!-- Dnipro -->
-          <div class="map-pin-dot position-absolute" style="top:50%;left:68%;"></div>
-
-          <!-- Zoom controls -->
-          <div class="position-absolute d-flex flex-column gap-2" style="bottom:16px;right:16px;z-index:2;">
-            <button class="btn btn-light"
-                    style="width:32px;height:32px;border-radius:8px;padding:0;font-weight:700;font-size:16px;line-height:1;box-shadow:0 1px 4px rgba(0,0,0,0.12);">
-              +
-            </button>
-            <button class="btn btn-light"
-                    style="width:32px;height:32px;border-radius:8px;padding:0;font-weight:700;font-size:16px;line-height:1;box-shadow:0 1px 4px rgba(0,0,0,0.12);">
-              −
-            </button>
-          </div>
-
-        </div>
+        <div id="home-mini-map" style="height:400px;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(37,99,235,0.13);"></div>
       </div>
 
     </div>
@@ -391,4 +358,75 @@
   </div>
 </section>
 
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  const map = L.map('home-mini-map', { zoomControl: false, scrollWheelZoom: false, dragging: false })
+               .setView([48.5, 31.2], 6);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20,
+  }).addTo(map);
+
+  const urgencyColors = { critical: '#dc3545', high: '#ffc107', medium: '#0dcaf0', low: '#198754' };
+  const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
+
+  fetch('{% url "requests:map-data" %}')
+    .then(r => r.json())
+    .then(data => {
+      data.forEach(item => {
+        const color = urgencyColors[item.urgency] || '#6c757d';
+        const marker = L.circleMarker([item.lat, item.lon], {
+          radius: 8,
+          fillColor: color,
+          color: '#fff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.85,
+        }).addTo(map);
+
+        if (isAuthenticated) {
+          marker.bindPopup(`
+            <strong>${item.title}</strong><br>
+            <span class="text-muted">${item.category}</span><br>
+            <a href="${item.url}" class="btn btn-sm btn-primary mt-1">Деталі</a>
+          `);
+        } else {
+          marker.bindPopup(`
+            <span class="text-muted">${item.category}</span><br>
+            <small>🔒 <a href="/accounts/login/">Увійдіть</a> для перегляду деталей</small>
+          `);
+        }
+      });
+    })
+    .catch(() => {});
+})();
+</script>
+
+<!-- Live stats polling: оновлення метрик кожні 60 секунд -->
+<script>
+(function () {
+  function updateStats(data) {
+    const vol = document.getElementById('stat-volunteers');
+    const usr = document.getElementById('stat-users');
+    if (vol) vol.textContent = data.total_volunteers + '+';
+    if (usr) usr.textContent = data.total_users + '+';
+  }
+
+  function pollStats() {
+    fetch('{% url "accounts:live-stats" %}', { credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) updateStats(data); })
+      .catch(() => {});
+  }
+
+  // Перше оновлення через 60с, потім кожні 60с
+  setInterval(pollStats, 60000);
+})();
+</script>
 {% endblock %}

@@ -66,6 +66,28 @@ def on_response_status_change(sender, instance, created, update_fields, **kwargs
         )
 
 
+@receiver(post_save, sender=Response)
+def on_response_received(sender, instance, created, **kwargs):
+    """Notify the recipient when a volunteer submits a new response to their request."""
+    if not created:
+        return
+
+    recipient = instance.help_request.recipient
+
+    Notification.objects.get_or_create(
+        user=recipient,
+        type=Notification.Type.NEW_RESPONSE,
+        related_request=instance.help_request,
+        defaults={
+            "title": f"{instance.volunteer.get_full_name()} відгукнувся(лась) на ваш запит",
+            "message": (
+                f"Запит: '{instance.help_request.title}'. "
+                "Перегляньте відгуки та оберіть волонтера."
+            ),
+        },
+    )
+
+
 @receiver(post_save, sender=HelpRequest)
 def on_request_completed(sender, instance, created, update_fields, **kwargs):
     """Notify the accepted volunteer when a help request is marked as completed."""
@@ -97,5 +119,30 @@ def on_request_completed(sender, instance, created, update_fields, **kwargs):
         defaults={
             "title": "Запит позначено як виконаний",
             "message": f"Дякуємо за допомогу з запитом '{instance.title}'!",
+        },
+    )
+
+
+@receiver(post_save, sender=HelpRequest)
+def on_request_completed_recipient(sender, instance, created, update_fields, **kwargs):
+    """Notify the recipient when their help request is marked as completed."""
+    # Only react to status updates, not new records
+    if created:
+        return
+
+    if instance.status != HelpRequest.Status.COMPLETED:
+        return
+
+    # Respect selective saves: skip if update_fields is set but doesn't include 'status'
+    if update_fields is not None and "status" not in update_fields:
+        return
+
+    Notification.objects.get_or_create(
+        user=instance.recipient,
+        type=Notification.Type.REQUEST_COMPLETED,
+        related_request=instance,
+        defaults={
+            "title": "Ваш запит виконано",
+            "message": f"Дякуємо! Запит '{instance.title}' успішно виконано.",
         },
     )
