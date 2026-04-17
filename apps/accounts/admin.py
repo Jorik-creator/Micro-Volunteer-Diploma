@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from .models import RecipientProfile, User, VolunteerProfile
@@ -14,8 +14,28 @@ class RecipientProfileInline(admin.StackedInline):
     can_delete = False
 
 
+@admin.action(description='Заблокувати обраних користувачів')
+def block_users(modeladmin, request, queryset):
+    eligible = queryset.filter(is_superuser=False)
+    count = eligible.update(is_active=False)
+    messages.success(request, f'Заблоковано {count} користувачів.')
+
+
+@admin.action(description='Розблокувати обраних користувачів')
+def unblock_users(modeladmin, request, queryset):
+    count = queryset.update(is_active=True)
+    messages.success(request, f'Розблоковано {count} користувачів.')
+
+
+@admin.action(description='Позначити як верифікованих')
+def verify_users(modeladmin, request, queryset):
+    count = queryset.update(is_verified=True)
+    messages.success(request, f'Верифіковано {count} користувачів.')
+
+
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
+    actions = [block_users, unblock_users, verify_users]
     list_display = (
         'username',
         'email',
