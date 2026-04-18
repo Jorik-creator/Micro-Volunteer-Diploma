@@ -20,6 +20,7 @@
 
   <!-- Project CSS (cache-bust via version param) -->
   <link href="{% static 'css/style.css' %}?v=2" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
 
   {% block extra_css %}{% endblock %}
 </head>
@@ -111,9 +112,13 @@
                 {% endif %}
                 <li><hr class="dropdown-divider my-1"></li>
                 <li>
-                  <a class="dropdown-item py-2 text-danger" href="{% url 'accounts:logout' %}">
-                    <i class="bi bi-box-arrow-right me-2"></i>Вийти
-                  </a>
+                  <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="dropdown-item py-2 text-danger bg-transparent border-0 w-100 text-start">
+                      <i class="bi bi-box-arrow-right me-2"></i>Вийти
+                    </button>
+                  </form>
                 </li>
               </ul>
             </li>
