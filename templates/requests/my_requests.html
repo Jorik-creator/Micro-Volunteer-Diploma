@@ -3,99 +3,71 @@
 {% block title %}Мої запити — MicroVolunteer{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-person-lines-fill me-2"></i>Мої запити</h2>
-    <a href="{% url 'requests:create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle me-1"></i>Новий запит
-    </a>
+<section class="page-hero">
+  <div class="container">
+    <div class="inner">
+      <div>
+        <h1 class="page-title">Мої запити</h1>
+        <p class="page-sub">Ваші активні та завершені запити</p>
+      </div>
+      <a href="{% url 'requests:create' %}" class="btn btn-solid">
+        <i class="bi bi-plus-lg"></i> Новий запит
+      </a>
+    </div>
   </div>
+</section>
+
+<div class="container" style="padding-top:32px;padding-bottom:64px">
 
   <!-- Stats row -->
   <div class="row g-3 mb-4">
     <div class="col-sm-4">
-      <div class="card text-center border-primary">
-        <div class="card-body py-2">
-          <div class="fs-3 fw-bold text-primary">{{ active_count }}</div>
-          <small class="text-muted">Активних</small>
-        </div>
+      <div class="card-panel" style="text-align:center;padding:16px">
+        <div style="font-size:2rem;font-weight:700;color:var(--mv-blue-600)">{{ active_count }}</div>
+        <small style="color:var(--mv-gray-500)">Активних</small>
       </div>
     </div>
     <div class="col-sm-4">
-      <div class="card text-center border-warning">
-        <div class="card-body py-2">
-          <div class="fs-3 fw-bold text-warning">{{ in_progress_count }}</div>
-          <small class="text-muted">В процесі</small>
-        </div>
+      <div class="card-panel" style="text-align:center;padding:16px">
+        <div style="font-size:2rem;font-weight:700;color:var(--mv-yellow-600, #d97706)">{{ in_progress_count }}</div>
+        <small style="color:var(--mv-gray-500)">В процесі</small>
       </div>
     </div>
     <div class="col-sm-4">
-      <div class="card text-center border-success">
-        <div class="card-body py-2">
-          <div class="fs-3 fw-bold text-success">{{ completed_count }}</div>
-          <small class="text-muted">Виконано</small>
-        </div>
+      <div class="card-panel" style="text-align:center;padding:16px">
+        <div style="font-size:2rem;font-weight:700;color:var(--mv-green-600, #16a34a)">{{ completed_count }}</div>
+        <small style="color:var(--mv-gray-500)">Виконано</small>
       </div>
     </div>
   </div>
 
   {% if requests %}
-  <div class="list-group shadow-sm">
+  <div class="requests-grid">
     {% for hr in requests %}
-    <div class="list-group-item list-group-item-action">
-      <div class="d-flex justify-content-between align-items-start">
-        <div>
-          <a href="{% url 'requests:detail' hr.pk %}" class="fw-semibold text-decoration-none text-dark">
-            {{ hr.title }}
-          </a>
-          <div class="mt-1">
-            <span class="badge
-              {% if hr.status == 'active' %}bg-primary
-              {% elif hr.status == 'in_progress' %}bg-warning text-dark
-              {% elif hr.status == 'completed' %}bg-success
-              {% elif hr.status == 'cancelled' %}bg-secondary
-              {% else %}bg-danger
-              {% endif %} me-1">
-              {{ hr.get_status_display }}
-            </span>
-            <span class="badge
-              {% if hr.urgency == 'critical' %}bg-danger
-              {% elif hr.urgency == 'high' %}bg-warning text-dark
-              {% elif hr.urgency == 'medium' %}bg-info text-dark
-              {% else %}bg-success
-              {% endif %}">
-              {{ hr.get_urgency_display }}
-            </span>
-            {% if hr.category %}
-            <small class="text-muted ms-2">{{ hr.category.name }}</small>
-            {% endif %}
-          </div>
-          <small class="text-muted">
-            <i class="bi bi-calendar-event me-1"></i>{{ hr.needed_date|date:"d.m.Y H:i" }}
-            &nbsp;|&nbsp;
-            <i class="bi bi-clock me-1"></i>{{ hr.get_duration_display }}
-          </small>
-        </div>
-        <div class="text-end text-nowrap ms-3">
-          <small class="text-muted d-block">{{ hr.created_at|date:"d.m.Y" }}</small>
-          {% if hr.status == 'active' %}
-          <a href="{% url 'requests:edit' hr.pk %}" class="btn btn-outline-secondary btn-sm mt-1">
-            <i class="bi bi-pencil"></i>
-          </a>
-          {% endif %}
-          <a href="{% url 'requests:detail' hr.pk %}" class="btn btn-outline-primary btn-sm mt-1">
-            <i class="bi bi-eye"></i>
-          </a>
-        </div>
+    <div class="request-card">
+      <div class="top-row">
+        {% if hr.category %}<span class="chip chip-blue">{{ hr.category.name }}</span>{% endif %}
+        <span class="status-badge {% if hr.status == 'active' %}open{% elif hr.status == 'in_progress' %}inprogress{% elif hr.status == 'completed' %}completed{% endif %}">
+          {{ hr.get_status_display }}
+        </span>
       </div>
+      <h5 class="request-title">{{ hr.title }}</h5>
+      <p class="request-desc">{{ hr.description|truncatewords:15 }}</p>
+      <hr class="request-divider">
+      <div class="request-meta-row">
+        <span class="geo"><i class="bi bi-geo-alt"></i> {{ hr.address|truncatechars:30 }}</span>
+        <span class="time">{{ hr.created_at|timesince }} тому</span>
+      </div>
+      <a href="{% url 'requests:detail' hr.pk %}" class="btn btn-solid btn-block btn-help">
+        Переглянути <i class="bi bi-arrow-right"></i>
+      </a>
     </div>
     {% endfor %}
   </div>
 
   <!-- Pagination -->
   {% if is_paginated %}
-  <nav class="mt-4">
+  <nav style="margin-top:32px">
     <ul class="pagination justify-content-center">
       {% if page_obj.has_previous %}
       <li class="page-item">
@@ -115,12 +87,10 @@
   {% endif %}
 
   {% else %}
-  <div class="text-center py-5 text-muted">
-    <i class="bi bi-inbox display-4 d-block mb-3"></i>
-    <p>У вас поки немає запитів.</p>
-    <a href="{% url 'requests:create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle me-1"></i>Створити перший запит
-    </a>
+  <div style="text-align:center;padding:80px 0;color:var(--mv-gray-500)">
+    <i class="bi bi-inbox" style="font-size:48px;display:block;margin-bottom:16px"></i>
+    <p>У вас ще немає запитів.</p>
+    <a href="{% url 'requests:create' %}" class="btn btn-solid">Створити перший запит</a>
   </div>
   {% endif %}
 

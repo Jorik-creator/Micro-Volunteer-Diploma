@@ -1,164 +1,224 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load static %}
 
 {% block title %}MicroVolunteer — Платформа мікро-волонтерства{% endblock %}
 
 {% block content %}
 
-<!-- Hero section -->
-<section class="bg-primary text-white py-5">
-  <div class="container text-center py-4">
-    <h1 class="display-5 fw-bold mb-3">
-      Допомога поруч
-    </h1>
-    <p class="lead mb-4 col-lg-8 mx-auto">
-      MicroVolunteer з'єднує людей, що потребують допомоги у повсякденних справах,
-      з волонтерами, готовими надати швидку локальну підтримку.
-    </p>
-    {% if not user.is_authenticated %}
-    <div class="d-flex justify-content-center gap-3">
-      <a href="{% url 'accounts:register' %}" class="btn btn-light btn-lg">
-        <i class="bi bi-heart-pulse me-1"></i>Знайти допомогу
-      </a>
-      <a href="{% url 'accounts:register' %}" class="btn btn-outline-light btn-lg">
-        <i class="bi bi-hand-thumbs-up me-1"></i>Стати волонтером
+<!-- ===== HERO ===== -->
+<section class="hero-section">
+  <div class="container hero-grid">
+    <!-- Left: text -->
+    <div>
+      <div class="hero-eyebrow">
+        <i class="bi bi-geo-alt-fill"></i> Допомога поруч, за 15 хвилин
+      </div>
+      <h1 class="hero-title">
+        Маленька допомога <span class="accent">— великі зміни</span>
+      </h1>
+      <p class="hero-subtitle">
+        MicroVolunteer з'єднує тих, хто потребує підтримки у повсякденних справах,
+        з волонтерами поруч. Швидко, локально, безпечно.
+      </p>
+      <div class="hero-actions">
+        <a href="{% url 'requests:list' %}" class="btn btn-solid btn-lg">
+          <i class="bi bi-heart-pulse"></i> Знайти допомогу
+        </a>
+        <a href="{% if user.is_authenticated %}{% url 'requests:map' %}{% else %}{% url 'accounts:register' %}{% endif %}" class="btn btn-ghost btn-lg">
+          <i class="bi bi-hand-thumbs-up"></i> Стати волонтером
+        </a>
+      </div>
+      <div class="hero-trust">
+        <div class="avatar-stack">
+          <div class="avatar" style="background:linear-gradient(135deg,#3B82F6,#1A3B6E)">ОВ</div>
+          <div class="avatar" style="background:linear-gradient(135deg,#2563EB,#0F2349)">АМ</div>
+          <div class="avatar" style="background:linear-gradient(135deg,#1A3B6E,#2563EB)">МК</div>
+          <div class="avatar" style="background:linear-gradient(135deg,#0F2349,#3B82F6)">ІП</div>
+        </div>
+        <span><strong style="color:var(--mv-blue-900)">{{ total_volunteers }} волонтерів</strong> вже допомагають щодня</span>
+      </div>
+    </div>
+
+    <!-- Right: illustration -->
+    <div class="hero-illustration">
+      <div class="mock-map-grid"></div>
+      <svg class="mock-routes" viewBox="0 0 400 380" preserveAspectRatio="none">
+        <path d="M 80 320 Q 180 240, 260 180 T 350 60" stroke="rgba(37,99,235,0.35)" stroke-width="2.5" stroke-dasharray="6 6" fill="none"/>
+        <path d="M 60 80 Q 160 140, 220 260" stroke="rgba(22,163,74,0.3)" stroke-width="2.5" stroke-dasharray="6 6" fill="none"/>
+      </svg>
+      <div class="map-pin" style="top:24%;left:18%"><div class="map-pin-dot pulse critical"></div></div>
+      <div class="map-pin" style="top:48%;left:58%"><div class="map-pin-dot pulse"></div></div>
+      <div class="map-pin" style="top:70%;left:32%"><div class="map-pin-dot success"></div></div>
+      <div class="map-pin" style="top:30%;left:78%"><div class="map-pin-dot"></div></div>
+
+      <div class="floating-card" style="top:12%;right:-4%">
+        <div class="fc-icon green"><i class="bi bi-check2-circle"></i></div>
+        <div>
+          <div class="fc-title">Запит виконано</div>
+          <div class="fc-sub">Доставка ліків • 800м</div>
+        </div>
+      </div>
+      <div class="floating-card" style="bottom:8%;left:-6%">
+        <div class="fc-icon"><i class="bi bi-people-fill"></i></div>
+        <div>
+          <div class="fc-title">3 волонтери поруч</div>
+          <div class="fc-sub">Готові допомогти</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== STATS BAR ===== -->
+<section class="stats-bar">
+  <div class="container stats-grid">
+    <div class="stat-item">
+      <div class="stat-number">{{ total_users|intcomma }}</div>
+      <div class="stat-label">Користувачів</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">{{ total_volunteers|intcomma }}</div>
+      <div class="stat-label">Волонтерів</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">{{ total_recipients|intcomma }}</div>
+      <div class="stat-label">Отримувачів</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">{{ recent_requests|length }}+</div>
+      <div class="stat-label">Активних запитів</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== MARQUEE ===== -->
+<section class="marquee-section">
+  <div class="marquee-track">
+    <div class="marquee-text">
+      <span>Доставка продуктів</span>
+      <span>Вигул тварин</span>
+      <span>Допомога літнім</span>
+      <span>Ліки з аптеки</span>
+      <span>Транспорт до лікаря</span>
+      <span>Побутова допомога</span>
+      <span>Підтримка переселенців</span>
+    </div>
+    <div class="marquee-text" aria-hidden="true">
+      <span>Доставка продуктів</span>
+      <span>Вигул тварин</span>
+      <span>Допомога літнім</span>
+      <span>Ліки з аптеки</span>
+      <span>Транспорт до лікаря</span>
+      <span>Побутова допомога</span>
+      <span>Підтримка переселенців</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== HOW IT WORKS ===== -->
+<section class="section section-muted" id="how-it-works">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">Як це працює</div>
+      <h2 class="section-title">Чотири кроки до допомоги</h2>
+      <p class="section-sub">Від реєстрації до виконання запиту — кілька хвилин</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number-badge">1</div>
+        <div class="step-icon"><i class="bi bi-person-plus"></i></div>
+        <div class="step-title">Реєстрація</div>
+        <div class="step-desc">Створіть акаунт як отримувач допомоги або волонтер за хвилину.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-number-badge">2</div>
+        <div class="step-icon"><i class="bi bi-pencil-square"></i></div>
+        <div class="step-title">Запит або пошук</div>
+        <div class="step-desc">Опишіть, яка допомога потрібна, або оберіть запит на карті.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-number-badge">3</div>
+        <div class="step-icon"><i class="bi bi-geo-alt"></i></div>
+        <div class="step-title">Зв'язок поруч</div>
+        <div class="step-desc">Волонтери поблизу бачать ваш запит та відгукуються миттєво.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-number-badge">4</div>
+        <div class="step-icon"><i class="bi bi-check-circle"></i></div>
+        <div class="step-title">Допомога</div>
+        <div class="step-desc">Координуйте зустріч та отримайте підтримку від волонтера.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ACTIVE REQUESTS ===== -->
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-eyebrow">Актуальні запити</div>
+      <h2 class="section-title">Хтось поруч потребує допомоги</h2>
+    </div>
+    <div class="requests-grid">
+      {% for req in recent_requests %}
+      <div class="request-card">
+        <div class="top-row">
+          {% if req.category %}
+          <span class="chip chip-blue">{{ req.category.name }}</span>
+          {% else %}
+          <span class="chip chip-gray">Загальне</span>
+          {% endif %}
+          <span class="chip {% if req.urgency == 'critical' %}chip-red{% elif req.urgency == 'high' %}chip-yellow{% elif req.urgency == 'medium' %}chip-blue{% else %}chip-green{% endif %}">
+            <span class="urgency-dot {{ req.urgency }}"></span>
+            {{ req.get_urgency_display }}
+          </span>
+        </div>
+        <h5 class="request-title">{{ req.title }}</h5>
+        <p class="request-desc">{{ req.description|truncatewords:15 }}</p>
+        <hr class="request-divider">
+        <div class="request-meta-row">
+          <span class="geo"><i class="bi bi-geo-alt"></i> {{ req.address|truncatechars:35 }}</span>
+          <span class="time">{{ req.created_at|timesince }} тому</span>
+        </div>
+        <a href="{% url 'requests:detail' req.pk %}" class="btn btn-solid btn-block btn-help">
+          Допомогти <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+      {% empty %}
+      <div style="grid-column:1/-1;text-align:center;padding:80px 0;color:var(--mv-gray-500)">
+        <i class="bi bi-inbox" style="font-size:48px;display:block;margin-bottom:16px"></i>
+        <p>Наразі активних запитів немає.</p>
+        <a href="{% url 'accounts:register' %}" class="btn btn-solid">Зареєструватись</a>
+      </div>
+      {% endfor %}
+    </div>
+    {% if recent_requests %}
+    <div style="text-align:center;margin-top:40px">
+      <a href="{% url 'requests:list' %}" class="btn btn-ghost btn-lg">
+        Усі запити <i class="bi bi-arrow-right"></i>
       </a>
     </div>
     {% endif %}
   </div>
 </section>
 
-<!-- How it works -->
-<section class="py-5">
-  <div class="container">
-    <h2 class="text-center mb-5">Як це працює</h2>
-    <div class="row g-4 text-center">
-      <div class="col-md-3">
-        <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3"
-             style="width:80px;height:80px;">
-          <i class="bi bi-person-plus fs-2 text-primary"></i>
-        </div>
-        <h5>1. Реєстрація</h5>
-        <p class="text-muted">Створіть акаунт як отримувач допомоги або волонтер.</p>
-      </div>
-      <div class="col-md-3">
-        <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3"
-             style="width:80px;height:80px;">
-          <i class="bi bi-pencil-square fs-2 text-primary"></i>
-        </div>
-        <h5>2. Створіть запит</h5>
-        <p class="text-muted">Опишіть, яка допомога потрібна, де і коли.</p>
-      </div>
-      <div class="col-md-3">
-        <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3"
-             style="width:80px;height:80px;">
-          <i class="bi bi-geo-alt fs-2 text-primary"></i>
-        </div>
-        <h5>3. Знайдіть волонтера</h5>
-        <p class="text-muted">Волонтери поблизу побачать ваш запит на карті.</p>
-      </div>
-      <div class="col-md-3">
-        <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3"
-             style="width:80px;height:80px;">
-          <i class="bi bi-check-circle fs-2 text-primary"></i>
-        </div>
-        <h5>4. Отримайте допомогу</h5>
-        <p class="text-muted">Волонтер відгукнеться, і ви зможете координувати допомогу.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Statistics -->
-<section class="bg-light py-5">
-  <div class="container">
-    <h2 class="text-center mb-5">Платформа в цифрах</h2>
-    <div class="row g-4 text-center">
-      <div class="col-md-4">
-        <div class="card shadow-sm border-0 h-100">
-          <div class="card-body py-4">
-            <i class="bi bi-people fs-1 text-primary"></i>
-            <h3 class="mt-2 mb-0">{{ total_users }}</h3>
-            <p class="text-muted mb-0">Користувачів</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card shadow-sm border-0 h-100">
-          <div class="card-body py-4">
-            <i class="bi bi-hand-thumbs-up fs-1 text-success"></i>
-            <h3 class="mt-2 mb-0">{{ total_volunteers }}</h3>
-            <p class="text-muted mb-0">Волонтерів</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card shadow-sm border-0 h-100">
-          <div class="card-body py-4">
-            <i class="bi bi-heart fs-1 text-danger"></i>
-            <h3 class="mt-2 mb-0">{{ total_recipients }}</h3>
-            <p class="text-muted mb-0">Отримувачів допомоги</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- CTA -->
+<!-- ===== CTA ===== -->
 {% if not user.is_authenticated %}
-<section class="py-5">
-  <div class="container text-center">
-    <h2 class="mb-3">Готові допомагати?</h2>
-    <p class="lead text-muted mb-4">
-      Приєднуйтесь до спільноти мікро-волонтерів вже сьогодні.
-    </p>
-    <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg">
-      <i class="bi bi-rocket-takeoff me-1"></i>Зареєструватися
-    </a>
+<section class="cta-section">
+  <div class="container cta-inner">
+    <h2 class="cta-title">Приєднуйтесь до спільноти</h2>
+    <p class="cta-sub">Ставайте частиною мережі, що робить українські громади сильнішими день за днем.</p>
+    <div class="cta-actions">
+      <a href="{% url 'accounts:register' %}" class="btn btn-white btn-lg">
+        <i class="bi bi-rocket-takeoff"></i> Зареєструватися
+      </a>
+      <a href="{% url 'requests:map' %}" class="btn btn-outline-white btn-lg">
+        <i class="bi bi-map"></i> Відкрити карту
+      </a>
+    </div>
   </div>
 </section>
 {% endif %}
-
-<!-- Active requests -->
-<section class="py-5 bg-light">
-  <div class="container">
-    <h2 class="text-center mb-5">Актуальні запити</h2>
-
-    <!-- Cards -->
-    <div class="row g-4" id="active-requests-grid">
-      {% for req in recent_requests %}
-      <div class="col-md-4">
-        <div class="request-card">
-          <div class="d-flex justify-content-between align-items-center">
-            {% if req.category %}
-            <span class="category-chip chip-blue">{{ req.category.name }}</span>
-            {% else %}
-            <span class="category-chip chip-blue">Без категорії</span>
-            {% endif %}
-            <span class="status-badge">Новий</span>
-          </div>
-          <h5 class="request-title">{{ req.title }}</h5>
-          <p class="request-desc">{{ req.description|truncatewords:15 }}</p>
-          <hr class="request-divider">
-          <div class="d-flex justify-content-between">
-            <span class="request-meta">
-              <i class="bi bi-geo-alt me-1"></i>{{ req.address|truncatechars:35 }}
-            </span>
-            <span class="request-meta-time">{{ req.created_at|timesince }} тому</span>
-          </div>
-          <a href="{% url 'requests:detail' req.pk %}" class="btn-help">Допомогти</a>
-        </div>
-      </div>
-      {% empty %}
-      <div class="col-12 text-center py-4 text-muted">
-        <i class="bi bi-inbox display-5 d-block mb-3"></i>
-        <p>Наразі активних запитів немає. Будьте першим!</p>
-        <a href="{% url 'accounts:register' %}" class="mv-btn-solid">Зареєструватись</a>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
 
 {% endblock %}

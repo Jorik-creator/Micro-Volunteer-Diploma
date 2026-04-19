@@ -4,94 +4,107 @@
 {% block title %}Запити допомоги — MicroVolunteer{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2><i class="bi bi-list-check me-2"></i>Запити допомоги</h2>
-    {% if user.is_recipient %}
-    <a href="{% url 'requests:create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle me-1"></i>Новий запит
-    </a>
-    {% endif %}
-  </div>
-
-  <!-- Filters -->
-  <div class="card mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-2">{{ filter_form.category|as_crispy_field }}</div>
-        <div class="col-md-2">{{ filter_form.urgency|as_crispy_field }}</div>
-        <div class="col-md-2">{{ filter_form.duration|as_crispy_field }}</div>
-        <div class="col-md-2">{{ filter_form.city|as_crispy_field }}</div>
-        <div class="col-md-1">{{ filter_form.date_from|as_crispy_field }}</div>
-        <div class="col-md-1">{{ filter_form.date_to|as_crispy_field }}</div>
-        <div class="col-md-2 d-flex gap-1 align-items-end pb-3">
-          <button type="submit" class="btn btn-outline-primary btn-sm flex-fill">
-            <i class="bi bi-funnel"></i> Фільтр
-          </button>
-          <a href="{% url 'requests:list' %}" class="btn btn-outline-secondary btn-sm flex-fill" title="Скинути">
-            <i class="bi bi-x"></i>
-          </a>
-        </div>
-      </form>
+<!-- Page hero -->
+<section class="page-hero">
+  <div class="container">
+    <div class="inner">
+      <div>
+        <h1 class="page-title">Запити допомоги</h1>
+        <p class="page-sub">Знайдіть, кому можете допомогти просто зараз</p>
+      </div>
+      {% if user.is_recipient %}
+      <a href="{% url 'requests:create' %}" class="btn btn-solid">
+        <i class="bi bi-plus-lg"></i> Новий запит
+      </a>
+      {% endif %}
     </div>
   </div>
+</section>
 
+<div class="container" style="padding-top:32px;padding-bottom:64px">
+  <!-- Filters bar -->
+  <form method="get" class="filters-bar">
+    <div>
+      <span class="field-label">Категорія</span>
+      {{ filter_form.category|as_crispy_field }}
+    </div>
+    <div>
+      <span class="field-label">Терміновість</span>
+      {{ filter_form.urgency|as_crispy_field }}
+    </div>
+    <div>
+      <span class="field-label">Тривалість</span>
+      {{ filter_form.duration|as_crispy_field }}
+    </div>
+    <div>
+      <span class="field-label">Місто</span>
+      {{ filter_form.city|as_crispy_field }}
+    </div>
+    <div>
+      <span class="field-label">Від</span>
+      {{ filter_form.date_from|as_crispy_field }}
+    </div>
+    <div>
+      <span class="field-label">До</span>
+      {{ filter_form.date_to|as_crispy_field }}
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <button type="submit" class="btn btn-solid btn-sm">
+        <i class="bi bi-funnel"></i> Фільтр
+      </button>
+      <a href="{% url 'requests:list' %}" class="btn btn-muted btn-sm" title="Скинути">
+        <i class="bi bi-x-lg"></i>
+      </a>
+    </div>
+  </form>
+
+  <!-- Results bar -->
+  <div class="results-bar">
+    <div class="results-count">
+      Знайдено <strong>{{ requests|length }}</strong> запитів
+    </div>
+    <a href="{% url 'requests:map' %}" class="btn btn-ghost btn-sm">
+      <i class="bi bi-map"></i> На карті
+    </a>
+  </div>
+
+  <!-- Requests grid -->
   {% if requests %}
-  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+  <div class="requests-grid">
     {% for hr in requests %}
-    <div class="col">
-      <div class="card h-100 shadow-sm">
-        <div class="card-body">
-          <!-- Urgency badge -->
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <span class="badge
-              {% if hr.urgency == 'critical' %}bg-danger
-              {% elif hr.urgency == 'high' %}bg-warning text-dark
-              {% elif hr.urgency == 'medium' %}bg-info text-dark
-              {% else %}bg-success
-              {% endif %}">
-              {{ hr.get_urgency_display }}
-            </span>
-            {% if hr.category %}
-            <small class="text-muted">
-              <i class="bi {{ hr.category.icon|default:'bi-tag' }} me-1"></i>{{ hr.category.name }}
-            </small>
-            {% endif %}
-          </div>
-
-          <h6 class="card-title">
-            <a href="{% url 'requests:detail' hr.pk %}" class="text-decoration-none text-dark stretched-link">
-              {{ hr.title }}
-            </a>
-          </h6>
-
-          <p class="card-text text-muted small mb-2">{{ hr.description|truncatewords:20 }}</p>
-
-          <div class="small text-muted">
-            <div><i class="bi bi-calendar-event me-1"></i>{{ hr.needed_date|date:"d.m.Y H:i" }}</div>
-            <div><i class="bi bi-clock me-1"></i>{{ hr.get_duration_display }}</div>
-            <div><i class="bi bi-geo-alt me-1"></i>{{ hr.address|truncatechars:40 }}</div>
-          </div>
-        </div>
-        <div class="card-footer bg-transparent small text-muted d-flex justify-content-between">
-          <span><i class="bi bi-people me-1"></i>{{ hr.volunteers_needed }} волонт.</span>
-          <span>{{ hr.created_at|date:"d.m.Y" }}</span>
-        </div>
+    <div class="request-card" onclick="window.location='{% url 'requests:detail' hr.pk %}';" style="cursor:pointer">
+      <div class="top-row">
+        {% if hr.category %}
+        <span class="chip chip-blue">{{ hr.category.name }}</span>
+        {% else %}
+        <span class="chip chip-gray">Загальне</span>
+        {% endif %}
+        <span class="chip {% if hr.urgency == 'critical' %}chip-red{% elif hr.urgency == 'high' %}chip-yellow{% elif hr.urgency == 'medium' %}chip-blue{% else %}chip-green{% endif %}">
+          <span class="urgency-dot {{ hr.urgency }}"></span>
+          {{ hr.get_urgency_display }}
+        </span>
       </div>
+      <h5 class="request-title">{{ hr.title }}</h5>
+      <p class="request-desc">{{ hr.description|truncatewords:20 }}</p>
+      <hr class="request-divider">
+      <div class="request-meta-row">
+        <span class="geo"><i class="bi bi-geo-alt"></i> {{ hr.address|truncatechars:35 }}</span>
+        <span class="time">{{ hr.created_at|timesince }} тому</span>
+      </div>
+      <a href="{% url 'requests:detail' hr.pk %}" class="btn btn-solid btn-block btn-help">
+        Детальніше <i class="bi bi-arrow-right"></i>
+      </a>
     </div>
     {% endfor %}
   </div>
 
   <!-- Pagination -->
   {% if is_paginated %}
-  <nav class="mt-4">
+  <nav style="margin-top:32px">
     <ul class="pagination justify-content-center">
       {% if page_obj.has_previous %}
       <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">
-          &laquo;
-        </a>
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">&laquo;</a>
       </li>
       {% endif %}
       <li class="page-item disabled">
@@ -99,9 +112,7 @@
       </li>
       {% if page_obj.has_next %}
       <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">
-          &raquo;
-        </a>
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">&raquo;</a>
       </li>
       {% endif %}
     </ul>
@@ -109,12 +120,11 @@
   {% endif %}
 
   {% else %}
-  <div class="text-center py-5 text-muted">
-    <i class="bi bi-inbox display-4 d-block mb-3"></i>
+  <div style="text-align:center;padding:80px 0;color:var(--mv-gray-500)">
+    <i class="bi bi-inbox" style="font-size:48px;display:block;margin-bottom:16px"></i>
     <p>Немає активних запитів за вашими фільтрами.</p>
-    <a href="{% url 'requests:list' %}" class="btn btn-outline-secondary btn-sm">Скинути фільтри</a>
+    <a href="{% url 'requests:list' %}" class="btn btn-ghost btn-sm">Скинути фільтри</a>
   </div>
   {% endif %}
-
 </div>
 {% endblock %}

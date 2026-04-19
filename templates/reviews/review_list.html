@@ -3,90 +3,53 @@
 {% block title %}Відгуки про {{ target_user.get_full_name }} — MicroVolunteer{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+<section class="page-hero">
+  <div class="container">
+    <a href="javascript:history.back()" class="btn btn-muted btn-sm" style="margin-bottom:12px">
+      <i class="bi bi-arrow-left"></i> Назад
+    </a>
+    <h1 class="page-title">Відгуки про {{ target_user.get_full_name }}</h1>
+    <p class="page-sub">
+      {% if reviews %}Всього відгуків: <strong>{{ reviews|length }}</strong>{% else %}Відгуки про виконані запити{% endif %}
+    </p>
+  </div>
+</section>
 
-      <!-- Page heading -->
-      <div class="d-flex align-items-center mb-4">
-        <i class="bi bi-star-fill text-warning fs-4 me-2"></i>
-        <h3 class="mb-0">Відгуки про {{ target_user.get_full_name }}</h3>
+<div class="container" style="padding-top:32px;padding-bottom:64px">
+  <div class="activity-list">
+    {% for review in reviews %}
+    <div class="activity-row" style="align-items:flex-start">
+      <div class="avatar">
+        {{ review.author.first_name|first|upper }}{{ review.author.last_name|first|upper }}
       </div>
-
-      {% if reviews %}
-
-        <!-- Summary bar -->
-        <div class="card shadow-sm mb-4 border-0 bg-light">
-          <div class="card-body py-3">
-            <div class="d-flex align-items-center gap-3">
-              <i class="bi bi-chat-square-text text-primary fs-5"></i>
-              <span class="fw-semibold">
-                Всього відгуків: <span class="text-primary">{{ reviews|length }}</span>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Review cards -->
-        <div class="d-flex flex-column gap-3">
-          {% for review in reviews %}
-          <div class="card shadow-sm">
-            <div class="card-body">
-
-              <!-- Card header: author + date -->
-              <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="d-flex align-items-center gap-2">
-                  <i class="bi bi-person-circle text-secondary fs-5"></i>
-                  <strong>{{ review.author.get_full_name }}</strong>
-                </div>
-                <small class="text-muted">
-                  <i class="bi bi-calendar3 me-1"></i>{{ review.created_at|date:"d.m.Y" }}
-                </small>
-              </div>
-
-              <!-- Rating -->
-              <div class="mb-2">
-                <span class="text-muted small me-1">Оцінка:</span>
-                <span class="fw-semibold text-warning">
-                  {% for i in "12345" %}
-                    {% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}
-                  {% endfor %}
-                </span>
-                <span class="text-muted small ms-1">({{ review.rating }}/5)</span>
-              </div>
-
-              <!-- Comment -->
-              {% if review.comment %}
-              <p class="card-text mb-0">{{ review.comment }}</p>
+      <div class="body">
+        <div class="t">
+          {{ review.author.get_full_name }}
+          <span class="rating" style="margin-left:8px;font-size:13px;color:var(--mv-warning)">
+            {% for i in "12345" %}
+              {% if forloop.counter <= review.rating %}
+                <i class="bi bi-star-fill"></i>
               {% else %}
-              <p class="card-text text-muted fst-italic mb-0">Коментар відсутній.</p>
+                <i class="bi bi-star"></i>
               {% endif %}
-
-            </div>
-          </div>
-          {% endfor %}
+            {% endfor %}
+          </span>
+          <span style="font-size:12px;color:var(--mv-gray-500);margin-left:4px">({{ review.rating }}/5)</span>
         </div>
-
-      {% else %}
-
-        <!-- Empty state -->
-        <div class="card shadow-sm border-0">
-          <div class="card-body text-center py-5">
-            <i class="bi bi-chat-square-dots text-muted fs-1 mb-3 d-block"></i>
-            <p class="text-muted mb-0">Відгуків ще немає.</p>
-          </div>
-        </div>
-
-      {% endif %}
-
-      <!-- Back link -->
-      <div class="mt-4">
-        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">
-          <i class="bi bi-arrow-left me-1"></i>Назад
-        </a>
+        {% if review.comment %}
+        <div class="s">{{ review.comment }}</div>
+        {% else %}
+        <div class="s" style="font-style:italic">Коментар відсутній.</div>
+        {% endif %}
       </div>
-
+      <div class="when">{{ review.created_at|date:"d.m.Y" }}</div>
     </div>
+    {% empty %}
+    <div style="text-align:center;padding:64px 0;color:var(--mv-gray-500)">
+      <i class="bi bi-chat-square" style="font-size:48px;display:block;margin-bottom:16px"></i>
+      <p>Відгуків поки немає</p>
+    </div>
+    {% endfor %}
   </div>
 </div>
 {% endblock %}
