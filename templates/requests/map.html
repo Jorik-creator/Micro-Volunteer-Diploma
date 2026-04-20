@@ -3,30 +3,34 @@
 {% block title %}Карта запитів — MicroVolunteer{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-  #map { height: 550px; width: 100%; border-radius: 8px; }
+  #map { height: calc(100vh - 72px); width: 100%; }
+  body.map-page main { overflow: hidden; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center mb-3 px-2">
-    <h2><i class="bi bi-map me-2"></i>Карта запитів</h2>
-    <a href="{% url 'requests:list' %}" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-list-ul me-1"></i>Список
-    </a>
+<div style="position:relative">
+  <!-- Toolbar overlay -->
+  <div style="position:absolute;top:16px;left:16px;z-index:400;display:flex;gap:8px;align-items:center">
+    <div style="background:#fff;border-radius:12px;padding:8px 16px;box-shadow:var(--mv-shadow-card);display:flex;align-items:center;gap:12px">
+      <strong style="font-size:15px;color:var(--mv-blue-900)"><i class="bi bi-map" style="margin-right:6px"></i>Карта запитів</strong>
+      <a href="{% url 'requests:list' %}" class="btn btn-muted btn-sm">
+        <i class="bi bi-list-ul"></i> Список
+      </a>
+    </div>
   </div>
 
+  <!-- Map -->
   <div id="map"></div>
 
-  <div class="mt-3 px-2">
-    <small class="text-muted">
-      <span class="badge bg-danger me-1">●</span> Критична
-      <span class="badge bg-warning text-dark ms-2 me-1">●</span> Висока
-      <span class="badge bg-info text-dark ms-2 me-1">●</span> Середня
-      <span class="badge bg-success ms-2 me-1">●</span> Низька
-    </small>
+  <!-- Legend overlay -->
+  <div class="map-legend">
+    <span class="map-legend-item"><span class="urgency-dot critical"></span> Критична</span>
+    <span class="map-legend-item"><span class="urgency-dot high"></span> Висока</span>
+    <span class="map-legend-item"><span class="urgency-dot medium"></span> Середня</span>
+    <span class="map-legend-item"><span class="urgency-dot low"></span> Низька</span>
   </div>
 </div>
 {% endblock %}
@@ -34,6 +38,9 @@
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+if (!window.L) {
+  document.getElementById('map').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--mv-gray-500)"><div style="text-align:center"><i class="bi bi-map" style="font-size:48px;display:block;margin-bottom:16px"></i><p>Карта недоступна. Перевірте з\'єднання з інтернетом.</p></div></div>';
+} else {
 (function () {
   const map = L.map('map').setView([50.4501, 30.5234], 10);
 
@@ -85,5 +92,6 @@
       console.error('Failed to load map data');
     });
 })();
+}
 </script>
 {% endblock %}

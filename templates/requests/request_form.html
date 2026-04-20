@@ -8,78 +8,74 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+<section class="page-hero">
+  <div class="container">
+    <a href="{% url 'requests:list' %}" class="btn btn-muted btn-sm" style="margin-bottom:12px">
+      <i class="bi bi-arrow-left"></i> Назад
+    </a>
+    <h1 class="page-title">{{ form_title }}</h1>
+    <p class="page-sub">Опишіть, що потрібно — волонтери побачать запит поруч</p>
+  </div>
+</section>
 
-      <h2 class="mb-4">
-        <i class="bi bi-pencil-square me-2"></i>{{ form_title }}
-      </h2>
+<div class="container" style="padding-top:32px;padding-bottom:64px;max-width:800px;margin:0 auto">
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    <div class="card-panel">
 
-      <div class="card shadow-sm">
-        <div class="card-body p-4">
-          <form method="post" enctype="multipart/form-data" novalidate>
-            {% csrf_token %}
+      {{ form.title|as_crispy_field }}
+      {{ form.description|as_crispy_field }}
 
-            {{ form.title|as_crispy_field }}
-            {{ form.description|as_crispy_field }}
-
-            <div class="row">
-              <div class="col-md-6">{{ form.category|as_crispy_field }}</div>
-              <div class="col-md-6">{{ form.urgency|as_crispy_field }}</div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6">{{ form.needed_date|as_crispy_field }}</div>
-              <div class="col-md-6">{{ form.duration|as_crispy_field }}</div>
-            </div>
-
-            {{ form.volunteers_needed|as_crispy_field }}
-
-            <!-- Address with Nominatim autocomplete -->
-            <div class="mb-3 position-relative" id="address-wrapper">
-              {{ form.address|as_crispy_field }}
-              <div id="address-suggestions"
-                   style="position:absolute;z-index:1000;width:100%;background:#fff;
-                          border:1px solid #dee2e6;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);
-                          display:none;max-height:220px;overflow-y:auto;top:100%;left:0;"></div>
-            </div>
-            {{ form.latitude }}
-            {{ form.longitude }}
-            <div class="mb-3 text-muted small">
-              <i class="bi bi-info-circle me-1"></i>
-              Почніть вводити адресу — з'являться підказки для вибору точного місця
-            </div>
-
-            <!-- Leaflet mini-map: shown after a suggestion is selected -->
-            <div id="map-container" class="mb-3" style="display:none;">
-              <div id="mini-map" style="height:220px;border-radius:8px;border:1px solid #dee2e6;"></div>
-              <div class="text-muted small mt-1">
-                <i class="bi bi-arrows-move me-1"></i>
-                Перетягніть маркер для уточнення координат
-              </div>
-            </div>
-            <div id="map-unavailable" class="alert alert-warning py-2 small" style="display:none;">
-              <i class="bi bi-exclamation-triangle me-1"></i>
-              Не вдалося завантажити мапу. Координати буде збережено за вибраною адресою без уточнення маркером.
-            </div>
-
-            {{ form.photo|as_crispy_field }}
-
-            <div class="d-flex gap-2 mt-3">
-              <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check-circle me-1"></i>{{ submit_label }}
-              </button>
-              <a href="{% url 'requests:my-requests' %}" class="btn btn-outline-secondary">
-                Скасувати
-              </a>
-            </div>
-          </form>
-        </div>
+      <div class="row">
+        <div class="col-md-6">{{ form.category|as_crispy_field }}</div>
+        <div class="col-md-6">{{ form.urgency|as_crispy_field }}</div>
       </div>
 
+      <div class="row">
+        <div class="col-md-6">{{ form.needed_date|as_crispy_field }}</div>
+        <div class="col-md-6">{{ form.duration|as_crispy_field }}</div>
+      </div>
+
+      {{ form.volunteers_needed|as_crispy_field }}
+
+      <!-- Address with Nominatim autocomplete -->
+      <div class="mb-3 position-relative" id="address-wrapper">
+        {{ form.address|as_crispy_field }}
+        <div id="address-suggestions"
+             style="position:absolute;z-index:1000;width:100%;background:#fff;
+                    border:1px solid #dee2e6;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);
+                    display:none;max-height:220px;overflow-y:auto;top:100%;left:0;"></div>
+      </div>
+      {{ form.latitude }}
+      {{ form.longitude }}
+      <div class="mb-3 text-muted small">
+        <i class="bi bi-info-circle me-1"></i>
+        Почніть вводити адресу — з'являться підказки для вибору точного місця
+      </div>
+
+      <!-- Leaflet mini-map: shown after a suggestion is selected -->
+      <div id="map-container" class="mb-3" style="display:none;">
+        <div id="mini-map" style="height:220px;border-radius:8px;border:1px solid #dee2e6;"></div>
+        <div class="text-muted small mt-1">
+          <i class="bi bi-arrows-move me-1"></i>
+          Перетягніть маркер для уточнення координат
+        </div>
+      </div>
+      <div id="map-unavailable" class="alert alert-warning py-2 small" style="display:none;">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        Не вдалося завантажити мапу. Координати буде збережено за вибраною адресою без уточнення маркером.
+      </div>
+
+      {{ form.photo|as_crispy_field }}
+
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button type="submit" class="btn btn-solid btn-lg">
+          <i class="bi bi-send"></i> {{ submit_label }}
+        </button>
+        <a href="{% url 'requests:my-requests' %}" class="btn btn-muted btn-lg">Скасувати</a>
+      </div>
     </div>
-  </div>
+  </form>
 </div>
 {% endblock %}
 

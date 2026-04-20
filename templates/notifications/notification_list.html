@@ -3,109 +3,86 @@
 {% block title %}Сповіщення — MicroVolunteer{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-
-  <!-- Page heading + unread badge -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>
-      <i class="bi bi-bell me-2"></i>Сповіщення
+<section class="page-hero">
+  <div class="container">
+    <div class="inner" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+      <div>
+        <h1 class="page-title">
+          Сповіщення
+          {% if unread_count > 0 %}
+          <span class="chip chip-red" style="font-size:12px;margin-left:8px">{{ unread_count }}</span>
+          {% endif %}
+        </h1>
+        <p class="page-sub">Ваші останні сповіщення</p>
+      </div>
       {% if unread_count > 0 %}
-      <span class="badge bg-danger ms-1">{{ unread_count }}</span>
+      <form method="post" action="/notifications/mark-all-read/">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-muted btn-sm">
+          <i class="bi bi-check2-all"></i> Позначити всі як прочитані
+        </button>
+      </form>
       {% endif %}
-    </h2>
-
-    <!-- "Mark all as read" — shown only when there are unread notifications -->
-    {% if unread_count > 0 %}
-    <form method="post" action="/notifications/mark-all-read/">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-check2-all me-1"></i>Позначити всі як прочитані
-      </button>
-    </form>
-    {% endif %}
+    </div>
   </div>
+</section>
 
-  {% if notifications %}
-  <div class="list-group shadow-sm">
+<div class="container" style="padding-top:32px;padding-bottom:64px;max-width:800px;margin:0 auto">
+  <div class="activity-list">
     {% for notification in notifications %}
-
-    <!-- Unread: highlighted with left primary border + bold; read: plain -->
-    <div class="list-group-item
-      {% if not notification.is_read %}bg-light fw-bold border-start border-primary border-3{% endif %}
-      py-3">
-
-      <div class="d-flex justify-content-between align-items-start gap-3">
-
-        <!-- Left: icon + content -->
-        <div class="flex-grow-1">
-
-          <!-- Notification type icon -->
-          <div class="d-flex align-items-center gap-2 mb-1">
-            {% if notification.type == "new_response" %}
-              <i class="bi bi-chat-dots text-primary"></i>
-            {% elif notification.type == "request_accepted" %}
-              <i class="bi bi-check-circle text-success"></i>
-            {% elif notification.type == "request_rejected" %}
-              <i class="bi bi-x-circle text-danger"></i>
-            {% elif notification.type == "request_completed" %}
-              <i class="bi bi-trophy text-warning"></i>
-            {% elif notification.type == "new_review" %}
-              <i class="bi bi-star text-warning"></i>
-            {% elif notification.type == "new_nearby_request" %}
-              <i class="bi bi-geo-alt text-info"></i>
-            {% else %}
-              <i class="bi bi-bell text-secondary"></i>
-            {% endif %}
-
-            <!-- Title -->
-            <span class="{% if not notification.is_read %}fw-bold{% else %}fw-semibold{% endif %}">
-              {{ notification.title }}
-            </span>
-          </div>
-
-          <!-- Message body -->
-          <p class="mb-1 {% if notification.is_read %}text-muted{% endif %} small">
-            {{ notification.message }}
-          </p>
-
-          <!-- Timestamp + optional link to related request -->
-          <div class="d-flex align-items-center gap-3 mt-1">
-            <small class="text-muted">
-              <i class="bi bi-clock me-1"></i>{{ notification.created_at|date:"d.m.Y H:i" }}
-            </small>
-
-            {% if notification.related_request %}
-            <a href="/requests/{{ notification.related_request.pk }}/"
-               class="small text-decoration-none">
-              <i class="bi bi-box-arrow-up-right me-1"></i>Переглянути запит
-            </a>
-            {% endif %}
-          </div>
+    <div class="activity-row" style="{% if not notification.is_read %}background:var(--mv-blue-50);border-color:var(--mv-blue-100){% endif %}">
+      <div class="activity-icon">
+        {% if notification.type == "new_response" %}
+          <i class="bi bi-chat-dots"></i>
+        {% elif notification.type == "request_accepted" %}
+          <i class="bi bi-check-circle"></i>
+        {% elif notification.type == "request_rejected" %}
+          <i class="bi bi-x-circle"></i>
+        {% elif notification.type == "request_completed" %}
+          <i class="bi bi-trophy"></i>
+        {% elif notification.type == "new_review" %}
+          <i class="bi bi-star"></i>
+        {% elif notification.type == "new_nearby_request" %}
+          <i class="bi bi-geo-alt"></i>
+        {% else %}
+          <i class="bi bi-bell{% if notification.is_read %}-slash{% endif %}"></i>
+        {% endif %}
+      </div>
+      <div class="body">
+        <div class="t">{{ notification.title }}</div>
+        <div class="s">{{ notification.message }}</div>
+        {% if notification.related_request %}
+        <div style="font-size:12px;color:var(--mv-gray-500);margin-top:4px">
+          <a href="/requests/{{ notification.related_request.pk }}/"
+             style="color:var(--mv-gray-500);text-decoration:none">
+            <i class="bi bi-box-arrow-up-right"></i> Переглянути запит
+          </a>
         </div>
-
-        <!-- Right: "Mark as read" button for unread notifications -->
+        {% endif %}
         {% if not notification.is_read %}
-        <div class="flex-shrink-0">
-          <form method="post" action="/notifications/mark-read/{{ notification.pk }}/">
+        <div style="margin-top:8px">
+          <form method="post" action="/notifications/mark-read/{{ notification.pk }}/" style="display:inline">
             {% csrf_token %}
-            <button type="submit"
-                    class="btn btn-outline-primary btn-sm"
-                    title="Позначити як прочитане">
-              <i class="bi bi-check2 me-1"></i>Прочитано
+            <button type="submit" class="btn btn-muted btn-sm">
+              <i class="bi bi-check2"></i> Прочитано
             </button>
           </form>
         </div>
         {% endif %}
-
       </div>
+      <div class="when">{{ notification.created_at|timesince }} тому</div>
     </div>
-
+    {% empty %}
+    <div style="text-align:center;padding:64px 0;color:var(--mv-gray-500)">
+      <i class="bi bi-bell-slash" style="font-size:48px;display:block;margin-bottom:16px"></i>
+      <p>Немає сповіщень</p>
+    </div>
     {% endfor %}
   </div>
 
   <!-- Pagination -->
   {% if is_paginated %}
-  <nav class="mt-4" aria-label="Навігація по сторінках">
+  <nav style="margin-top:32px" aria-label="Навігація по сторінках">
     <ul class="pagination justify-content-center">
       {% if page_obj.has_previous %}
       <li class="page-item">
@@ -123,14 +100,5 @@
     </ul>
   </nav>
   {% endif %}
-
-  {% else %}
-  <!-- Empty state -->
-  <div class="text-center py-5 text-muted">
-    <i class="bi bi-bell-slash display-4 d-block mb-3"></i>
-    <p class="mb-0">У вас немає сповіщень</p>
-  </div>
-  {% endif %}
-
 </div>
 {% endblock %}
