@@ -40,28 +40,25 @@
       </div>
     </div>
 
-    <!-- Right: illustration -->
+    <!-- Right: illustration — Ukraine map with 2 live task markers -->
     <div class="hero-illustration">
-      <div class="mock-map-grid"></div>
-      <svg class="mock-routes" viewBox="0 0 400 380" preserveAspectRatio="none">
-        <path d="M 80 320 Q 180 240, 260 180 T 350 60" stroke="rgba(37,99,235,0.35)" stroke-width="2.5" stroke-dasharray="6 6" fill="none"/>
-        <path d="M 60 80 Q 160 140, 220 260" stroke="rgba(22,163,74,0.3)" stroke-width="2.5" stroke-dasharray="6 6" fill="none"/>
-      </svg>
-      <div class="map-pin" style="top:24%;left:18%"><div class="map-pin-dot pulse critical"></div></div>
-      <div class="map-pin" style="top:48%;left:58%"><div class="map-pin-dot pulse"></div></div>
-      <div class="map-pin" style="top:70%;left:32%"><div class="map-pin-dot success"></div></div>
-      <div class="map-pin" style="top:30%;left:78%"><div class="map-pin-dot"></div></div>
+      {% include "partials/_ukraine_map.svg" %}
 
-      <div class="floating-card" style="top:12%;right:-4%">
+      {# Kyiv — active critical request #}
+      <div class="map-pin" style="top:34%;left:52%"><div class="map-pin-dot pulse critical"></div></div>
+      {# Lviv — volunteers nearby #}
+      <div class="map-pin" style="top:41%;left:21%"><div class="map-pin-dot pulse"></div></div>
+
+      <div class="floating-card" style="top:5%;right:5%">
         <div class="fc-icon green"><i class="bi bi-check2-circle"></i></div>
-        <div>
+        <div class="fc-body">
           <div class="fc-title">Запит виконано</div>
           <div class="fc-sub">Доставка ліків • 800м</div>
         </div>
       </div>
-      <div class="floating-card" style="bottom:8%;left:-6%">
+      <div class="floating-card" style="bottom:5%;left:5%">
         <div class="fc-icon"><i class="bi bi-people-fill"></i></div>
-        <div>
+        <div class="fc-body">
           <div class="fc-title">3 волонтери поруч</div>
           <div class="fc-sub">Готові допомогти</div>
         </div>

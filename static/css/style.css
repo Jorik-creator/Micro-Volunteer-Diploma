@@ -89,9 +89,8 @@ h1, h2, h3, h4, h5, h6 { color: var(--mv-blue-900); margin: 0; font-weight: 700;
 .navbar-brand:hover { text-decoration: none; }
 .navbar-brand .logo-mark {
   width: 30px; height: 30px; border-radius: 8px;
-  background: linear-gradient(135deg, var(--mv-blue-600), var(--mv-blue-800));
   display: inline-flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 16px;
+  color: var(--mv-blue-600); font-size: 22px;
 }
 /* Legacy: icon directly in brand (no .logo-mark) */
 .mv-navbar .navbar-brand i { color: var(--mv-blue-600); }
@@ -334,25 +333,30 @@ h1, h2, h3, h4, h5, h6 { color: var(--mv-blue-900); margin: 0; font-weight: 700;
 .avatar-stack .avatar { margin-left: -10px; border: 2px solid #fff; width: 32px; height: 32px; font-size: 11px; }
 .avatar-stack .avatar:first-child { margin-left: 0; }
 
-/* Hero illustration — map mock */
+/* Hero illustration — Ukraine map */
 .hero-illustration {
   position: relative;
   aspect-ratio: 1 / 0.95;
-  background: linear-gradient(135deg, var(--mv-blue-100) 0%, #fff 100%);
+  background: linear-gradient(135deg, var(--mv-blue-50) 0%, #fff 100%);
   border-radius: var(--mv-radius-lg);
   box-shadow: 0 20px 60px rgba(15,35,73,0.12);
   overflow: hidden;
   border: 1px solid rgba(37,99,235,0.08);
 }
-.hero-illustration .mock-map-grid {
-  position: absolute; inset: 0;
-  background-image:
-    linear-gradient(rgba(37,99,235,0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(37,99,235,0.08) 1px, transparent 1px);
-  background-size: 40px 40px;
+.hero-illustration .ukraine-map {
+  position: absolute;
+  inset: 6% 6% 6% 6%;
+  width: 88%; height: 88%;
+  color: var(--mv-blue-100);
+  filter: drop-shadow(0 8px 20px rgba(37,99,235,0.18));
 }
-.hero-illustration svg.mock-routes {
-  position: absolute; inset: 0; width: 100%; height: 100%;
+.hero-illustration .ukraine-map__path {
+  fill: var(--mv-blue-100);
+  stroke: var(--mv-blue-600);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
 }
 
 /* Map pins (hero + map page) */
@@ -381,23 +385,34 @@ h1, h2, h3, h4, h5, h6 { color: var(--mv-blue-900); margin: 0; font-weight: 700;
   100% { transform: scale(2.4); opacity: 0; }
 }
 
-/* Floating cards (hero illustration) */
+/* Floating cards (hero illustration)
+   Structure: .floating-card > .fc-icon + .fc-body(>.fc-title, .fc-sub)
+   .fc-body wrapper is required so `min-width:0` lets the flex child
+   shrink and ellipsis kicks in on narrow illustrations. */
 .floating-card {
   position: absolute; background: #fff;
   border-radius: var(--mv-radius-md);
   box-shadow: 0 12px 32px rgba(15,35,73,0.14);
-  padding: 14px 16px; display: flex; gap: 12px; align-items: center;
+  padding: 12px 14px; display: flex; gap: 12px; align-items: center;
   border: 1px solid var(--mv-gray-200);
+  max-width: calc(100% - 24px);
 }
 .floating-card .fc-icon {
   width: 40px; height: 40px; border-radius: 10px;
   background: var(--mv-blue-50); color: var(--mv-blue-600);
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 18px;
+  font-size: 18px; flex-shrink: 0;
 }
 .floating-card .fc-icon.green { background: var(--mv-success-bg); color: var(--mv-success); }
-.floating-card .fc-title { font-size: 13px; font-weight: 600; color: var(--mv-blue-900); }
-.floating-card .fc-sub   { font-size: 12px; color: var(--mv-gray-500); }
+.floating-card .fc-body { min-width: 0; }
+.floating-card .fc-title {
+  font-size: 13px; font-weight: 600; color: var(--mv-blue-900);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.floating-card .fc-sub {
+  font-size: 12px; color: var(--mv-gray-500);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
 /* Hero stat card (legacy — used in home.html) */
 .hero-stat-card {
