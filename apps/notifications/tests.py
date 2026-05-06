@@ -165,6 +165,30 @@ class TestNotificationViews:
         assert response.status_code == 302
 
     @pytest.mark.django_db
+    def test_notification_count_returns_own_unread_count(
+        self, client_logged_in_volunteer, volunteer
+    ):
+        """GET notification count returns only the current user's unread total."""
+        # Arrange — 2 own unread, 1 own read, 1 unread for another user
+        NotificationFactory(user=volunteer, is_read=False)
+        NotificationFactory(user=volunteer, is_read=False)
+        NotificationFactory(user=volunteer, is_read=True)
+        NotificationFactory(user=RecipientFactory(), is_read=False)
+
+        # Act
+        response = client_logged_in_volunteer.get("/notifications/count/")
+
+        # Assert
+        assert response.status_code == 200
+        assert response.json() == {"count": 2}
+
+    @pytest.mark.django_db
+    def test_notification_count_allows_get_only(self, client_logged_in_volunteer):
+        """Notification count is a read-only polling endpoint: POST returns 405."""
+        response = client_logged_in_volunteer.post("/notifications/count/")
+        assert response.status_code == 405
+
+    @pytest.mark.django_db
     def test_unauthenticated_redirect(self):
         """Unauthenticated GET to /notifications/ redirects to login."""
         from django.test import Client

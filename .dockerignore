@@ -10,3 +10,4 @@ media/
 *.md
 .docs/
 !README.md
+.playwright-mcp/

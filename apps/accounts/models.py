@@ -37,7 +37,7 @@ class User(AbstractUser):
     class Meta:
         verbose_name = 'Користувач'
         verbose_name_plural = 'Користувачі'
-        ordering = ['-created_at']
+        ordering = ['-created_at', '-id']
 
     def __str__(self):
         return f"{self.get_full_name()} ({self.get_user_type_display()})"

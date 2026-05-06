@@ -35,6 +35,7 @@ docs/
 
 # Project tooling
 .tmp/
+.playwright-mcp/
 
 # Windows reserved names
 nul

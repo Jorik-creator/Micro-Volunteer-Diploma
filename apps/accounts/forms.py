@@ -129,12 +129,8 @@ class UserProfileForm(forms.ModelForm):
                 attrs={"type": "date"},
                 format="%Y-%m-%d",
             ),
-            "latitude": forms.NumberInput(
-                attrs={"step": "0.000001", "placeholder": "50.4501"}
-            ),
-            "longitude": forms.NumberInput(
-                attrs={"step": "0.000001", "placeholder": "30.5234"}
-            ),
+            "latitude": forms.HiddenInput(),
+            "longitude": forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):

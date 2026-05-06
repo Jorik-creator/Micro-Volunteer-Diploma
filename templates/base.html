@@ -213,11 +213,15 @@
   {% block extra_js %}{% endblock %}
 
   {% if user.is_authenticated %}
-  <!-- Real-time сповіщення через Server-Sent Events -->
+  <!-- Оновлення лічильника сповіщень через lightweight polling -->
   <script>
   (function () {
     const badge = document.getElementById('notification-badge');
     if (!badge) return;
+
+    const COUNT_URL = '{% url "notifications:notification-count" %}';
+    const POLL_INTERVAL_MS = 15000;
+    const FETCH_TIMEOUT_MS = 5000;
 
     function updateBadge(count) {
       badge.textContent = count;
@@ -247,31 +251,72 @@
     }
 
     let previousCount = parseInt(badge.textContent, 10) || 0;
-    let source = null;
+    let pollTimer = null;
+    let isPolling = false;
 
-    function connect() {
-      source = new EventSource('{% url "notifications:notification-stream-sse" %}');
-
-      source.onmessage = function (e) {
-        try {
-          const data = JSON.parse(e.data);
-          const newCount = data.count;
-          if (newCount > previousCount) {
-            showNotificationToast(newCount);
-          }
-          previousCount = newCount;
-          updateBadge(newCount);
-        } catch (_) {}
-      };
-
-      source.onerror = function () {
-        source.close();
-        // Перепідключення через 30с при розриві з'єднання
-        setTimeout(connect, 30000);
-      };
+    function scheduleNextPoll() {
+      window.clearTimeout(pollTimer);
+      if (!document.hidden) {
+        pollTimer = window.setTimeout(fetchNotificationCount, POLL_INTERVAL_MS);
+      }
     }
 
-    connect();
+    async function fetchNotificationCount() {
+      if (isPolling || document.hidden) {
+        scheduleNextPoll();
+        return;
+      }
+
+      isPolling = true;
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(function () {
+        controller.abort();
+      }, FETCH_TIMEOUT_MS);
+
+      try {
+        const response = await fetch(COUNT_URL, {
+          credentials: 'same-origin',
+          headers: { 'Accept': 'application/json' },
+          signal: controller.signal
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const newCount = Number(data.count) || 0;
+        if (newCount > previousCount) {
+          showNotificationToast(newCount);
+        }
+        previousCount = newCount;
+        updateBadge(newCount);
+      } catch (_) {
+        // Network/timeout errors are non-fatal; the next poll will retry.
+      } finally {
+        window.clearTimeout(timeoutId);
+        isPolling = false;
+        scheduleNextPoll();
+      }
+    }
+
+    function pollNow() {
+      window.clearTimeout(pollTimer);
+      fetchNotificationCount();
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        window.clearTimeout(pollTimer);
+        return;
+      }
+      pollNow();
+    });
+    window.addEventListener('focus', pollNow);
+    window.addEventListener('pageshow', pollNow);
+    window.addEventListener('pagehide', function () {
+      window.clearTimeout(pollTimer);
+    });
+
+    pollNow();
   })();
   </script>
   {% endif %}
