@@ -15,13 +15,13 @@ from django.db import IntegrityError
 from django.utils import timezone
 from datetime import timedelta
 
+from apps.notifications.models import Notification
 from apps.requests.models import Category, HelpRequest, Response
 from apps.requests.utils import haversine_distance, offset_coordinates
 
 from conftest import (
     CategoryFactory,
     HelpRequestFactory,
-    RecipientFactory,
     ResponseFactory,
     VolunteerFactory,
 )
@@ -46,7 +46,7 @@ class TestCategoryModel:
 
     def test_category_ordering(self, db):
         """Categories are ordered alphabetically by name."""
-        c_b = CategoryFactory(name="Бета", slug="beta")
+        CategoryFactory(name="Бета", slug="beta")
         c_a = CategoryFactory(name="Альфа", slug="alpha")
         categories = list(Category.objects.filter(slug__in=["alpha", "beta"]))
         assert categories[0] == c_a  # Альфа before Бета
@@ -77,7 +77,7 @@ class TestHelpRequestModel:
 
     def test_help_request_ordering(self, db):
         """HelpRequests are ordered by -created_at (newest first)."""
-        hr1 = HelpRequestFactory(title="First")
+        HelpRequestFactory(title="First")
         hr2 = HelpRequestFactory(title="Second")
         requests = list(HelpRequest.objects.filter(title__in=["First", "Second"]))
         assert requests[0] == hr2  # Second created → first in queryset
@@ -362,7 +362,7 @@ class TestHelpRequestCreateView:
             "volunteers_needed": 1,
             "address": "Адреса",
         }
-        response = client_logged_in_recipient.post("/requests/create/", data)
+        client_logged_in_recipient.post("/requests/create/", data)
         # Should redirect (blocked), not create
         assert not HelpRequest.objects.filter(title="Зайвий запит").exists()
 
@@ -490,6 +490,27 @@ class TestAcceptRejectVolunteer:
         v2_resp.refresh_from_db()
         assert v2_resp.status == Response.Status.REJECTED
 
+    def test_accept_notifies_auto_rejected_volunteers(
+        self, client_logged_in_recipient, help_request, volunteer
+    ):
+        """Auto-rejected volunteers receive REQUEST_REJECTED notifications."""
+        # Arrange — volunteers_needed=1, so accepting v1 rejects v2.
+        v1_resp = ResponseFactory(help_request=help_request, volunteer=volunteer)
+        v2 = VolunteerFactory()
+        v2_resp = ResponseFactory(help_request=help_request, volunteer=v2)
+
+        # Act
+        client_logged_in_recipient.post(f"/requests/responses/{v1_resp.pk}/accept/")
+
+        # Assert
+        v2_resp.refresh_from_db()
+        assert v2_resp.status == Response.Status.REJECTED
+        assert Notification.objects.filter(
+            user=v2,
+            type=Notification.Type.REQUEST_REJECTED,
+            related_request=help_request,
+        ).exists()
+
     def test_reject_volunteer(self, client_logged_in_recipient, volunteer_response):
         """Recipient can reject a pending response."""
         response = client_logged_in_recipient.post(
@@ -539,7 +560,7 @@ class TestCompleteRequest:
         """Volunteer without accepted response cannot complete request."""
         help_request.status = HelpRequest.Status.IN_PROGRESS
         help_request.save()
-        response = client_logged_in_volunteer.post(
+        client_logged_in_volunteer.post(
             f"/requests/{help_request.pk}/complete/"
         )
         help_request.refresh_from_db()
@@ -549,7 +570,7 @@ class TestCompleteRequest:
         """Recipient cannot mark request as completed."""
         help_request.status = HelpRequest.Status.IN_PROGRESS
         help_request.save()
-        response = client_logged_in_recipient.post(
+        client_logged_in_recipient.post(
             f"/requests/{help_request.pk}/complete/"
         )
         help_request.refresh_from_db()
@@ -589,7 +610,7 @@ class TestCancelRequest:
 
     def test_non_owner_cannot_cancel(self, client_logged_in_volunteer, help_request):
         """Volunteer cannot cancel someone else's request."""
-        response = client_logged_in_volunteer.post(
+        client_logged_in_volunteer.post(
             f"/requests/{help_request.pk}/cancel/"
         )
         help_request.refresh_from_db()

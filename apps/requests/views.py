@@ -22,8 +22,6 @@ Volunteer action views:
   complete_request  — mark request as completed (accepted volunteer only)
 """
 
-import json
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -40,6 +38,7 @@ from django.views.generic import (
 )
 
 from apps.accounts.decorators import recipient_required, volunteer_required
+from apps.notifications.signals import create_response_status_notification
 from .forms import FilterForm, HelpRequestForm, ResponseForm
 from .models import HelpRequest, Response
 from .utils import offset_coordinates
@@ -414,6 +413,12 @@ def accept_volunteer(request, response_id):
                 help_request=hr,
                 status=Response.Status.PENDING,
             ).update(status=Response.Status.REJECTED)
+            rejected_responses = Response.objects.filter(
+                help_request=hr,
+                status=Response.Status.REJECTED,
+            ).select_related("volunteer", "help_request")
+            for rejected_response in rejected_responses:
+                create_response_status_notification(rejected_response)
             messages.success(
                 request,
                 f'Набрано {accepted_count} волонтер(ів). Запит перейшов у статус "В процесі".',

@@ -7,6 +7,17 @@
 <style>
   #map { height: calc(100vh - 72px); width: 100%; }
   body.map-page main { overflow: hidden; }
+  .leaflet-popup-content .map-details-btn {
+    background: var(--mv-blue-600);
+    color: #fff !important;
+    border: none;
+  }
+  .leaflet-popup-content .map-details-btn:hover,
+  .leaflet-popup-content .map-details-btn:focus {
+    background: var(--mv-blue-800);
+    color: #fff !important;
+    text-decoration: none;
+  }
 </style>
 {% endblock %}
 
@@ -84,7 +95,7 @@ if (!window.L) {
             <span class="text-muted">${item.category}</span><br>
             📅 ${item.needed_date}<br>
             ⏱ ${item.duration}<br>
-            <a href="${item.url}" class="btn btn-sm btn-primary mt-1">Деталі</a>
+            <a href="${item.url}" class="btn btn-sm btn-primary map-details-btn mt-1">Деталі</a>
           `);
       });
     })

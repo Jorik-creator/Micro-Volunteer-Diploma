@@ -95,14 +95,21 @@
 <!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+  if (!window.Chart) {
+    document.getElementById('statusChart').insertAdjacentHTML(
+      'beforebegin',
+      '<div class="alert alert-warning">Графіки тимчасово недоступні: Chart.js не завантажився.</div>'
+    );
+  } else {
   // Pass Django template variables to JavaScript safely
+  const statusKeys     = {{ status_keys|safe }};
   const statusLabels   = {{ status_labels|safe }};
   const statusData     = {{ status_data|safe }};
   const categoryLabels = {{ category_labels|safe }};
   const categoryData   = {{ category_data|safe }};
 
   // ── Doughnut chart: requests by status ──────────────────────────────────
-  new Chart(document.getElementById('statusChart'), {
+  const statusChart = new Chart(document.getElementById('statusChart'), {
     type: 'doughnut',
     data: {
       labels: statusLabels,
@@ -137,7 +144,7 @@
   });
 
   // ── Bar chart: requests by category ─────────────────────────────────────
-  new Chart(document.getElementById('categoryChart'), {
+  const categoryChart = new Chart(document.getElementById('categoryChart'), {
     type: 'bar',
     data: {
       labels: categoryLabels,
@@ -169,5 +176,28 @@
       }
     }
   });
+
+  function refreshStatsCharts() {
+    fetch('{% url "stats:stats-data" %}', { credentials: 'same-origin' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        if (!payload) return;
+
+        statusChart.data.datasets[0].data = statusKeys.map(
+          (key) => payload.statuses[key] || 0
+        );
+        statusChart.update();
+
+        const categoryEntries = Object.entries(payload.categories || {});
+        categoryChart.data.labels = categoryEntries.map(([label]) => label);
+        categoryChart.data.datasets[0].data = categoryEntries.map(([, count]) => count);
+        categoryChart.update();
+      })
+      .catch(() => {});
+  }
+
+  refreshStatsCharts();
+  setInterval(refreshStatsCharts, 60000);
+  }
 </script>
 {% endblock %}

@@ -6,7 +6,7 @@ from django.contrib.auth.views import (
     LogoutView,
     PasswordChangeView,
 )
-from django.db.models import Avg, Count
+from django.db.models import Avg
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
@@ -43,8 +43,10 @@ class HomeView(TemplateView):
         ).count()
         # Local import avoids circular dependency between accounts and requests apps
         from apps.requests.models import HelpRequest
+        active_requests = HelpRequest.objects.filter(status=HelpRequest.Status.ACTIVE)
+        context['active_requests_count'] = active_requests.count()
         context['recent_requests'] = (
-            HelpRequest.objects.filter(status=HelpRequest.Status.ACTIVE)
+            active_requests
             .select_related('category')
             .order_by('-created_at')[:3]
         )
@@ -59,12 +61,21 @@ class HomeView(TemplateView):
 def live_stats(request):
     """JSON endpoint: live platform statistics for home page polling."""
     from apps.requests.models import HelpRequest  # local import to avoid circular
-    return JsonResponse({
-        "total_users": User.objects.count(),
-        "total_volunteers": User.objects.filter(user_type=User.UserType.VOLUNTEER).count(),
-        "total_recipients": User.objects.filter(user_type=User.UserType.RECIPIENT).count(),
-        "active_requests": HelpRequest.objects.filter(status=HelpRequest.Status.ACTIVE).count(),
-    })
+
+    return JsonResponse(
+        {
+            "total_users": User.objects.count(),
+            "total_volunteers": User.objects.filter(
+                user_type=User.UserType.VOLUNTEER,
+            ).count(),
+            "total_recipients": User.objects.filter(
+                user_type=User.UserType.RECIPIENT,
+            ).count(),
+            "active_requests": HelpRequest.objects.filter(
+                status=HelpRequest.Status.ACTIVE,
+            ).count(),
+        }
+    )
 
 
 # ---------------------------------------------------------------------------

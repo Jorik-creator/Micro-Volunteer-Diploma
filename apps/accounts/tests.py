@@ -14,7 +14,7 @@ from apps.accounts.models import User, VolunteerProfile, RecipientProfile
 from apps.accounts.forms import LoginForm, RegisterForm, UserProfileForm
 from apps.accounts.decorators import volunteer_required, recipient_required
 
-from conftest import VolunteerFactory, RecipientFactory
+from conftest import VolunteerFactory
 
 
 # ===================================================================
@@ -52,7 +52,7 @@ class TestUserModel:
 
     def test_user_ordering(self, db):
         """Users are ordered by -created_at (newest first)."""
-        u1 = VolunteerFactory(username="first_user")
+        VolunteerFactory(username="first_user")
         u2 = VolunteerFactory(username="second_user")
         users = list(User.objects.filter(username__in=["first_user", "second_user"]))
         assert users[0] == u2  # second created → first in queryset
@@ -310,6 +310,34 @@ class TestProfileView:
         """Authenticated users can access their profile."""
         response = client_logged_in_volunteer.get("/accounts/profile/")
         assert response.status_code == 200
+
+    def test_volunteer_can_save_address_and_coordinates(
+        self, client_logged_in_volunteer, volunteer
+    ):
+        """Volunteer profile edit saves address data used by nearby matching."""
+        response = client_logged_in_volunteer.post(
+            "/accounts/profile/edit/",
+            {
+                "first_name": volunteer.first_name,
+                "last_name": volunteer.last_name,
+                "email": volunteer.email,
+                "phone": "+380501112233",
+                "address": "Київ, Хрещатик",
+                "latitude": "50.450100",
+                "longitude": "30.523400",
+                "role-radius_km": VolunteerProfile.RadiusChoices.MEDIUM,
+                "role-is_available": "on",
+                "role-bio": "Готовий допомогти поруч.",
+            },
+        )
+
+        assert response.status_code == 302
+        volunteer.refresh_from_db()
+        volunteer.volunteer_profile.refresh_from_db()
+        assert volunteer.address == "Київ, Хрещатик"
+        assert volunteer.latitude == 50.4501
+        assert volunteer.longitude == 30.5234
+        assert volunteer.volunteer_profile.is_available is True
 
 
 # ===================================================================

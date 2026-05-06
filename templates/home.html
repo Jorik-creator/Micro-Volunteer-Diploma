@@ -71,19 +71,19 @@
 <section class="stats-bar">
   <div class="container stats-grid">
     <div class="stat-item">
-      <div class="stat-number">{{ total_users|intcomma }}</div>
+      <div class="stat-number" id="stat-users">{{ total_users|intcomma }}</div>
       <div class="stat-label">Користувачів</div>
     </div>
     <div class="stat-item">
-      <div class="stat-number">{{ total_volunteers|intcomma }}</div>
+      <div class="stat-number" id="stat-volunteers">{{ total_volunteers|intcomma }}</div>
       <div class="stat-label">Волонтерів</div>
     </div>
     <div class="stat-item">
-      <div class="stat-number">{{ total_recipients|intcomma }}</div>
+      <div class="stat-number" id="stat-recipients">{{ total_recipients|intcomma }}</div>
       <div class="stat-label">Отримувачів</div>
     </div>
     <div class="stat-item">
-      <div class="stat-number">{{ recent_requests|length }}+</div>
+      <div class="stat-number" id="stat-active-requests">{{ active_requests_count|intcomma }}</div>
       <div class="stat-label">Активних запитів</div>
     </div>
   </div>
@@ -218,4 +218,35 @@
 </section>
 {% endif %}
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const statMap = {
+    total_users: document.getElementById('stat-users'),
+    total_volunteers: document.getElementById('stat-volunteers'),
+    total_recipients: document.getElementById('stat-recipients'),
+    active_requests: document.getElementById('stat-active-requests'),
+  };
+  const formatter = new Intl.NumberFormat('uk-UA');
+
+  function updateStats(data) {
+    Object.entries(statMap).forEach(([key, element]) => {
+      if (!element || typeof data[key] !== 'number') return;
+      element.textContent = formatter.format(data[key]);
+    });
+  }
+
+  function fetchStats() {
+    fetch('{% url "accounts:live-stats" %}', { credentials: 'same-origin' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => { if (data) updateStats(data); })
+      .catch(() => {});
+  }
+
+  fetchStats();
+  setInterval(fetchStats, 60000);
+})();
+</script>
 {% endblock %}

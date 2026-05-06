@@ -1,9 +1,87 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from apps.accounts.models import User
 from apps.notifications.models import Notification
 from apps.reviews.models import Review
 from apps.requests.models import HelpRequest, Response
+from apps.requests.utils import haversine_distance
+
+
+def _display_name(user):
+    """Return a stable display name for notification copy."""
+    return user.get_full_name() or user.username
+
+
+def _volunteer_matches_request(volunteer, help_request):
+    """
+    Decide whether a volunteer should be notified about a new request.
+
+    Matching is intentionally conservative:
+    - volunteer must have an available profile (filtered before this helper),
+    - if the volunteer picked categories, the request category must be among them,
+    - if both sides have coordinates, the request must be inside volunteer radius,
+    - otherwise fall back to requiring a shared address/city substring.
+    """
+    profile = getattr(volunteer, "volunteer_profile", None)
+    if profile is None or not profile.is_available:
+        return False
+
+    if help_request.category_id and profile.categories.exists():
+        if not profile.categories.filter(pk=help_request.category_id).exists():
+            return False
+
+    if (
+        volunteer.latitude is not None
+        and volunteer.longitude is not None
+        and help_request.latitude is not None
+        and help_request.longitude is not None
+    ):
+        distance_km = haversine_distance(
+            volunteer.latitude,
+            volunteer.longitude,
+            help_request.latitude,
+            help_request.longitude,
+        )
+        return distance_km <= profile.radius_km
+
+    volunteer_address = (volunteer.address or "").casefold()
+    request_address = (help_request.address or "").casefold()
+    if not volunteer_address or not request_address:
+        return False
+
+    return any(
+        len(part) >= 3 and part in request_address
+        for part in volunteer_address.replace(",", " ").split()
+    )
+
+
+def create_response_status_notification(response):
+    """Create an accepted/rejected notification for a volunteer response."""
+    if response.status == Response.Status.ACCEPTED:
+        Notification.objects.get_or_create(
+            user=response.volunteer,
+            type=Notification.Type.REQUEST_ACCEPTED,
+            related_request=response.help_request,
+            defaults={
+                "title": "Вас підтверджено як волонтера",
+                "message": f"Запит '{response.help_request.title}' тепер в роботі",
+            },
+        )
+
+    elif response.status == Response.Status.REJECTED:
+        Notification.objects.get_or_create(
+            user=response.volunteer,
+            type=Notification.Type.REQUEST_REJECTED,
+            related_request=response.help_request,
+            defaults={
+                "title": "Ваш відгук не прийнято",
+                "message": (
+                    f"На жаль, ваш відгук на запит "
+                    f"'{response.help_request.title}' відхилено."
+                ),
+            },
+        )
 
 
 @receiver(post_save, sender=Review)
@@ -21,7 +99,7 @@ def on_review_created(sender, instance, created, **kwargs):
         type=Notification.Type.NEW_REVIEW,
         related_request=review.help_request,
         defaults={
-            "title": f"{review.author.get_full_name()} залишив(ла) відгук про вас",
+            "title": f"{_display_name(review.author)} залишив(ла) відгук про вас",
             "message": f"Оцінка: {review.rating}/5. {comment_preview}",
         },
     )
@@ -38,32 +116,7 @@ def on_response_status_change(sender, instance, created, update_fields, **kwargs
     if update_fields is not None and "status" not in update_fields:
         return
 
-    if instance.status == Response.Status.ACCEPTED:
-        # W1 fix: "отримувачем" (recipient accepts), not "волонтером"
-        Notification.objects.get_or_create(
-            user=instance.volunteer,
-            type=Notification.Type.REQUEST_ACCEPTED,
-            related_request=instance.help_request,
-            defaults={
-                "title": "Вас підтверджено як волонтера",
-                "message": f"Запит '{instance.help_request.title}' тепер в роботі",
-            },
-        )
-
-    elif instance.status == Response.Status.REJECTED:
-        # W8: повідомляємо волонтера про відхилення
-        Notification.objects.get_or_create(
-            user=instance.volunteer,
-            type=Notification.Type.REQUEST_REJECTED,
-            related_request=instance.help_request,
-            defaults={
-                "title": "Ваш відгук не прийнято",
-                "message": (
-                    f"На жаль, ваш відгук на запит "
-                    f"'{instance.help_request.title}' відхилено."
-                ),
-            },
-        )
+    create_response_status_notification(instance)
 
 
 @receiver(post_save, sender=Response)
@@ -79,13 +132,48 @@ def on_response_received(sender, instance, created, **kwargs):
         type=Notification.Type.NEW_RESPONSE,
         related_request=instance.help_request,
         defaults={
-            "title": f"{instance.volunteer.get_full_name()} відгукнувся(лась) на ваш запит",
+            "title": f"{_display_name(instance.volunteer)} відгукнувся(лась) на ваш запит",
             "message": (
                 f"Запит: '{instance.help_request.title}'. "
                 "Перегляньте відгуки та оберіть волонтера."
             ),
         },
     )
+
+
+@receiver(post_save, sender=HelpRequest)
+def on_new_request_created(sender, instance, created, **kwargs):
+    """Notify matching verified volunteers when a new active request is created."""
+    if not created:
+        return
+
+    if instance.status != HelpRequest.Status.ACTIVE:
+        return
+
+    volunteers = (
+        User.objects.filter(
+            user_type=User.UserType.VOLUNTEER,
+            is_active=True,
+            is_verified=True,
+            volunteer_profile__is_available=True,
+        )
+        .select_related("volunteer_profile")
+        .prefetch_related("volunteer_profile__categories")
+    )
+
+    for volunteer in volunteers:
+        if not _volunteer_matches_request(volunteer, instance):
+            continue
+
+        Notification.objects.get_or_create(
+            user=volunteer,
+            type=Notification.Type.NEW_NEARBY_REQUEST,
+            related_request=instance,
+            defaults={
+                "title": "Новий запит поблизу",
+                "message": f"Поруч з вами з'явився запит: '{instance.title}'.",
+            },
+        )
 
 
 @receiver(post_save, sender=HelpRequest)

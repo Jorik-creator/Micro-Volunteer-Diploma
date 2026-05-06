@@ -85,6 +85,7 @@ class StatsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         # --- Chart.js data: statuses ---
         # Preserve the canonical Status order for consistent chart rendering
         status_order = [choice[0] for choice in HelpRequest.Status.choices]
+        context["status_keys"] = status_order
         context["status_labels"] = [HelpRequest.Status(s).label for s in status_order]
         context["status_data"] = [requests_by_status.get(s, 0) for s in status_order]
 

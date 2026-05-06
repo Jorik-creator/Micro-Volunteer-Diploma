@@ -9,8 +9,16 @@ from unittest.mock import patch
 from django.utils import timezone
 
 from apps.notifications.models import Notification
+from apps.notifications.signals import on_new_request_created
+from apps.requests.models import HelpRequest
 
-from conftest import NotificationFactory, RecipientFactory
+from conftest import (
+    CategoryFactory,
+    HelpRequestFactory,
+    NotificationFactory,
+    RecipientFactory,
+    VolunteerFactory,
+)
 
 
 # ===================================================================
@@ -39,7 +47,7 @@ class TestNotificationModel:
     def test_notification_ordering(self, db):
         """Notifications are ordered by -created_at (newest first)."""
         user = RecipientFactory()
-        n1 = NotificationFactory(user=user, title="First")
+        NotificationFactory(user=user, title="First")
         n2 = NotificationFactory(user=user, title="Second")
         notifications = list(
             Notification.objects.filter(user=user, title__in=["First", "Second"])
@@ -170,3 +178,97 @@ class TestNotificationViews:
         # Assert — 302 redirect pointing to the login page
         assert response.status_code == 302
         assert "login" in response.url or "accounts" in response.url
+
+
+# ===================================================================
+# NOTIFICATION SIGNAL TESTS
+# ===================================================================
+
+
+class TestNotificationSignals:
+    """Tests for notification-producing signals."""
+
+    @pytest.mark.django_db
+    def test_new_request_notifies_matching_verified_volunteer(self):
+        """A verified available volunteer in radius receives NEW_NEARBY_REQUEST."""
+        # Arrange
+        category = CategoryFactory()
+        volunteer = VolunteerFactory(
+            is_verified=True,
+            address="Київ",
+            latitude=50.4501,
+            longitude=30.5234,
+        )
+        volunteer.volunteer_profile.categories.add(category)
+        volunteer.volunteer_profile.radius_km = 10
+        volunteer.volunteer_profile.save()
+
+        # Act — HelpRequestFactory save triggers post_save.
+        help_request = HelpRequestFactory(
+            category=category,
+            address="Київ, Хрещатик",
+            latitude=50.4505,
+            longitude=30.5238,
+        )
+
+        # Assert
+        assert Notification.objects.filter(
+            user=volunteer,
+            type=Notification.Type.NEW_NEARBY_REQUEST,
+            related_request=help_request,
+        ).exists()
+
+    @pytest.mark.django_db
+    def test_new_request_skips_unverified_volunteer(self):
+        """Unverified volunteers do not receive nearby request notifications."""
+        # Arrange
+        volunteer = VolunteerFactory(
+            is_verified=False,
+            address="Київ",
+            latitude=50.4501,
+            longitude=30.5234,
+        )
+
+        # Act
+        help_request = HelpRequestFactory(
+            address="Київ, Хрещатик",
+            latitude=50.4505,
+            longitude=30.5238,
+        )
+
+        # Assert
+        assert not Notification.objects.filter(
+            user=volunteer,
+            type=Notification.Type.NEW_NEARBY_REQUEST,
+            related_request=help_request,
+        ).exists()
+
+    @pytest.mark.django_db
+    def test_new_request_notification_is_idempotent(self):
+        """Calling the signal twice still leaves one nearby notification."""
+        # Arrange
+        volunteer = VolunteerFactory(
+            is_verified=True,
+            address="Київ",
+            latitude=50.4501,
+            longitude=30.5234,
+        )
+        help_request = HelpRequestFactory(
+            address="Київ, Хрещатик",
+            latitude=50.4505,
+            longitude=30.5238,
+        )
+
+        # Act — simulate a duplicate delivery of the same post_save event.
+        on_new_request_created(
+            sender=HelpRequest,
+            instance=help_request,
+            created=True,
+        )
+
+        # Assert
+        assert Notification.objects.filter(
+            user=volunteer,
+            type=Notification.Type.NEW_NEARBY_REQUEST,
+            related_request=help_request,
+        ).count() == 1
