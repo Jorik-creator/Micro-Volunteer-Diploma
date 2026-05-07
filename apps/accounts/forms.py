@@ -136,6 +136,11 @@ class UserProfileForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["date_of_birth"].input_formats = ["%Y-%m-%d"]
+        self.fields["email"].widget.attrs.update({"autocomplete": "email"})
+        self.fields["first_name"].widget.attrs.update({"autocomplete": "given-name"})
+        self.fields["last_name"].widget.attrs.update({"autocomplete": "family-name"})
+        self.fields["phone"].widget.attrs.update({"autocomplete": "tel"})
+        self.fields["address"].widget.attrs.update({"autocomplete": "street-address"})
 
     def clean_avatar(self):
         avatar = self.cleaned_data.get("avatar")
@@ -183,4 +188,14 @@ class RecipientProfileForm(forms.ModelForm):
 class CustomPasswordChangeForm(DjangoPasswordChangeForm):
     """Styled password-change form (inherits all Django validation)."""
 
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["old_password"].widget.attrs.update(
+            {"autocomplete": "current-password"}
+        )
+        self.fields["new_password1"].widget.attrs.update(
+            {"autocomplete": "new-password"}
+        )
+        self.fields["new_password2"].widget.attrs.update(
+            {"autocomplete": "new-password"}
+        )

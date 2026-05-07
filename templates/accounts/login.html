@@ -11,11 +11,16 @@
         <i class="bi bi-heart-pulse-fill"></i>
       </span>
     </div>
-    <h2 class="auth-title">З поверненням!</h2>
-    <p class="auth-sub">Увійдіть, щоб продовжити допомагати</p>
+    <h1 class="auth-title">З поверненням!</h1>
+    <p class="auth-sub" id="login-help">Увійдіть, щоб переглядати свої запити, відгуки та сповіщення.</p>
 
-    <form method="post" novalidate autocomplete="on">
+    <form method="post" novalidate autocomplete="on" aria-describedby="login-help">
       {% csrf_token %}
+      {% if form.errors %}
+      <div class="form-alert" role="alert">
+        Перевірте ім’я користувача та пароль. Якщо помилка повторюється, спробуйте ввести дані ще раз повільно.
+      </div>
+      {% endif %}
       {{ form|crispy }}
       <button type="submit" class="btn btn-solid btn-block btn-lg auth-submit">
         <i class="bi bi-door-open"></i> Увійти

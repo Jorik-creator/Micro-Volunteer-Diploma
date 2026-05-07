@@ -23,7 +23,7 @@
 
 <div class="container page-shell">
   <!-- Filters bar -->
-  <form method="get" class="filters-bar">
+  <form method="get" class="filters-bar" role="search" aria-label="Фільтри запитів допомоги">
     <div>
       <span class="field-label">Категорія</span>
       {{ filter_form.category|as_crispy_field }}
@@ -50,10 +50,10 @@
     </div>
     <div class="filters-actions">
       <button type="submit" class="btn btn-solid btn-sm">
-        <i class="bi bi-funnel"></i> Фільтр
+        <i class="bi bi-funnel"></i> Застосувати
       </button>
-      <a href="{% url 'requests:list' %}" class="btn btn-muted btn-sm" title="Скинути">
-        <i class="bi bi-x-lg"></i>
+      <a href="{% url 'requests:list' %}" class="btn btn-muted btn-sm" title="Скинути фільтри" aria-label="Скинути всі фільтри">
+        <i class="bi bi-x-lg"></i> Скинути
       </a>
     </div>
   </form>
@@ -72,7 +72,7 @@
   {% if requests %}
   <div class="requests-grid">
     {% for hr in requests %}
-    <div class="request-card" onclick="window.location='{% url 'requests:detail' hr.pk %}';" style="cursor:pointer">
+    <article class="request-card" aria-labelledby="request-title-{{ hr.pk }}">
       <div class="top-row">
         {% if hr.category %}
         <span class="chip chip-blue">{{ hr.category.name }}</span>
@@ -84,7 +84,7 @@
           {{ hr.get_urgency_display }}
         </span>
       </div>
-      <h5 class="request-title">{{ hr.title }}</h5>
+      <h2 class="request-title" id="request-title-{{ hr.pk }}">{{ hr.title }}</h2>
       <p class="request-desc">{{ hr.description|truncatewords:20 }}</p>
       <hr class="request-divider">
       <div class="request-meta-row">
@@ -92,9 +92,9 @@
         <span class="time">{{ hr.created_at|timesince }} тому</span>
       </div>
       <a href="{% url 'requests:detail' hr.pk %}" class="btn btn-solid btn-block btn-help">
-        Детальніше <i class="bi bi-arrow-right"></i>
+        Детальніше про запит <i class="bi bi-arrow-right"></i>
       </a>
-    </div>
+    </article>
     {% endfor %}
   </div>
 

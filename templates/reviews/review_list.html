@@ -5,9 +5,9 @@
 {% block content %}
 <section class="page-hero">
   <div class="container">
-    <a href="javascript:history.back()" class="btn btn-muted btn-sm toolbar-row">
+    <button type="button" class="btn btn-muted btn-sm toolbar-row" id="review-back-button">
       <i class="bi bi-arrow-left"></i> Назад
-    </a>
+    </button>
     <h1 class="page-title">Відгуки про {{ target_user.get_full_name }}</h1>
     <p class="page-sub">
       {% if reviews %}Всього відгуків: <strong>{{ reviews|length }}</strong>{% else %}Відгуки про виконані запити{% endif %}
@@ -18,19 +18,19 @@
 <div class="container page-shell">
   <div class="activity-list">
     {% for review in reviews %}
-    <div class="activity-row activity-row-top">
+    <article class="activity-row activity-row-top" aria-labelledby="review-title-{{ review.pk }}">
       <div class="avatar">
         {{ review.author.first_name|first|upper }}{{ review.author.last_name|first|upper }}
       </div>
       <div class="body">
-        <div class="t">
+        <div class="t" id="review-title-{{ review.pk }}">
           {{ review.author.get_full_name }}
-          <span class="rating rating-inline">
+          <span class="rating rating-inline" aria-label="Оцінка {{ review.rating }} з 5">
             {% for i in "12345" %}
               {% if forloop.counter <= review.rating %}
-                <i class="bi bi-star-fill"></i>
+                <i class="bi bi-star-fill" aria-hidden="true"></i>
               {% else %}
-                <i class="bi bi-star"></i>
+                <i class="bi bi-star" aria-hidden="true"></i>
               {% endif %}
             {% endfor %}
           </span>
@@ -43,7 +43,7 @@
         {% endif %}
       </div>
       <div class="when">{{ review.created_at|date:"d.m.Y" }}</div>
-    </div>
+    </article>
     {% empty %}
     <div class="empty-state">
       <i class="bi bi-chat-square empty-icon"></i>
@@ -52,4 +52,13 @@
     {% endfor %}
   </div>
 </div>
+<script>
+(function () {
+  const backButton = document.getElementById('review-back-button');
+  if (!backButton) return;
+  backButton.addEventListener('click', function () {
+    history.back();
+  });
+})();
+</script>
 {% endblock %}

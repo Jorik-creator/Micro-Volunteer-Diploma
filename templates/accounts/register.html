@@ -2,6 +2,7 @@
 {% load crispy_forms_tags %}
 
 {% block title %}Реєстрація — MicroVolunteer{% endblock %}
+{% block body_class %}auth-no-footer{% endblock %}
 
 {% block content %}
 <div class="auth-shell">
@@ -11,11 +12,21 @@
         <i class="bi bi-heart-pulse-fill"></i>
       </span>
     </div>
-    <h2 class="auth-title">Створити акаунт</h2>
-    <p class="auth-sub">Приєднуйтесь до спільноти волонтерів за хвилину</p>
+    <h1 class="auth-title">Створити акаунт</h1>
+    <p class="auth-sub" id="register-help">Оберіть роль: отримувати допомогу або допомагати іншим як волонтер.</p>
 
-    <form method="post" novalidate autocomplete="on">
+    <div class="form-help-card form-help-card-compact" role="note">
+      <i class="bi bi-info-circle"></i>
+      <p>Після реєстрації ви зможете відредагувати профіль і додати адресу, телефон та інші деталі.</p>
+    </div>
+
+    <form method="post" novalidate autocomplete="on" aria-describedby="register-help">
       {% csrf_token %}
+      {% if form.errors %}
+      <div class="form-alert" role="alert">
+        Деякі поля заповнені неправильно. Перегляньте повідомлення під полями та виправте їх.
+      </div>
+      {% endif %}
       {{ form|crispy }}
       <button type="submit" class="btn btn-solid btn-block btn-lg auth-submit">
         <i class="bi bi-check-circle"></i> Зареєструватися

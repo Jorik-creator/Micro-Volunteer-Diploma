@@ -20,17 +20,17 @@
 <div class="container page-shell">
 
   <!-- Stats row -->
-  <div class="stat-grid-3 mb-4">
+  <div class="stat-grid-3 mb-4" aria-label="Статистика моїх запитів">
     <div class="mini-stat mini-stat-center">
       <div class="n">{{ active_count }}</div>
       <div class="l">Активних</div>
     </div>
     <div class="mini-stat mini-stat-center">
-      <div class="n" style="color:var(--mv-warning)">{{ in_progress_count }}</div>
+      <div class="n stat-warning">{{ in_progress_count }}</div>
       <div class="l">В процесі</div>
     </div>
     <div class="mini-stat mini-stat-center">
-      <div class="n" style="color:var(--mv-success)">{{ completed_count }}</div>
+      <div class="n stat-success">{{ completed_count }}</div>
       <div class="l">Виконано</div>
     </div>
   </div>
@@ -38,14 +38,14 @@
   {% if requests %}
   <div class="requests-grid">
     {% for hr in requests %}
-    <div class="request-card">
+    <article class="request-card" aria-labelledby="my-request-title-{{ hr.pk }}">
       <div class="top-row">
         {% if hr.category %}<span class="chip chip-blue">{{ hr.category.name }}</span>{% endif %}
         <span class="status-badge {% if hr.status == 'active' %}open{% elif hr.status == 'in_progress' %}inprogress{% elif hr.status == 'completed' %}completed{% endif %}">
           {{ hr.get_status_display }}
         </span>
       </div>
-      <h5 class="request-title">{{ hr.title }}</h5>
+      <h2 class="request-title" id="my-request-title-{{ hr.pk }}">{{ hr.title }}</h2>
       <p class="request-desc">{{ hr.description|truncatewords:15 }}</p>
       <hr class="request-divider">
       <div class="request-meta-row">
@@ -53,19 +53,19 @@
         <span class="time">{{ hr.created_at|timesince }} тому</span>
       </div>
       <a href="{% url 'requests:detail' hr.pk %}" class="btn btn-solid btn-block btn-help">
-        Переглянути <i class="bi bi-arrow-right"></i>
+        Переглянути запит <i class="bi bi-arrow-right"></i>
       </a>
-    </div>
+    </article>
     {% endfor %}
   </div>
 
   <!-- Pagination -->
   {% if is_paginated %}
-  <nav class="pagination-wrap">
+  <nav class="pagination-wrap" aria-label="Навігація сторінками моїх запитів">
     <ul class="pagination justify-content-center">
       {% if page_obj.has_previous %}
       <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a>
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Попередня сторінка">&laquo;</a>
       </li>
       {% endif %}
       <li class="page-item disabled">
@@ -73,7 +73,7 @@
       </li>
       {% if page_obj.has_next %}
       <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a>
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Наступна сторінка">&raquo;</a>
       </li>
       {% endif %}
     </ul>

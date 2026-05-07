@@ -13,12 +13,12 @@
           <span class="chip chip-red chip-inline">{{ unread_count }}</span>
           {% endif %}
         </h1>
-        <p class="page-sub">Ваші останні сповіщення</p>
+        <p class="page-sub">Нові та прочитані повідомлення про запити, відгуки й статуси</p>
       </div>
       {% if unread_count > 0 %}
       <form method="post" action="/notifications/mark-all-read/">
         {% csrf_token %}
-        <button type="submit" class="btn btn-muted btn-sm">
+        <button type="submit" class="btn btn-muted btn-sm" aria-label="Позначити всі сповіщення як прочитані">
           <i class="bi bi-check2-all"></i> Позначити всі як прочитані
         </button>
       </form>
@@ -30,8 +30,8 @@
 <div class="container page-shell form-shell-lg">
   <div class="activity-list">
     {% for notification in notifications %}
-    <div class="activity-row{% if not notification.is_read %} activity-unread{% endif %}">
-      <div class="activity-icon">
+    <article class="activity-row activity-row-top{% if not notification.is_read %} activity-unread{% endif %}" aria-labelledby="notification-title-{{ notification.pk }}">
+      <div class="activity-icon" aria-hidden="true">
         {% if notification.type == "new_response" %}
           <i class="bi bi-chat-dots"></i>
         {% elif notification.type == "request_accepted" %}
@@ -49,11 +49,14 @@
         {% endif %}
       </div>
       <div class="body">
-        <div class="t">{{ notification.title }}</div>
+        <div class="t" id="notification-title-{{ notification.pk }}">
+          {{ notification.title }}
+          {% if not notification.is_read %}<span class="chip chip-blue chip-inline-tight">Нове</span>{% endif %}
+        </div>
         <div class="s">{{ notification.message }}</div>
         {% if notification.related_request %}
         <div class="notification-link">
-          <a href="/requests/{{ notification.related_request.pk }}/">
+          <a href="/requests/{{ notification.related_request.pk }}/" aria-label="Переглянути пов’язаний запит: {{ notification.related_request.title }}">
             <i class="bi bi-box-arrow-up-right"></i> Переглянути запит
           </a>
         </div>
@@ -62,7 +65,7 @@
         <div class="notification-action">
           <form method="post" action="/notifications/mark-read/{{ notification.pk }}/" class="d-inline">
             {% csrf_token %}
-            <button type="submit" class="btn btn-muted btn-sm">
+            <button type="submit" class="btn btn-muted btn-sm" aria-label="Позначити сповіщення як прочитане">
               <i class="bi bi-check2"></i> Прочитано
             </button>
           </form>
@@ -70,7 +73,7 @@
         {% endif %}
       </div>
       <div class="when">{{ notification.created_at|timesince }} тому</div>
-    </div>
+    </article>
     {% empty %}
     <div class="empty-state">
       <i class="bi bi-bell-slash empty-icon"></i>
@@ -85,7 +88,7 @@
     <ul class="pagination justify-content-center">
       {% if page_obj.has_previous %}
       <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a>
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Попередня сторінка">&laquo;</a>
       </li>
       {% endif %}
       <li class="page-item disabled">
@@ -93,7 +96,7 @@
       </li>
       {% if page_obj.has_next %}
       <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a>
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Наступна сторінка">&raquo;</a>
       </li>
       {% endif %}
     </ul>

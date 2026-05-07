@@ -26,14 +26,14 @@
   function showStatusToast(newStatus) {
     // Bootstrap Toast
     const toastHtml = `
-      <div id="status-toast" class="toast align-items-center text-bg-info border-0 position-fixed bottom-0 end-0 m-3"
-           role="alert" aria-live="polite" style="z-index:1100;">
+      <div id="status-toast" class="toast align-items-center text-bg-info border-0 position-fixed bottom-0 end-0 m-3 status-toast"
+           role="alert" aria-live="polite">
         <div class="d-flex">
           <div class="toast-body">
             <i class="bi bi-arrow-repeat me-2"></i>
             Статус оновлено: <strong>${newStatus}</strong>. Оновлення сторінки…
           </div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Закрити повідомлення"></button>
         </div>
       </div>`;
     document.body.insertAdjacentHTML('beforeend', toastHtml);
@@ -54,9 +54,11 @@ function copyAddress() {
   function showSuccess() {
     icon.className = 'bi bi-check-lg text-success';
     btn.title = 'Скопійовано!';
+    btn.setAttribute('aria-label', 'Адресу скопійовано');
     setTimeout(() => {
       icon.className = 'bi bi-clipboard';
       btn.title = 'Скопіювати адресу';
+      btn.setAttribute('aria-label', 'Скопіювати адресу');
     }, 2000);
   }
 
@@ -74,12 +76,26 @@ function copyAddress() {
 function fallbackCopy(text) {
   const ta = document.createElement('textarea');
   ta.value = text;
-  ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;';
+  ta.className = 'copy-fallback-textarea';
   document.body.appendChild(ta);
   ta.select();
   try { document.execCommand('copy'); } catch (_) {}
   document.body.removeChild(ta);
 }
+
+(function () {
+  const copyButton = document.getElementById('copy-address-btn');
+  if (copyButton) copyButton.addEventListener('click', copyAddress);
+
+  document.querySelectorAll('[data-confirm-submit]').forEach(function (button) {
+    button.addEventListener('click', function (event) {
+      const message = button.getAttribute('data-confirm-submit');
+      if (message && !confirm(message)) {
+        event.preventDefault();
+      }
+    });
+  });
+})();
 </script>
 {% endblock %}
 
@@ -126,11 +142,11 @@ function fallbackCopy(text) {
         </div>
         <div>
           <div class="m-label">Адреса</div>
-          <div class="m-value">
+            <div class="m-value address-copy-row">
             <i class="bi bi-geo-alt"></i>
             {% if is_accepted or is_owner %}
               <span id="address-text">{{ help_request.address }}</span>
-              <button type="button" id="copy-address-btn" class="btn btn-muted btn-sm copy-btn" title="Скопіювати адресу" onclick="copyAddress()">
+              <button type="button" id="copy-address-btn" class="btn btn-muted btn-sm copy-btn" title="Скопіювати адресу" aria-label="Скопіювати адресу">
                 <i class="bi bi-clipboard" id="copy-icon"></i>
               </button>
             {% else %}
@@ -163,7 +179,7 @@ function fallbackCopy(text) {
               </div>
               <form method="post" action="{% url 'requests:complete' help_request.pk %}" class="mt-3">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-solid" onclick="return confirm('Позначити запит як виконаний?')">
+                <button type="submit" class="btn btn-solid" data-confirm-submit="Позначити запит як виконаний?">
                   <i class="bi bi-check2-circle"></i> Позначити як виконане
                 </button>
               </form>
@@ -173,7 +189,7 @@ function fallbackCopy(text) {
             <div class="alert alert-secondary"><i class="bi bi-x-circle me-2"></i>На жаль, ваш відгук було відхилено.</div>
           {% endif %}
         {% elif help_request.status == 'active' %}
-          <form method="post" action="{% url 'requests:respond' help_request.pk %}">
+          <form method="post" action="{% url 'requests:respond' help_request.pk %}" aria-label="Форма відгуку на запит">
             {% csrf_token %}
             {{ response_form|crispy }}
             <button type="submit" class="btn btn-solid">
@@ -192,10 +208,10 @@ function fallbackCopy(text) {
         <div class="section-hd">Відгуки волонтерів</div>
         <div class="activity-list">
           {% for resp in responses %}
-          <div class="activity-row">
+          <article class="activity-row activity-row-top" aria-labelledby="response-title-{{ resp.pk }}">
             <div class="avatar">{{ resp.volunteer.first_name|first|upper }}{{ resp.volunteer.last_name|first|upper }}</div>
             <div class="body">
-              <div class="t">
+              <div class="t" id="response-title-{{ resp.pk }}">
                 {{ resp.volunteer.get_full_name }}
                 <span class="chip chip-inline-tight {% if resp.status == 'pending' %}chip-gray{% elif resp.status == 'accepted' %}chip-green{% else %}chip-red{% endif %}">{{ resp.get_status_display }}</span>
               </div>
@@ -205,14 +221,14 @@ function fallbackCopy(text) {
             {% if resp.status == 'pending' and help_request.status == 'active' %}
             <div class="response-actions">
               <form method="post" action="{% url 'requests:accept' resp.pk %}">{% csrf_token %}
-                <button type="submit" class="btn btn-solid btn-sm" title="Підтвердити"><i class="bi bi-check-lg"></i></button>
+                <button type="submit" class="btn btn-solid btn-sm" title="Підтвердити" aria-label="Підтвердити волонтера {{ resp.volunteer.get_full_name }}"><i class="bi bi-check-lg"></i></button>
               </form>
               <form method="post" action="{% url 'requests:reject' resp.pk %}">{% csrf_token %}
-                <button type="submit" class="btn btn-danger-ghost btn-sm" title="Відхилити"><i class="bi bi-x-lg"></i></button>
+                <button type="submit" class="btn btn-danger-ghost btn-sm" title="Відхилити" aria-label="Відхилити волонтера {{ resp.volunteer.get_full_name }}"><i class="bi bi-x-lg"></i></button>
               </form>
             </div>
             {% endif %}
-          </div>
+          </article>
           {% endfor %}
         </div>
       </div>
@@ -241,7 +257,7 @@ function fallbackCopy(text) {
           {% if help_request.status == 'active' or help_request.status == 'in_progress' %}
           <form method="post" action="{% url 'requests:cancel' help_request.pk %}">
             {% csrf_token %}
-            <button type="submit" class="btn btn-danger-ghost btn-sm btn-block" onclick="return confirm('Скасувати запит?')">
+            <button type="submit" class="btn btn-danger-ghost btn-sm btn-block" data-confirm-submit="Скасувати запит?">
               <i class="bi bi-x-circle"></i> Скасувати запит
             </button>
           </form>

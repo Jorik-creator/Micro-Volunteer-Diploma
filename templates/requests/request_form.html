@@ -14,7 +14,7 @@
       <i class="bi bi-arrow-left"></i> Назад
     </a>
     <h1 class="page-title">{{ form_title }}</h1>
-    <p class="page-sub">Опишіть, що потрібно — волонтери побачать запит поруч</p>
+    <p class="page-sub">Напишіть простими словами, яка допомога потрібна. Волонтери поруч побачать ваш запит.</p>
   </div>
 </section>
 
@@ -22,6 +22,16 @@
   <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
     <div class="card-panel">
+      <div class="form-help-card" role="note">
+        <i class="bi bi-lightbulb"></i>
+        <div>
+          <p><strong>Підказка:</strong> коротко опишіть дію, місце і час.</p>
+          <ul>
+            <li>Наприклад: “Потрібно купити ліки сьогодні після 16:00”.</li>
+            <li>Точну адресу побачить лише прийнятий волонтер.</li>
+          </ul>
+        </div>
+      </div>
 
       {{ form.title|as_crispy_field }}
       {{ form.description|as_crispy_field }}
@@ -41,10 +51,7 @@
       <!-- Address with Nominatim autocomplete -->
       <div class="mb-3 position-relative" id="address-wrapper">
         {{ form.address|as_crispy_field }}
-        <div id="address-suggestions"
-             style="position:absolute;z-index:1000;width:100%;background:#fff;
-                    border:1px solid #dee2e6;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);
-                    display:none;max-height:220px;overflow-y:auto;top:100%;left:0;"></div>
+        <div id="address-suggestions" class="address-suggestions" role="listbox" aria-label="Підказки адрес"></div>
       </div>
       {{ form.latitude }}
       {{ form.longitude }}
@@ -54,14 +61,14 @@
       </div>
 
       <!-- Leaflet mini-map: shown after a suggestion is selected -->
-      <div id="map-container" class="mb-3" style="display:none;">
-        <div id="mini-map" style="height:220px;border-radius:8px;border:1px solid #dee2e6;"></div>
+      <div id="map-container" class="mb-3 mini-map-panel" hidden>
+        <div id="mini-map" class="mini-map-canvas" aria-label="Міні-мапа для уточнення адреси"></div>
         <div class="text-muted small mt-1">
           <i class="bi bi-arrows-move me-1"></i>
           Перетягніть маркер для уточнення координат
         </div>
       </div>
-      <div id="map-unavailable" class="alert alert-warning py-2 small" style="display:none;">
+      <div id="map-unavailable" class="alert alert-warning py-2 small map-unavailable" hidden>
         <i class="bi bi-exclamation-triangle me-1"></i>
         Не вдалося завантажити мапу. Координати буде збережено за вибраною адресою без уточнення маркером.
       </div>
@@ -93,18 +100,21 @@
   const mapUnavailable = document.getElementById('map-unavailable');
 
   if (!addressInput) return;
+  addressInput.setAttribute('aria-autocomplete', 'list');
+  addressInput.setAttribute('aria-controls', 'address-suggestions');
+  addressInput.setAttribute('aria-expanded', 'false');
 
   // ── Leaflet mini-map (lazy-initialised on first suggestion pick) ──
   let map    = null;
   let marker = null;
 
   function showMapUnavailable() {
-    if (mapContainer) mapContainer.style.display = 'none';
-    if (mapUnavailable) mapUnavailable.style.display = 'block';
+    if (mapContainer) mapContainer.hidden = true;
+    if (mapUnavailable) mapUnavailable.hidden = false;
   }
 
   function hideMapUnavailable() {
-    if (mapUnavailable) mapUnavailable.style.display = 'none';
+    if (mapUnavailable) mapUnavailable.hidden = true;
   }
 
   function initMap(lat, lon) {
@@ -136,7 +146,7 @@
       map.setView([lat, lon], 15);
       marker.setLatLng([lat, lon]);
     }
-    mapContainer.style.display = 'block';
+    mapContainer.hidden = false;
     // Leaflet needs a size recalc after the container becomes visible
     setTimeout(() => map.invalidateSize(), 50);
   }
@@ -148,7 +158,8 @@
     clearTimeout(debounceTimer);
     const query = this.value.trim();
     if (query.length < 3) {
-      suggestionsBox.style.display = 'none';
+      suggestionsBox.classList.remove('is-open');
+      addressInput.setAttribute('aria-expanded', 'false');
       return;
     }
     debounceTimer = setTimeout(() => fetchSuggestions(query), 400);
@@ -165,19 +176,28 @@
   function renderSuggestions(results) {
     suggestionsBox.innerHTML = '';
     if (!results.length) {
-      suggestionsBox.style.display = 'none';
+      suggestionsBox.classList.remove('is-open');
+      addressInput.setAttribute('aria-expanded', 'false');
       return;
     }
-    results.forEach(item => {
+    results.forEach((item, index) => {
       const div = document.createElement('div');
-      div.style.cssText = 'padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:14px;';
+      div.className = 'address-suggestion';
+      div.setAttribute('role', 'option');
+      div.setAttribute('tabindex', '0');
+      div.id = `address-suggestion-${index}`;
       div.textContent = item.display_name;
-      div.addEventListener('mouseenter', () => div.style.background = '#f8f9ff');
-      div.addEventListener('mouseleave', () => div.style.background = '');
-      div.addEventListener('click',      () => selectSuggestion(item));
+      div.addEventListener('click', () => selectSuggestion(item));
+      div.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          selectSuggestion(item);
+        }
+      });
       suggestionsBox.appendChild(div);
     });
-    suggestionsBox.style.display = 'block';
+    suggestionsBox.classList.add('is-open');
+    addressInput.setAttribute('aria-expanded', 'true');
   }
 
   function selectSuggestion(item) {
@@ -187,7 +207,8 @@
     addressInput.value = item.display_name;
     if (latInput) latInput.value = lat.toFixed(6);
     if (lonInput) lonInput.value = lon.toFixed(6);
-    suggestionsBox.style.display = 'none';
+    suggestionsBox.classList.remove('is-open');
+    addressInput.setAttribute('aria-expanded', 'false');
 
     // Show / update the mini-map
     initMap(lat, lon);
@@ -206,7 +227,8 @@
   document.addEventListener('click', function (e) {
     const wrapper = document.getElementById('address-wrapper');
     if (wrapper && !wrapper.contains(e.target)) {
-      suggestionsBox.style.display = 'none';
+      suggestionsBox.classList.remove('is-open');
+      addressInput.setAttribute('aria-expanded', 'false');
     }
   });
 })();

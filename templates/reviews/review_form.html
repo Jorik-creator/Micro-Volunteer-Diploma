@@ -10,7 +10,7 @@
       <i class="bi bi-arrow-left"></i> Назад до запиту
     </a>
     <h1 class="page-title">Залишити відгук</h1>
-    <p class="page-sub">Поділіться своїм досвідом співпраці</p>
+    <p class="page-sub" id="review-help">Оцініть співпрацю та, за бажанням, додайте короткий коментар.</p>
   </div>
 </section>
 
@@ -34,9 +34,14 @@
   </div>
 
   <!-- Review form -->
-  <form method="post" novalidate>
+  <form method="post" novalidate aria-describedby="review-help">
     {% csrf_token %}
     <div class="card-panel">
+      {% if form.errors %}
+      <div class="form-alert" role="alert">
+        Не вдалося надіслати відгук. Перевірте оцінку та коментар.
+      </div>
+      {% endif %}
       {{ form|crispy }}
       <div class="form-actions">
         <button type="submit" class="btn btn-solid">

@@ -10,13 +10,18 @@
       <i class="bi bi-arrow-left"></i> До профілю
     </a>
     <h1 class="page-title">Редагувати профіль</h1>
-    <p class="page-sub">Оновіть свою особисту інформацію</p>
+    <p class="page-sub">Оновіть контакти, адресу та налаштування профілю. Заповнюйте тільки те, що хочете показати в межах платформи.</p>
   </div>
 </section>
 
 <div class="container page-shell form-shell-md">
   <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
+    {% if form.errors or role_form.errors %}
+    <div class="form-alert" role="alert">
+      Не всі зміни можна зберегти. Перевірте повідомлення під полями та виправте помилки.
+    </div>
+    {% endif %}
 
     <!-- Core user fields -->
     <div class="card-panel mb-4">
@@ -39,10 +44,7 @@
       <!-- Address with Nominatim autocomplete; coordinates are stored in hidden fields. -->
       <div class="mb-3 position-relative" id="profile-address-wrapper">
         {{ form.address|as_crispy_field }}
-        <div id="profile-address-suggestions"
-             style="position:absolute;z-index:1000;width:100%;background:#fff;
-                    border:1px solid #dee2e6;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);
-                    display:none;max-height:220px;overflow-y:auto;top:100%;left:0;"></div>
+        <div id="profile-address-suggestions" class="address-suggestions" role="listbox" aria-label="Підказки адрес"></div>
       </div>
       {{ form.latitude }}
       {{ form.longitude }}
@@ -94,6 +96,9 @@
   const wrapper = document.getElementById('profile-address-wrapper');
 
   if (!addressInput || !suggestionsBox) return;
+  addressInput.setAttribute('aria-autocomplete', 'list');
+  addressInput.setAttribute('aria-controls', 'profile-address-suggestions');
+  addressInput.setAttribute('aria-expanded', 'false');
 
   let debounceTimer = null;
 
@@ -105,7 +110,8 @@
     if (lonInput) lonInput.value = '';
 
     if (query.length < 3) {
-      suggestionsBox.style.display = 'none';
+      suggestionsBox.classList.remove('is-open');
+      addressInput.setAttribute('aria-expanded', 'false');
       return;
     }
 
@@ -118,28 +124,38 @@
       .then(response => response.json())
       .then(results => renderSuggestions(results))
       .catch(() => {
-        suggestionsBox.style.display = 'none';
+        suggestionsBox.classList.remove('is-open');
+        addressInput.setAttribute('aria-expanded', 'false');
       });
   }
 
   function renderSuggestions(results) {
     suggestionsBox.innerHTML = '';
     if (!results.length) {
-      suggestionsBox.style.display = 'none';
+      suggestionsBox.classList.remove('is-open');
+      addressInput.setAttribute('aria-expanded', 'false');
       return;
     }
 
-    results.forEach(item => {
+    results.forEach((item, index) => {
       const div = document.createElement('div');
-      div.style.cssText = 'padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:14px;';
+      div.className = 'address-suggestion';
+      div.setAttribute('role', 'option');
+      div.setAttribute('tabindex', '0');
+      div.id = `profile-address-suggestion-${index}`;
       div.textContent = item.display_name;
-      div.addEventListener('mouseenter', () => div.style.background = '#f8f9ff');
-      div.addEventListener('mouseleave', () => div.style.background = '');
       div.addEventListener('click', () => selectSuggestion(item));
+      div.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          selectSuggestion(item);
+        }
+      });
       suggestionsBox.appendChild(div);
     });
 
-    suggestionsBox.style.display = 'block';
+    suggestionsBox.classList.add('is-open');
+    addressInput.setAttribute('aria-expanded', 'true');
   }
 
   function selectSuggestion(item) {
@@ -149,12 +165,14 @@
     addressInput.value = item.display_name;
     if (latInput && Number.isFinite(lat)) latInput.value = lat.toFixed(6);
     if (lonInput && Number.isFinite(lon)) lonInput.value = lon.toFixed(6);
-    suggestionsBox.style.display = 'none';
+    suggestionsBox.classList.remove('is-open');
+    addressInput.setAttribute('aria-expanded', 'false');
   }
 
   document.addEventListener('click', function (event) {
     if (wrapper && !wrapper.contains(event.target)) {
-      suggestionsBox.style.display = 'none';
+      suggestionsBox.classList.remove('is-open');
+      addressInput.setAttribute('aria-expanded', 'false');
     }
   });
 })();

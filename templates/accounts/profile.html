@@ -7,11 +7,11 @@
 <!-- Profile hero banner -->
 <section class="profile-hero">
   <div class="container">
-    <div style="font-size:14px;opacity:0.7">
-      <a href="{% url 'home' %}" style="color:rgba(255,255,255,0.7);text-decoration:none">Головна</a>
-      <span style="margin:0 8px;opacity:0.5">/</span>
+    <nav class="profile-breadcrumb" aria-label="Шлях сторінки">
+      <a href="{% url 'home' %}">Головна</a>
+      <span aria-hidden="true">/</span>
       <span>Профіль</span>
-    </div>
+    </nav>
   </div>
 </section>
 
@@ -20,8 +20,8 @@
   <div class="profile-card">
     <!-- Avatar -->
     {% if profile_user.avatar %}
-      <img src="{{ profile_user.avatar.url }}" alt="Аватар"
-           class="avatar avatar-xl" style="object-fit:cover;">
+      <img src="{{ profile_user.avatar.url }}" alt="Аватар {{ profile_user.get_full_name }}"
+           class="avatar avatar-xl avatar-cover">
     {% else %}
       <div class="avatar avatar-xl">
         {{ profile_user.first_name|first|upper }}{{ profile_user.last_name|first|upper }}
@@ -55,7 +55,7 @@
 
     <!-- Actions — show only to the profile owner -->
     {% if is_own_profile or user == profile_user %}
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div class="profile-actions">
       <a href="{% url 'accounts:profile-edit' %}" class="btn btn-ghost btn-sm">
         <i class="bi bi-pencil"></i> Редагувати
       </a>
@@ -91,18 +91,18 @@
   </div>
 
   <!-- Tabs -->
-  <div class="tabs" id="profile-tabs">
-    <button class="tab active" data-tab="info">Інформація</button>
+  <div class="tabs" id="profile-tabs" role="tablist" aria-label="Розділи профілю">
+    <button class="tab active" id="tab-button-info" data-tab="info" type="button" role="tab" aria-selected="true" aria-controls="tab-info">Інформація</button>
     {% if profile_user.is_volunteer and volunteer_profile %}
-    <button class="tab" data-tab="volunteer">Волонтерський профіль</button>
+    <button class="tab" id="tab-button-volunteer" data-tab="volunteer" type="button" role="tab" aria-selected="false" aria-controls="tab-volunteer">Волонтерський профіль</button>
     {% endif %}
     {% if reviews %}
-    <button class="tab" data-tab="reviews">Відгуки ({{ review_count }})</button>
+    <button class="tab" id="tab-button-reviews" data-tab="reviews" type="button" role="tab" aria-selected="false" aria-controls="tab-reviews">Відгуки ({{ review_count }})</button>
     {% endif %}
   </div>
 
   <!-- Tab: Info -->
-  <div id="tab-info" class="tab-panel card-panel" style="margin-bottom:32px">
+  <div id="tab-info" class="tab-panel card-panel tab-panel-spaced" role="tabpanel" aria-labelledby="tab-button-info">
     <div class="section-hd">Особиста інформація</div>
     <div class="detail-meta-grid">
       <div>
@@ -134,9 +134,9 @@
     </div>
     {% if profile_user.is_recipient and recipient_profile %}
       {% if recipient_profile.situation_type %}
-      <div style="margin-top:16px">
+      <div class="profile-section-block">
         <div class="m-label">Ситуація</div>
-        <div class="m-value" style="margin-top:4px">{{ recipient_profile.get_situation_type_display }}</div>
+        <div class="m-value profile-value-spaced">{{ recipient_profile.get_situation_type_display }}</div>
       </div>
       {% endif %}
     {% endif %}
@@ -144,14 +144,14 @@
 
   <!-- Tab: Volunteer profile -->
   {% if profile_user.is_volunteer and volunteer_profile %}
-  <div id="tab-volunteer" class="tab-panel card-panel" style="margin-bottom:32px;display:none">
+  <div id="tab-volunteer" class="tab-panel card-panel tab-panel-spaced" role="tabpanel" aria-labelledby="tab-button-volunteer" hidden>
     <div class="section-hd">Профіль волонтера</div>
     <div class="detail-meta-grid">
       <div>
         <div class="m-label">Статус</div>
         <div class="m-value">
           {% if volunteer_profile.is_available %}
-            <span class="chip chip-green"><i class="bi bi-circle-fill" style="font-size:8px"></i> Доступний</span>
+            <span class="chip chip-green"><i class="bi bi-circle-fill chip-status-dot"></i> Доступний</span>
           {% else %}
             <span class="chip chip-gray">Недоступний</span>
           {% endif %}
@@ -163,15 +163,15 @@
       </div>
     </div>
     {% if volunteer_profile.bio %}
-    <div style="margin-top:16px">
+    <div class="profile-section-block">
       <div class="m-label">Про себе</div>
-      <div class="detail-desc" style="margin-top:8px">{{ volunteer_profile.bio }}</div>
+      <div class="detail-desc profile-desc-spaced">{{ volunteer_profile.bio }}</div>
     </div>
     {% endif %}
     {% if volunteer_profile.categories.exists %}
-    <div style="margin-top:16px">
+    <div class="profile-section-block">
       <div class="m-label">Категорії допомоги</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <div class="profile-chip-list">
         {% for cat in volunteer_profile.categories.all %}
           <span class="chip chip-blue">{{ cat.name }}</span>
         {% endfor %}
@@ -183,20 +183,20 @@
 
   <!-- Tab: Reviews -->
   {% if reviews %}
-  <div id="tab-reviews" class="tab-panel" style="margin-bottom:64px;display:none">
+  <div id="tab-reviews" class="tab-panel tab-panel-reviews" role="tabpanel" aria-labelledby="tab-button-reviews" hidden>
     <div class="activity-list">
       {% for review in reviews %}
-      <div class="activity-row" style="align-items:flex-start">
+      <div class="activity-row activity-row-top">
         <div class="avatar">{{ review.author.first_name|first|upper }}{{ review.author.last_name|first|upper }}</div>
         <div class="body">
           <div class="t">
             {{ review.author.get_full_name }}
-            <span class="rating" style="margin-left:8px">
+            <span class="rating rating-inline" aria-label="Оцінка {{ review.rating }} з 5">
               {% for i in "12345" %}
                 {% if forloop.counter <= review.rating %}
-                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill" aria-hidden="true"></i>
                 {% else %}
-                  <i class="bi bi-star"></i>
+                  <i class="bi bi-star" aria-hidden="true"></i>
                 {% endif %}
               {% endfor %}
             </span>
@@ -216,14 +216,31 @@
   /* Tab switching — show/hide panels by matching data-tab to panel id */
   const tabs   = document.querySelectorAll('#profile-tabs .tab');
   const panels = document.querySelectorAll('.tab-panel');
+  function activateTab(tab) {
+    tabs.forEach(function (t) {
+      t.classList.remove('active');
+      t.setAttribute('aria-selected', 'false');
+    });
+    tab.classList.add('active');
+    tab.setAttribute('aria-selected', 'true');
+    var target = tab.dataset.tab;
+    panels.forEach(function (p) {
+      p.hidden = p.id !== 'tab-' + target;
+    });
+  }
+
   tabs.forEach(function (tab) {
     tab.addEventListener('click', function () {
-      tabs.forEach(function (t) { t.classList.remove('active'); });
-      this.classList.add('active');
-      var target = this.dataset.tab;
-      panels.forEach(function (p) {
-        p.style.display = (p.id === 'tab-' + target) ? '' : 'none';
-      });
+      activateTab(this);
+    });
+    tab.addEventListener('keydown', function (event) {
+      if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+      event.preventDefault();
+      var currentIndex = Array.prototype.indexOf.call(tabs, this);
+      var direction = event.key === 'ArrowRight' ? 1 : -1;
+      var nextIndex = (currentIndex + direction + tabs.length) % tabs.length;
+      tabs[nextIndex].focus();
+      activateTab(tabs[nextIndex]);
     });
   });
 })();

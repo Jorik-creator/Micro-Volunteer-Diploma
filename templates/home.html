@@ -18,12 +18,12 @@
         Маленька допомога <span class="accent">— великі зміни</span>
       </h1>
       <p class="hero-subtitle">
-        MicroVolunteer з'єднує тих, хто потребує підтримки у повсякденних справах,
-        з волонтерами поруч. Швидко, локально, безпечно.
+        MicroVolunteer допомагає попросити про підтримку у повсякденних справах
+        або знайти запит поруч. Швидко, локально, безпечно.
       </p>
       <div class="hero-actions">
         <a href="{% url 'requests:list' %}" class="btn btn-solid btn-lg">
-          <i class="bi bi-heart-pulse"></i> Знайти допомогу
+          <i class="bi bi-heart-pulse"></i> Попросити або знайти допомогу
         </a>
         <a href="{% if user.is_authenticated %}{% url 'requests:map' %}{% else %}{% url 'accounts:register' %}{% endif %}" class="btn btn-ghost btn-lg">
           <i class="bi bi-hand-thumbs-up"></i> Стати волонтером
@@ -31,12 +31,12 @@
       </div>
       <div class="hero-trust">
         <div class="avatar-stack">
-          <div class="avatar" style="background:linear-gradient(135deg,#3B82F6,#1A3B6E)">ОВ</div>
-          <div class="avatar" style="background:linear-gradient(135deg,#2563EB,#0F2349)">АМ</div>
-          <div class="avatar" style="background:linear-gradient(135deg,#1A3B6E,#2563EB)">МК</div>
-          <div class="avatar" style="background:linear-gradient(135deg,#0F2349,#3B82F6)">ІП</div>
+          <div class="avatar avatar-tone-1">ОВ</div>
+          <div class="avatar avatar-tone-2">АМ</div>
+          <div class="avatar avatar-tone-3">МК</div>
+          <div class="avatar avatar-tone-4">ІП</div>
         </div>
-        <span><strong style="color:var(--mv-blue-900)">{{ total_volunteers }} волонтерів</strong> вже допомагають щодня</span>
+        <span><strong class="hero-trust-count">{{ total_volunteers }} волонтерів</strong> вже допомагають щодня</span>
       </div>
     </div>
 
@@ -46,9 +46,9 @@
         {% include "partials/_ukraine_map.svg" %}
 
         {# Kyiv — active critical request #}
-        <div class="map-pin" style="top:34%;left:52%"><div class="map-pin-dot pulse critical"></div></div>
+        <div class="map-pin map-pin-kyiv" aria-hidden="true"><div class="map-pin-dot pulse critical"></div></div>
         {# Lviv — volunteers nearby #}
-        <div class="map-pin" style="top:41%;left:21%"><div class="map-pin-dot pulse"></div></div>
+        <div class="map-pin map-pin-lviv" aria-hidden="true"><div class="map-pin-dot pulse"></div></div>
 
         <div class="floating-card fc-top-right">
           <div class="fc-icon green"><i class="bi bi-check2-circle"></i></div>
@@ -88,24 +88,26 @@
 </section>
 
 <!-- ===== STATS BAR ===== -->
-<section class="stats-bar">
-  <div class="container stats-grid">
-    <div class="stat-item">
+<section class="stats-bar" aria-labelledby="home-stats-title">
+  <h2 class="visually-hidden" id="home-stats-title">Коротка статистика платформи</h2>
+  <div class="container stats-grid" aria-describedby="home-stats-note">
+    <p class="visually-hidden" id="home-stats-note">Ці числа можуть оновлюватися автоматично без перезавантаження сторінки.</p>
+    <article class="stat-item" aria-label="Користувачів: {{ total_users|intcomma }}">
       <div class="stat-number" id="stat-users">{{ total_users|intcomma }}</div>
       <div class="stat-label">Користувачів</div>
-    </div>
-    <div class="stat-item">
+    </article>
+    <article class="stat-item" aria-label="Волонтерів: {{ total_volunteers|intcomma }}">
       <div class="stat-number" id="stat-volunteers">{{ total_volunteers|intcomma }}</div>
       <div class="stat-label">Волонтерів</div>
-    </div>
-    <div class="stat-item">
+    </article>
+    <article class="stat-item" aria-label="Отримувачів: {{ total_recipients|intcomma }}">
       <div class="stat-number" id="stat-recipients">{{ total_recipients|intcomma }}</div>
       <div class="stat-label">Отримувачів</div>
-    </div>
-    <div class="stat-item">
+    </article>
+    <article class="stat-item" aria-label="Активних запитів: {{ active_requests_count|intcomma }}">
       <div class="stat-number" id="stat-active-requests">{{ active_requests_count|intcomma }}</div>
       <div class="stat-label">Активних запитів</div>
-    </div>
+    </article>
   </div>
 </section>
 
@@ -139,7 +141,7 @@
     <div class="section-head">
       <div class="section-eyebrow">Як це працює</div>
       <h2 class="section-title">Чотири кроки до допомоги</h2>
-      <p class="section-sub">Від реєстрації до виконання запиту — кілька хвилин</p>
+      <p class="section-sub">Простий шлях: створіть запит або оберіть, кому допомогти</p>
     </div>
     <div class="steps-grid">
       <div class="step-card">
@@ -152,7 +154,7 @@
         <div class="step-number-badge">2</div>
         <div class="step-icon"><i class="bi bi-pencil-square"></i></div>
         <div class="step-title">Запит або пошук</div>
-        <div class="step-desc">Опишіть, яка допомога потрібна, або оберіть запит на карті.</div>
+        <div class="step-desc">Напишіть простими словами, що потрібно, або оберіть запит зі списку чи карти.</div>
       </div>
       <div class="step-card">
         <div class="step-number-badge">3</div>
@@ -179,7 +181,7 @@
     </div>
     <div class="requests-grid">
       {% for req in recent_requests %}
-      <div class="request-card">
+      <article class="request-card" aria-labelledby="home-request-title-{{ req.pk }}">
         <div class="top-row">
           {% if req.category %}
           <span class="chip chip-blue">{{ req.category.name }}</span>
@@ -191,7 +193,7 @@
             {{ req.get_urgency_display }}
           </span>
         </div>
-        <h5 class="request-title">{{ req.title }}</h5>
+        <h3 class="request-title" id="home-request-title-{{ req.pk }}">{{ req.title }}</h3>
         <p class="request-desc">{{ req.description|truncatewords:15 }}</p>
         <hr class="request-divider">
         <div class="request-meta-row">
@@ -201,7 +203,7 @@
         <a href="{% url 'requests:detail' req.pk %}" class="btn btn-solid btn-block btn-help">
           Допомогти <i class="bi bi-arrow-right"></i>
         </a>
-      </div>
+      </article>
       {% empty %}
       <div class="empty-state empty-state-grid">
         <i class="bi bi-inbox empty-icon"></i>
