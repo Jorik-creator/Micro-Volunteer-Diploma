@@ -7,16 +7,16 @@
   <div class="container">
     <h1 class="page-title">
       <i class="bi bi-bar-chart-line me-2"></i>Статистика платформи
-      <span class="chip chip-red" style="font-size:12px;margin-left:8px;vertical-align:middle">Admin</span>
+      <span class="chip chip-red chip-inline">Admin</span>
     </h1>
     <p class="page-sub">Аналітика та дані MicroVolunteer</p>
   </div>
 </section>
 
-<div class="container" style="padding-top:32px;padding-bottom:64px">
+<div class="container page-shell">
 
   <!-- Key stats -->
-  <div class="stat-grid-3" style="margin-bottom:32px">
+  <div class="stat-grid-3 mb-4">
     <div class="mini-stat">
       <div class="n">{{ total_requests }}</div>
       <div class="l">Всього запитів</div>
@@ -26,65 +26,67 @@
       <div class="l">Всього відгуків</div>
     </div>
     <div class="mini-stat">
-      <div class="n">{{ avg_rating|floatformat:1 }} <span style="font-size:0.7em">★</span></div>
+      <div class="n">{{ avg_rating|floatformat:1 }} <span class="rating-star-sm">★</span></div>
       <div class="l">Середня оцінка</div>
     </div>
   </div>
 
   <!-- Charts -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+  <div class="grid-2-lg mb-4">
     <div class="card-panel">
-      <div style="font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px">
-        <i class="bi bi-pie-chart-fill" style="color:var(--mv-blue)"></i> Запити за статусом
+      <div class="card-panel-title">
+        <i class="bi bi-pie-chart-fill text-primary"></i> Запити за статусом
       </div>
-      <div style="display:flex;justify-content:center;align-items:center;min-height:280px">
-        <canvas id="statusChart" style="max-height:260px"></canvas>
+      <div class="chart-wrap">
+        <canvas id="statusChart"></canvas>
       </div>
     </div>
     <div class="card-panel">
-      <div style="font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+      <div class="card-panel-title">
         <i class="bi bi-bar-chart-fill" style="color:var(--mv-success)"></i> Запити за категорією
       </div>
-      <div style="display:flex;justify-content:center;align-items:center;min-height:280px">
-        <canvas id="categoryChart" style="max-height:260px;width:100%"></canvas>
+      <div class="chart-wrap">
+        <canvas id="categoryChart"></canvas>
       </div>
     </div>
   </div>
 
   <!-- Top volunteers table -->
   <div class="card-panel">
-    <div style="font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+    <div class="card-panel-title">
       <i class="bi bi-trophy-fill" style="color:var(--mv-warning)"></i> Топ волонтерів
     </div>
-    <table class="table table-hover mb-0">
-      <thead class="table-light">
-        <tr>
-          <th scope="col" style="width:60px;padding-left:12px">#</th>
-          <th scope="col">Ім'я</th>
-          <th scope="col" style="text-align:right;padding-right:12px">К-сть відгуків</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for vol in top_volunteers %}
-        <tr>
-          <td style="padding-left:12px;color:var(--mv-gray-500)">{{ forloop.counter }}</td>
-          <td>
-            <i class="bi bi-person-circle me-2" style="color:var(--mv-gray-400)"></i>
-            {{ vol.get_full_name|default:vol.username }}
-          </td>
-          <td style="text-align:right;padding-right:12px">
-            <span class="chip chip-blue">{{ vol.review_count }}</span>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="3" style="text-align:center;color:var(--mv-gray-500);padding:32px">
-            <i class="bi bi-person-x me-2"></i>Волонтерів ще немає
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th scope="col" class="col-num">#</th>
+            <th scope="col">Ім'я</th>
+            <th scope="col" class="col-num-right">К-сть відгуків</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for vol in top_volunteers %}
+          <tr>
+            <td class="col-num">{{ forloop.counter }}</td>
+            <td>
+              <i class="bi bi-person-circle me-2 text-muted"></i>
+              {{ vol.get_full_name|default:vol.username }}
+            </td>
+            <td class="col-num-right">
+              <span class="chip chip-blue">{{ vol.review_count }}</span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="3" class="empty-cell">
+              <i class="bi bi-person-x me-2"></i>Волонтерів ще немає
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 
 </div>

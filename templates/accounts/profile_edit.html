@@ -6,7 +6,7 @@
 {% block content %}
 <section class="page-hero">
   <div class="container">
-    <a href="{% url 'accounts:profile' %}" class="btn btn-muted btn-sm" style="margin-bottom:12px">
+    <a href="{% url 'accounts:profile' %}" class="btn btn-muted btn-sm toolbar-row">
       <i class="bi bi-arrow-left"></i> До профілю
     </a>
     <h1 class="page-title">Редагувати профіль</h1>
@@ -14,24 +14,24 @@
   </div>
 </section>
 
-<div class="container" style="padding-top:32px;padding-bottom:64px;max-width:700px;margin:0 auto">
+<div class="container page-shell form-shell-md">
   <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
 
     <!-- Core user fields -->
-    <div class="card-panel" style="margin-bottom:24px">
-      <div style="font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+    <div class="card-panel mb-4">
+      <div class="card-panel-title">
         <i class="bi bi-person-vcard"></i> Особиста інформація
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="grid-2">
         <div>{{ form.first_name|as_crispy_field }}</div>
         <div>{{ form.last_name|as_crispy_field }}</div>
       </div>
 
       {{ form.email|as_crispy_field }}
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="grid-2">
         <div>{{ form.phone|as_crispy_field }}</div>
         <div>{{ form.date_of_birth|as_crispy_field }}</div>
       </div>
@@ -53,18 +53,17 @@
 
       {{ form.avatar|as_crispy_field }}
       {% if user.avatar %}
-      <div style="margin-bottom:12px">
-        <small style="color:var(--mv-gray-500)">Поточне фото:</small><br>
-        <img src="{{ user.avatar.url }}" alt="Аватар"
-             style="border-radius:8px;margin-top:6px;object-fit:cover;width:100px;height:100px">
+      <div class="mb-3">
+        <small class="text-muted">Поточне фото:</small><br>
+        <img src="{{ user.avatar.url }}" alt="Аватар" class="avatar-preview">
       </div>
       {% endif %}
     </div>
 
     <!-- Role-specific fields -->
     {% if role_form %}
-    <div class="card-panel" style="margin-bottom:24px">
-      <div style="font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+    <div class="card-panel mb-4">
+      <div class="card-panel-title">
         {% if user.is_volunteer %}
           <i class="bi bi-hand-thumbs-up"></i> Налаштування волонтера
         {% else %}
@@ -75,7 +74,7 @@
     </div>
     {% endif %}
 
-    <div style="display:flex;gap:10px;margin-top:16px">
+    <div class="form-actions">
       <button type="submit" class="btn btn-solid">
         <i class="bi bi-check-lg"></i> Зберегти зміни
       </button>

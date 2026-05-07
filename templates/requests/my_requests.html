@@ -17,27 +17,21 @@
   </div>
 </section>
 
-<div class="container" style="padding-top:32px;padding-bottom:64px">
+<div class="container page-shell">
 
   <!-- Stats row -->
-  <div class="row g-3 mb-4">
-    <div class="col-sm-4">
-      <div class="card-panel" style="text-align:center;padding:16px">
-        <div style="font-size:2rem;font-weight:700;color:var(--mv-blue-600)">{{ active_count }}</div>
-        <small style="color:var(--mv-gray-500)">Активних</small>
-      </div>
+  <div class="stat-grid-3 mb-4">
+    <div class="mini-stat mini-stat-center">
+      <div class="n">{{ active_count }}</div>
+      <div class="l">Активних</div>
     </div>
-    <div class="col-sm-4">
-      <div class="card-panel" style="text-align:center;padding:16px">
-        <div style="font-size:2rem;font-weight:700;color:var(--mv-yellow-600, #d97706)">{{ in_progress_count }}</div>
-        <small style="color:var(--mv-gray-500)">В процесі</small>
-      </div>
+    <div class="mini-stat mini-stat-center">
+      <div class="n" style="color:var(--mv-warning)">{{ in_progress_count }}</div>
+      <div class="l">В процесі</div>
     </div>
-    <div class="col-sm-4">
-      <div class="card-panel" style="text-align:center;padding:16px">
-        <div style="font-size:2rem;font-weight:700;color:var(--mv-green-600, #16a34a)">{{ completed_count }}</div>
-        <small style="color:var(--mv-gray-500)">Виконано</small>
-      </div>
+    <div class="mini-stat mini-stat-center">
+      <div class="n" style="color:var(--mv-success)">{{ completed_count }}</div>
+      <div class="l">Виконано</div>
     </div>
   </div>
 
@@ -67,7 +61,7 @@
 
   <!-- Pagination -->
   {% if is_paginated %}
-  <nav style="margin-top:32px">
+  <nav class="pagination-wrap">
     <ul class="pagination justify-content-center">
       {% if page_obj.has_previous %}
       <li class="page-item">
@@ -87,8 +81,8 @@
   {% endif %}
 
   {% else %}
-  <div style="text-align:center;padding:80px 0;color:var(--mv-gray-500)">
-    <i class="bi bi-inbox" style="font-size:48px;display:block;margin-bottom:16px"></i>
+  <div class="empty-state">
+    <i class="bi bi-inbox empty-icon"></i>
     <p>У вас ще немає запитів.</p>
     <a href="{% url 'requests:create' %}" class="btn btn-solid">Створити перший запит</a>
   </div>

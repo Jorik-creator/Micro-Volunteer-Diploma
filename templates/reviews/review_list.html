@@ -5,7 +5,7 @@
 {% block content %}
 <section class="page-hero">
   <div class="container">
-    <a href="javascript:history.back()" class="btn btn-muted btn-sm" style="margin-bottom:12px">
+    <a href="javascript:history.back()" class="btn btn-muted btn-sm toolbar-row">
       <i class="bi bi-arrow-left"></i> Назад
     </a>
     <h1 class="page-title">Відгуки про {{ target_user.get_full_name }}</h1>
@@ -15,17 +15,17 @@
   </div>
 </section>
 
-<div class="container" style="padding-top:32px;padding-bottom:64px">
+<div class="container page-shell">
   <div class="activity-list">
     {% for review in reviews %}
-    <div class="activity-row" style="align-items:flex-start">
+    <div class="activity-row activity-row-top">
       <div class="avatar">
         {{ review.author.first_name|first|upper }}{{ review.author.last_name|first|upper }}
       </div>
       <div class="body">
         <div class="t">
           {{ review.author.get_full_name }}
-          <span class="rating" style="margin-left:8px;font-size:13px;color:var(--mv-warning)">
+          <span class="rating rating-inline">
             {% for i in "12345" %}
               {% if forloop.counter <= review.rating %}
                 <i class="bi bi-star-fill"></i>
@@ -34,19 +34,19 @@
               {% endif %}
             {% endfor %}
           </span>
-          <span style="font-size:12px;color:var(--mv-gray-500);margin-left:4px">({{ review.rating }}/5)</span>
+          <span class="rating-num">({{ review.rating }}/5)</span>
         </div>
         {% if review.comment %}
         <div class="s">{{ review.comment }}</div>
         {% else %}
-        <div class="s" style="font-style:italic">Коментар відсутній.</div>
+        <div class="s s-italic">Коментар відсутній.</div>
         {% endif %}
       </div>
       <div class="when">{{ review.created_at|date:"d.m.Y" }}</div>
     </div>
     {% empty %}
-    <div style="text-align:center;padding:64px 0;color:var(--mv-gray-500)">
-      <i class="bi bi-chat-square" style="font-size:48px;display:block;margin-bottom:16px"></i>
+    <div class="empty-state">
+      <i class="bi bi-chat-square empty-icon"></i>
       <p>Відгуків поки немає</p>
     </div>
     {% endfor %}

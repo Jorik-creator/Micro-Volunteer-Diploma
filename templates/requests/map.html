@@ -5,7 +5,12 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-  #map { height: calc(100vh - 72px); width: 100%; }
+  /* Use dvh for accurate viewport on iOS Safari (handles bottom URL bar) */
+  #map {
+    height: calc(100vh - 72px);
+    height: calc(100dvh - 72px);
+    width: 100%;
+  }
   body.map-page main { overflow: hidden; }
   .leaflet-popup-content .map-details-btn {
     background: var(--mv-blue-600);
@@ -22,11 +27,11 @@
 {% endblock %}
 
 {% block content %}
-<div style="position:relative">
+<div class="map-page-wrap">
   <!-- Toolbar overlay -->
-  <div style="position:absolute;top:16px;left:16px;z-index:400;display:flex;gap:8px;align-items:center">
-    <div style="background:#fff;border-radius:12px;padding:8px 16px;box-shadow:var(--mv-shadow-card);display:flex;align-items:center;gap:12px">
-      <strong style="font-size:15px;color:var(--mv-blue-900)"><i class="bi bi-map" style="margin-right:6px"></i>Карта запитів</strong>
+  <div class="map-toolbar">
+    <div class="map-toolbar-card">
+      <strong class="map-toolbar-title"><i class="bi bi-map me-1"></i>Карта запитів</strong>
       <a href="{% url 'requests:list' %}" class="btn btn-muted btn-sm">
         <i class="bi bi-list-ul"></i> Список
       </a>
@@ -36,14 +41,41 @@
   <!-- Map -->
   <div id="map"></div>
 
+  <!-- Legend toggle (visible on phone) -->
+  <button type="button" class="map-legend-toggle" id="map-legend-toggle"
+          aria-expanded="false" aria-controls="map-legend">
+    <i class="bi bi-info-circle"></i>
+    <span>Легенда</span>
+  </button>
+
   <!-- Legend overlay -->
-  <div class="map-legend">
+  <div class="map-legend" id="map-legend">
+    <button type="button" class="map-legend-close" aria-label="Закрити" id="map-legend-close">
+      <i class="bi bi-x-lg"></i>
+    </button>
     <span class="map-legend-item"><span class="urgency-dot critical"></span> Критична</span>
     <span class="map-legend-item"><span class="urgency-dot high"></span> Висока</span>
     <span class="map-legend-item"><span class="urgency-dot medium"></span> Середня</span>
     <span class="map-legend-item"><span class="urgency-dot low"></span> Низька</span>
   </div>
 </div>
+
+<script>
+(function () {
+  const toggle = document.getElementById('map-legend-toggle');
+  const legend = document.getElementById('map-legend');
+  const close  = document.getElementById('map-legend-close');
+  if (!toggle || !legend) return;
+  toggle.addEventListener('click', function () {
+    const open = legend.classList.toggle('is-open');
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  if (close) close.addEventListener('click', function () {
+    legend.classList.remove('is-open');
+    toggle.setAttribute('aria-expanded', 'false');
+  });
+})();
+</script>
 {% endblock %}
 
 {% block extra_js %}

@@ -41,26 +41,46 @@
     </div>
 
     <!-- Right: illustration — Ukraine map with 2 live task markers -->
-    <div class="hero-illustration">
-      {% include "partials/_ukraine_map.svg" %}
+    <div class="hero-illustration-wrap">
+      <div class="hero-illustration">
+        {% include "partials/_ukraine_map.svg" %}
 
-      {# Kyiv — active critical request #}
-      <div class="map-pin" style="top:34%;left:52%"><div class="map-pin-dot pulse critical"></div></div>
-      {# Lviv — volunteers nearby #}
-      <div class="map-pin" style="top:41%;left:21%"><div class="map-pin-dot pulse"></div></div>
+        {# Kyiv — active critical request #}
+        <div class="map-pin" style="top:34%;left:52%"><div class="map-pin-dot pulse critical"></div></div>
+        {# Lviv — volunteers nearby #}
+        <div class="map-pin" style="top:41%;left:21%"><div class="map-pin-dot pulse"></div></div>
 
-      <div class="floating-card" style="top:5%;right:5%">
-        <div class="fc-icon green"><i class="bi bi-check2-circle"></i></div>
-        <div class="fc-body">
-          <div class="fc-title">Запит виконано</div>
-          <div class="fc-sub">Доставка ліків • 800м</div>
+        <div class="floating-card fc-top-right">
+          <div class="fc-icon green"><i class="bi bi-check2-circle"></i></div>
+          <div class="fc-body">
+            <div class="fc-title">Запит виконано</div>
+            <div class="fc-sub">Доставка ліків • 800м</div>
+          </div>
+        </div>
+        <div class="floating-card fc-bottom-left">
+          <div class="fc-icon"><i class="bi bi-people-fill"></i></div>
+          <div class="fc-body">
+            <div class="fc-title">3 волонтери поруч</div>
+            <div class="fc-sub">Готові допомогти</div>
+          </div>
         </div>
       </div>
-      <div class="floating-card" style="bottom:5%;left:5%">
-        <div class="fc-icon"><i class="bi bi-people-fill"></i></div>
-        <div class="fc-body">
-          <div class="fc-title">3 волонтери поруч</div>
-          <div class="fc-sub">Готові допомогти</div>
+
+      <!-- Phone-only: floating-cards stack below illustration (replaces absolute positioning) -->
+      <div class="fc-stack" aria-hidden="false">
+        <div class="floating-card">
+          <div class="fc-icon green"><i class="bi bi-check2-circle"></i></div>
+          <div class="fc-body">
+            <div class="fc-title">Запит виконано</div>
+            <div class="fc-sub">Доставка ліків • 800м</div>
+          </div>
+        </div>
+        <div class="floating-card">
+          <div class="fc-icon"><i class="bi bi-people-fill"></i></div>
+          <div class="fc-body">
+            <div class="fc-title">3 волонтери поруч</div>
+            <div class="fc-sub">Готові допомогти</div>
+          </div>
         </div>
       </div>
     </div>
@@ -183,15 +203,15 @@
         </a>
       </div>
       {% empty %}
-      <div style="grid-column:1/-1;text-align:center;padding:80px 0;color:var(--mv-gray-500)">
-        <i class="bi bi-inbox" style="font-size:48px;display:block;margin-bottom:16px"></i>
+      <div class="empty-state empty-state-grid">
+        <i class="bi bi-inbox empty-icon"></i>
         <p>Наразі активних запитів немає.</p>
         <a href="{% url 'accounts:register' %}" class="btn btn-solid">Зареєструватись</a>
       </div>
       {% endfor %}
     </div>
     {% if recent_requests %}
-    <div style="text-align:center;margin-top:40px">
+    <div class="section-cta">
       <a href="{% url 'requests:list' %}" class="btn btn-ghost btn-lg">
         Усі запити <i class="bi bi-arrow-right"></i>
       </a>

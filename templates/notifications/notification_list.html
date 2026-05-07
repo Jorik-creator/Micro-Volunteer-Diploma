@@ -5,12 +5,12 @@
 {% block content %}
 <section class="page-hero">
   <div class="container">
-    <div class="inner" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+    <div class="inner">
       <div>
         <h1 class="page-title">
           Сповіщення
           {% if unread_count > 0 %}
-          <span class="chip chip-red" style="font-size:12px;margin-left:8px">{{ unread_count }}</span>
+          <span class="chip chip-red chip-inline">{{ unread_count }}</span>
           {% endif %}
         </h1>
         <p class="page-sub">Ваші останні сповіщення</p>
@@ -27,10 +27,10 @@
   </div>
 </section>
 
-<div class="container" style="padding-top:32px;padding-bottom:64px;max-width:800px;margin:0 auto">
+<div class="container page-shell form-shell-lg">
   <div class="activity-list">
     {% for notification in notifications %}
-    <div class="activity-row" style="{% if not notification.is_read %}background:var(--mv-blue-50);border-color:var(--mv-blue-100){% endif %}">
+    <div class="activity-row{% if not notification.is_read %} activity-unread{% endif %}">
       <div class="activity-icon">
         {% if notification.type == "new_response" %}
           <i class="bi bi-chat-dots"></i>
@@ -52,16 +52,15 @@
         <div class="t">{{ notification.title }}</div>
         <div class="s">{{ notification.message }}</div>
         {% if notification.related_request %}
-        <div style="font-size:12px;color:var(--mv-gray-500);margin-top:4px">
-          <a href="/requests/{{ notification.related_request.pk }}/"
-             style="color:var(--mv-gray-500);text-decoration:none">
+        <div class="notification-link">
+          <a href="/requests/{{ notification.related_request.pk }}/">
             <i class="bi bi-box-arrow-up-right"></i> Переглянути запит
           </a>
         </div>
         {% endif %}
         {% if not notification.is_read %}
-        <div style="margin-top:8px">
-          <form method="post" action="/notifications/mark-read/{{ notification.pk }}/" style="display:inline">
+        <div class="notification-action">
+          <form method="post" action="/notifications/mark-read/{{ notification.pk }}/" class="d-inline">
             {% csrf_token %}
             <button type="submit" class="btn btn-muted btn-sm">
               <i class="bi bi-check2"></i> Прочитано
@@ -73,8 +72,8 @@
       <div class="when">{{ notification.created_at|timesince }} тому</div>
     </div>
     {% empty %}
-    <div style="text-align:center;padding:64px 0;color:var(--mv-gray-500)">
-      <i class="bi bi-bell-slash" style="font-size:48px;display:block;margin-bottom:16px"></i>
+    <div class="empty-state">
+      <i class="bi bi-bell-slash empty-icon"></i>
       <p>Немає сповіщень</p>
     </div>
     {% endfor %}
@@ -82,7 +81,7 @@
 
   <!-- Pagination -->
   {% if is_paginated %}
-  <nav style="margin-top:32px" aria-label="Навігація по сторінках">
+  <nav class="pagination-wrap" aria-label="Навігація по сторінках">
     <ul class="pagination justify-content-center">
       {% if page_obj.has_previous %}
       <li class="page-item">

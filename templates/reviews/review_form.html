@@ -6,7 +6,7 @@
 {% block content %}
 <section class="page-hero">
   <div class="container">
-    <a href="{% url 'requests:detail' help_request.pk %}" class="btn btn-muted btn-sm" style="margin-bottom:12px">
+    <a href="{% url 'requests:detail' help_request.pk %}" class="btn btn-muted btn-sm toolbar-row">
       <i class="bi bi-arrow-left"></i> Назад до запиту
     </a>
     <h1 class="page-title">Залишити відгук</h1>
@@ -14,22 +14,22 @@
   </div>
 </section>
 
-<div class="container" style="padding-top:32px;padding-bottom:64px;max-width:600px;margin:0 auto">
+<div class="container page-shell form-shell-sm">
 
   <!-- Help request context -->
-  <div class="card-panel" style="margin-bottom:16px">
-    <div style="font-size:12px;color:var(--mv-gray-500);margin-bottom:4px">
+  <div class="card-panel mb-3">
+    <div class="card-panel-eyebrow">
       <i class="bi bi-file-earmark-text"></i> Запит
     </div>
-    <div style="font-weight:600;margin-bottom:4px">{{ help_request.title }}</div>
-    <div style="font-size:13px;color:var(--mv-gray-500)">
+    <div class="card-panel-title">{{ help_request.title }}</div>
+    <div class="card-panel-meta">
       <i class="bi bi-person"></i> Отримувач: <strong>{{ help_request.recipient.get_full_name }}</strong>
     </div>
   </div>
 
   <!-- Rating info -->
-  <div style="background:var(--mv-blue-50);border:1px solid var(--mv-blue-100);border-radius:var(--mv-radius-md);padding:12px 16px;margin-bottom:16px;font-size:14px;color:var(--mv-gray-700);display:flex;align-items:center;gap:8px">
-    <i class="bi bi-info-circle-fill" style="color:var(--mv-blue);flex-shrink:0"></i>
+  <div class="info-banner">
+    <i class="bi bi-info-circle-fill"></i>
     <span>Оцінка 1–5 зірок.&nbsp;<strong>1</strong> = погано,&nbsp;<strong>5</strong> = відмінно</span>
   </div>
 
@@ -38,7 +38,7 @@
     {% csrf_token %}
     <div class="card-panel">
       {{ form|crispy }}
-      <div style="display:flex;gap:10px;margin-top:16px">
+      <div class="form-actions">
         <button type="submit" class="btn btn-solid">
           <i class="bi bi-send"></i> Надіслати відгук
         </button>

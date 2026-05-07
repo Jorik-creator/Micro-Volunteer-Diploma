@@ -19,7 +19,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
   <!-- Project CSS (cache-bust via version param) -->
-  <link href="{% static 'css/style.css' %}?v=4" rel="stylesheet">
+  <link href="{% static 'css/style.css' %}?v=5" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
 
   {% block extra_css %}{% endblock %}
@@ -209,6 +209,23 @@
 
   <!-- Bootstrap 5 JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Auto-collapse mobile nav after a link is tapped -->
+  <script>
+  (function () {
+    const navEl = document.getElementById('mainNav');
+    if (!navEl) return;
+
+    navEl.addEventListener('click', function (e) {
+      const link = e.target.closest('a.nav-link, a.dropdown-item');
+      if (!link) return;
+      // Only when the menu is currently expanded (collapsed state on mobile)
+      if (!navEl.classList.contains('show')) return;
+      const collapse = bootstrap.Collapse.getInstance(navEl) || new bootstrap.Collapse(navEl, { toggle: false });
+      collapse.hide();
+    });
+  })();
+  </script>
 
   {% block extra_js %}{% endblock %}
 

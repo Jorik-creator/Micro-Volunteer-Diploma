@@ -21,7 +21,7 @@
   </div>
 </section>
 
-<div class="container" style="padding-top:32px;padding-bottom:64px">
+<div class="container page-shell">
   <!-- Filters bar -->
   <form method="get" class="filters-bar">
     <div>
@@ -48,7 +48,7 @@
       <span class="field-label">До</span>
       {{ filter_form.date_to|as_crispy_field }}
     </div>
-    <div style="display:flex;gap:8px;align-items:flex-end">
+    <div class="filters-actions">
       <button type="submit" class="btn btn-solid btn-sm">
         <i class="bi bi-funnel"></i> Фільтр
       </button>
@@ -100,7 +100,7 @@
 
   <!-- Pagination -->
   {% if is_paginated %}
-  <nav style="margin-top:32px">
+  <nav class="pagination-wrap">
     <ul class="pagination justify-content-center">
       {% if page_obj.has_previous %}
       <li class="page-item">
@@ -120,8 +120,8 @@
   {% endif %}
 
   {% else %}
-  <div style="text-align:center;padding:80px 0;color:var(--mv-gray-500)">
-    <i class="bi bi-inbox" style="font-size:48px;display:block;margin-bottom:16px"></i>
+  <div class="empty-state">
+    <i class="bi bi-inbox empty-icon"></i>
     <p>Немає активних запитів за вашими фільтрами.</p>
     <a href="{% url 'requests:list' %}" class="btn btn-ghost btn-sm">Скинути фільтри</a>
   </div>
