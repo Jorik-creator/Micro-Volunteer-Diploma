@@ -22,11 +22,11 @@
         або знайти запит поруч. Швидко, локально, безпечно.
       </p>
       <div class="hero-actions">
-        <a href="{% url 'requests:list' %}" class="btn btn-solid btn-lg">
-          <i class="bi bi-heart-pulse"></i> Попросити або знайти допомогу
+        <a href="{% if user.is_authenticated and user.is_recipient %}{% url 'requests:create' %}{% elif user.is_authenticated %}{% url 'requests:list' %}{% else %}{% url 'accounts:register' %}{% endif %}" class="btn btn-solid btn-lg">
+          <i class="bi bi-heart-pulse"></i> {% if user.is_authenticated and not user.is_recipient %}Переглянути запити{% else %}Мені потрібна допомога{% endif %}
         </a>
         <a href="{% if user.is_authenticated %}{% url 'requests:map' %}{% else %}{% url 'accounts:register' %}{% endif %}" class="btn btn-ghost btn-lg">
-          <i class="bi bi-hand-thumbs-up"></i> Стати волонтером
+          <i class="bi bi-hand-thumbs-up"></i> Я хочу допомагати
         </a>
       </div>
       <div class="hero-trust">
@@ -36,7 +36,7 @@
           <div class="avatar avatar-tone-3">МК</div>
           <div class="avatar avatar-tone-4">ІП</div>
         </div>
-        <span><strong class="hero-trust-count">{{ total_volunteers }} волонтерів</strong> вже допомагають щодня</span>
+        <span><strong class="hero-trust-count">{{ total_volunteers }} волонтерів</strong> вже допомагають щодня. Точна адреса відкрита лише підтвердженому волонтеру.</span>
       </div>
     </div>
 
@@ -122,8 +122,22 @@
       <span>Транспорт до лікаря</span>
       <span>Побутова допомога</span>
       <span>Підтримка переселенців</span>
+      <span>Доставка продуктів</span>
+      <span>Вигул тварин</span>
+      <span>Допомога літнім</span>
+      <span>Ліки з аптеки</span>
+      <span>Транспорт до лікаря</span>
+      <span>Побутова допомога</span>
+      <span>Підтримка переселенців</span>
     </div>
     <div class="marquee-text" aria-hidden="true">
+      <span>Доставка продуктів</span>
+      <span>Вигул тварин</span>
+      <span>Допомога літнім</span>
+      <span>Ліки з аптеки</span>
+      <span>Транспорт до лікаря</span>
+      <span>Побутова допомога</span>
+      <span>Підтримка переселенців</span>
       <span>Доставка продуктів</span>
       <span>Вигул тварин</span>
       <span>Допомога літнім</span>
@@ -145,26 +159,34 @@
     </div>
     <div class="steps-grid">
       <div class="step-card">
-        <div class="step-number-badge">1</div>
-        <div class="step-icon"><i class="bi bi-person-plus"></i></div>
+        <div class="step-card-top">
+          <div class="step-icon"><i class="bi bi-person-plus"></i></div>
+          <div class="step-number-badge">1</div>
+        </div>
         <div class="step-title">Реєстрація</div>
         <div class="step-desc">Створіть акаунт як отримувач допомоги або волонтер за хвилину.</div>
       </div>
       <div class="step-card">
-        <div class="step-number-badge">2</div>
-        <div class="step-icon"><i class="bi bi-pencil-square"></i></div>
+        <div class="step-card-top">
+          <div class="step-icon"><i class="bi bi-pencil-square"></i></div>
+          <div class="step-number-badge">2</div>
+        </div>
         <div class="step-title">Запит або пошук</div>
         <div class="step-desc">Напишіть простими словами, що потрібно, або оберіть запит зі списку чи карти.</div>
       </div>
       <div class="step-card">
-        <div class="step-number-badge">3</div>
-        <div class="step-icon"><i class="bi bi-geo-alt"></i></div>
+        <div class="step-card-top">
+          <div class="step-icon"><i class="bi bi-geo-alt"></i></div>
+          <div class="step-number-badge">3</div>
+        </div>
         <div class="step-title">Зв'язок поруч</div>
         <div class="step-desc">Волонтери поблизу бачать ваш запит та відгукуються миттєво.</div>
       </div>
       <div class="step-card">
-        <div class="step-number-badge">4</div>
-        <div class="step-icon"><i class="bi bi-check-circle"></i></div>
+        <div class="step-card-top">
+          <div class="step-icon"><i class="bi bi-check-circle"></i></div>
+          <div class="step-number-badge">4</div>
+        </div>
         <div class="step-title">Допомога</div>
         <div class="step-desc">Координуйте зустріч та отримайте підтримку від волонтера.</div>
       </div>

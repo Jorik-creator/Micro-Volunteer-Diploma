@@ -119,7 +119,8 @@
   if (!window.L) {
     mapEl.innerHTML = '<div class="map-fallback"><div><i class="bi bi-map"></i><p>Карта недоступна. Перевірте з\'єднання з інтернетом або скористайтеся списком запитів.</p></div></div>';
   } else {
-    map = L.map('map').setView([50.4501, 30.5234], 10);
+    map = L.map('map', { zoomControl: false }).setView([50.4501, 30.5234], 10);
+    L.control.zoom({ position: 'topright' }).addTo(map);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
@@ -128,14 +129,14 @@
   }
 
   const urgencyColors = {
-    critical: '#dc3545',
-    high:     '#ffc107',
-    medium:   '#0dcaf0',
-    low:      '#198754',
+    critical: '#DC2626',
+    high:     '#D97706',
+    medium:   '#3B82F6',
+    low:      '#16A34A',
   };
 
   function makeIcon(urgency) {
-    const color = urgencyColors[urgency] || '#6c757d';
+    const color = urgencyColors[urgency] || '#6B7280';
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="36" viewBox="0 0 24 36">
       <path fill="${color}" stroke="#fff" stroke-width="1.5"
         d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z"/>
