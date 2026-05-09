@@ -1,0 +1,570 @@
+[
+  {
+    "model": "accounts.user",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$MRjUByecFuqh7McE3D68b5$EI539R+HBvQHz7HVJWKMxMqIq3DL/VgLDOwR/qynPoA=",
+      "last_login": null,
+      "is_superuser": true,
+      "username": "admin.demo",
+      "first_name": "Адмін",
+      "last_name": "Демо",
+      "email": "admin.demo@example.test",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-05-08T09:00:00+03:00",
+      "groups": [],
+      "user_permissions": [],
+      "phone": "+380000000001",
+      "user_type": "volunteer",
+      "address": "Київ, Майдан Незалежності",
+      "latitude": 50.4501,
+      "longitude": 30.5234,
+      "date_of_birth": null,
+      "avatar": "",
+      "is_verified": true,
+      "created_at": "2026-05-08T09:00:00+03:00"
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 2,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$MRjUByecFuqh7McE3D68b5$EI539R+HBvQHz7HVJWKMxMqIq3DL/VgLDOwR/qynPoA=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "volunteer.anna",
+      "first_name": "Анна",
+      "last_name": "Коваль",
+      "email": "volunteer.anna@example.test",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-05-08T09:05:00+03:00",
+      "groups": [],
+      "user_permissions": [],
+      "phone": "+380000000002",
+      "user_type": "volunteer",
+      "address": "Львів, площа Ринок",
+      "latitude": 49.8419,
+      "longitude": 24.0315,
+      "date_of_birth": "1994-03-12",
+      "avatar": "",
+      "is_verified": true,
+      "created_at": "2026-05-08T09:05:00+03:00"
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 3,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$MRjUByecFuqh7McE3D68b5$EI539R+HBvQHz7HVJWKMxMqIq3DL/VgLDOwR/qynPoA=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "volunteer.oleh",
+      "first_name": "Олег",
+      "last_name": "Мельник",
+      "email": "volunteer.oleh@example.test",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-05-08T09:10:00+03:00",
+      "groups": [],
+      "user_permissions": [],
+      "phone": "+380000000003",
+      "user_type": "volunteer",
+      "address": "Київ, Майдан Незалежності",
+      "latitude": 50.4501,
+      "longitude": 30.5234,
+      "date_of_birth": "1988-07-21",
+      "avatar": "",
+      "is_verified": true,
+      "created_at": "2026-05-08T09:10:00+03:00"
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 4,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$MRjUByecFuqh7McE3D68b5$EI539R+HBvQHz7HVJWKMxMqIq3DL/VgLDOwR/qynPoA=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "volunteer.iryna",
+      "first_name": "Ірина",
+      "last_name": "Шевченко",
+      "email": "volunteer.iryna@example.test",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-05-08T09:15:00+03:00",
+      "groups": [],
+      "user_permissions": [],
+      "phone": "+380000000004",
+      "user_type": "volunteer",
+      "address": "Харків, площа Свободи",
+      "latitude": 50.0044,
+      "longitude": 36.2314,
+      "date_of_birth": "1991-11-05",
+      "avatar": "",
+      "is_verified": true,
+      "created_at": "2026-05-08T09:15:00+03:00"
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 5,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$MRjUByecFuqh7McE3D68b5$EI539R+HBvQHz7HVJWKMxMqIq3DL/VgLDOwR/qynPoA=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "recipient.maria",
+      "first_name": "Марія",
+      "last_name": "Іваненко",
+      "email": "recipient.maria@example.test",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-05-08T09:20:00+03:00",
+      "groups": [],
+      "user_permissions": [],
+      "phone": "+380000000005",
+      "user_type": "recipient",
+      "address": "Львів, біля Оперного театру",
+      "latitude": 49.8442,
+      "longitude": 24.0265,
+      "date_of_birth": "1951-02-18",
+      "avatar": "",
+      "is_verified": true,
+      "created_at": "2026-05-08T09:20:00+03:00"
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 6,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$MRjUByecFuqh7McE3D68b5$EI539R+HBvQHz7HVJWKMxMqIq3DL/VgLDOwR/qynPoA=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "recipient.petrenko",
+      "first_name": "Петро",
+      "last_name": "Петренко",
+      "email": "recipient.petrenko@example.test",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-05-08T09:25:00+03:00",
+      "groups": [],
+      "user_permissions": [],
+      "phone": "+380000000006",
+      "user_type": "recipient",
+      "address": "Київ, біля Золотих воріт",
+      "latitude": 50.4488,
+      "longitude": 30.5133,
+      "date_of_birth": "1948-09-30",
+      "avatar": "",
+      "is_verified": true,
+      "created_at": "2026-05-08T09:25:00+03:00"
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 7,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$MRjUByecFuqh7McE3D68b5$EI539R+HBvQHz7HVJWKMxMqIq3DL/VgLDOwR/qynPoA=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "recipient.sofia",
+      "first_name": "Софія",
+      "last_name": "Бондар",
+      "email": "recipient.sofia@example.test",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-05-08T09:30:00+03:00",
+      "groups": [],
+      "user_permissions": [],
+      "phone": "+380000000007",
+      "user_type": "recipient",
+      "address": "Одеса, Приморський бульвар",
+      "latitude": 46.4886,
+      "longitude": 30.7413,
+      "date_of_birth": "1985-05-14",
+      "avatar": "",
+      "is_verified": true,
+      "created_at": "2026-05-08T09:30:00+03:00"
+    }
+  },
+  {
+    "model": "accounts.volunteerprofile",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "categories": [1, 2, 3, 4, 5, 6, 7, 8],
+      "radius_km": 20,
+      "is_available": true,
+      "bio": "Адміністративний тестовий профіль для перевірки staff-only розділів."
+    }
+  },
+  {
+    "model": "accounts.volunteerprofile",
+    "pk": 2,
+    "fields": {
+      "user": 2,
+      "categories": [1, 4, 7],
+      "radius_km": 10,
+      "is_available": true,
+      "bio": "Допомагаю з продуктами, побутовими справами та доглядом за тваринами у Львові."
+    }
+  },
+  {
+    "model": "accounts.volunteerprofile",
+    "pk": 3,
+    "fields": {
+      "user": 3,
+      "categories": [2, 3, 5],
+      "radius_km": 20,
+      "is_available": true,
+      "bio": "Можу допомогти з транспортом, ліками та технічними питаннями у Києві."
+    }
+  },
+  {
+    "model": "accounts.volunteerprofile",
+    "pk": 4,
+    "fields": {
+      "user": 4,
+      "categories": [1, 2, 6, 8],
+      "radius_km": 20,
+      "is_available": true,
+      "bio": "Підтримую консультації, навчання, доставку базових речей і медичні доручення."
+    }
+  },
+  {
+    "model": "accounts.recipientprofile",
+    "pk": 1,
+    "fields": {
+      "user": 5,
+      "situation_type": "elderly",
+      "emergency_contact_name": "Олена Іваненко",
+      "emergency_contact_phone": "+380000100005"
+    }
+  },
+  {
+    "model": "accounts.recipientprofile",
+    "pk": 2,
+    "fields": {
+      "user": 6,
+      "situation_type": "disability",
+      "emergency_contact_name": "Наталія Петренко",
+      "emergency_contact_phone": "+380000100006"
+    }
+  },
+  {
+    "model": "accounts.recipientprofile",
+    "pk": 3,
+    "fields": {
+      "user": 7,
+      "situation_type": "idp",
+      "emergency_contact_name": "Андрій Бондар",
+      "emergency_contact_phone": "+380000100007"
+    }
+  },
+  {
+    "model": "requests.helprequest",
+    "pk": 1,
+    "fields": {
+      "recipient": 5,
+      "title": "Купити продукти на тиждень",
+      "description": "Потрібна допомога з купівлею базових продуктів та доставкою до під'їзду.",
+      "category": 1,
+      "urgency": "medium",
+      "status": "active",
+      "needed_date": "2026-05-12T11:00:00+03:00",
+      "duration": "1h",
+      "volunteers_needed": 1,
+      "address": "Львів, біля Оперного театру",
+      "latitude": 49.8442,
+      "longitude": 24.0265,
+      "photo": "",
+      "created_at": "2026-05-08T10:00:00+03:00",
+      "updated_at": "2026-05-08T10:00:00+03:00"
+    }
+  },
+  {
+    "model": "requests.helprequest",
+    "pk": 2,
+    "fields": {
+      "recipient": 6,
+      "title": "Забрати ліки з аптеки",
+      "description": "Потрібно забрати оплачене замовлення з аптеки та передати біля входу в будинок.",
+      "category": 2,
+      "urgency": "critical",
+      "status": "active",
+      "needed_date": "2026-05-09T16:30:00+03:00",
+      "duration": "30min",
+      "volunteers_needed": 1,
+      "address": "Київ, біля Золотих воріт",
+      "latitude": 50.4488,
+      "longitude": 30.5133,
+      "photo": "",
+      "created_at": "2026-05-08T10:10:00+03:00",
+      "updated_at": "2026-05-08T10:10:00+03:00"
+    }
+  },
+  {
+    "model": "requests.helprequest",
+    "pk": 3,
+    "fields": {
+      "recipient": 6,
+      "title": "Супровід до поліклініки",
+      "description": "Потрібен супровід до поліклініки та допомога з поверненням додому.",
+      "category": 3,
+      "urgency": "high",
+      "status": "in_progress",
+      "needed_date": "2026-05-10T09:00:00+03:00",
+      "duration": "2h+",
+      "volunteers_needed": 1,
+      "address": "Київ, станція метро Університет",
+      "latitude": 50.4443,
+      "longitude": 30.5083,
+      "photo": "",
+      "created_at": "2026-05-08T10:20:00+03:00",
+      "updated_at": "2026-05-08T10:40:00+03:00"
+    }
+  },
+  {
+    "model": "requests.helprequest",
+    "pk": 4,
+    "fields": {
+      "recipient": 5,
+      "title": "Налаштувати смартфон",
+      "description": "Потрібно допомогти встановити месенджер, збільшити шрифт і показати базові функції.",
+      "category": 5,
+      "urgency": "low",
+      "status": "completed",
+      "needed_date": "2026-05-07T14:00:00+03:00",
+      "duration": "1h",
+      "volunteers_needed": 1,
+      "address": "Львів, площа Ринок",
+      "latitude": 49.8419,
+      "longitude": 24.0315,
+      "photo": "",
+      "created_at": "2026-05-06T12:00:00+03:00",
+      "updated_at": "2026-05-07T15:15:00+03:00"
+    }
+  },
+  {
+    "model": "requests.helprequest",
+    "pk": 5,
+    "fields": {
+      "recipient": 7,
+      "title": "Допомога з онлайн-заявкою",
+      "description": "Потрібна консультація телефоном щодо заповнення онлайн-заявки на соціальну допомогу.",
+      "category": 6,
+      "urgency": "medium",
+      "status": "active",
+      "needed_date": "2026-05-13T18:00:00+03:00",
+      "duration": "30min",
+      "volunteers_needed": 1,
+      "address": "Одеса, Приморський бульвар",
+      "latitude": 46.4886,
+      "longitude": 30.7413,
+      "photo": "",
+      "created_at": "2026-05-08T10:30:00+03:00",
+      "updated_at": "2026-05-08T10:30:00+03:00"
+    }
+  },
+  {
+    "model": "requests.helprequest",
+    "pk": 6,
+    "fields": {
+      "recipient": 5,
+      "title": "Допомогти з легким прибиранням",
+      "description": "Потрібна допомога з прибиранням кухні та винесенням сміття після дрібного ремонту.",
+      "category": 4,
+      "urgency": "low",
+      "status": "completed",
+      "needed_date": "2026-05-05T12:00:00+03:00",
+      "duration": "2h+",
+      "volunteers_needed": 1,
+      "address": "Львів, біля Парку Франка",
+      "latitude": 49.8383,
+      "longitude": 24.0223,
+      "photo": "",
+      "created_at": "2026-05-04T09:30:00+03:00",
+      "updated_at": "2026-05-05T14:30:00+03:00"
+    }
+  },
+  {
+    "model": "requests.helprequest",
+    "pk": 7,
+    "fields": {
+      "recipient": 7,
+      "title": "Купити корм для кота",
+      "description": "Потрібно купити невелику упаковку корму та залишити біля консьєржа.",
+      "category": 7,
+      "urgency": "high",
+      "status": "active",
+      "needed_date": "2026-05-11T13:00:00+03:00",
+      "duration": "30min",
+      "volunteers_needed": 1,
+      "address": "Харків, площа Свободи",
+      "latitude": 50.0044,
+      "longitude": 36.2314,
+      "photo": "",
+      "created_at": "2026-05-08T10:45:00+03:00",
+      "updated_at": "2026-05-08T10:45:00+03:00"
+    }
+  },
+  {
+    "model": "requests.response",
+    "pk": 1,
+    "fields": {
+      "help_request": 1,
+      "volunteer": 2,
+      "status": "pending",
+      "message": "Можу допомогти завтра до обіду.",
+      "created_at": "2026-05-08T11:00:00+03:00"
+    }
+  },
+  {
+    "model": "requests.response",
+    "pk": 2,
+    "fields": {
+      "help_request": 1,
+      "volunteer": 3,
+      "status": "pending",
+      "message": "Якщо буде потрібно, зможу підключитися ввечері.",
+      "created_at": "2026-05-08T11:05:00+03:00"
+    }
+  },
+  {
+    "model": "requests.response",
+    "pk": 3,
+    "fields": {
+      "help_request": 2,
+      "volunteer": 3,
+      "status": "pending",
+      "message": "Я поруч, можу забрати ліки після роботи.",
+      "created_at": "2026-05-08T11:10:00+03:00"
+    }
+  },
+  {
+    "model": "requests.response",
+    "pk": 4,
+    "fields": {
+      "help_request": 2,
+      "volunteer": 4,
+      "status": "pending",
+      "message": "Можу допомогти дистанційно з уточненням замовлення, якщо потрібно.",
+      "created_at": "2026-05-08T11:15:00+03:00"
+    }
+  },
+  {
+    "model": "requests.response",
+    "pk": 5,
+    "fields": {
+      "help_request": 3,
+      "volunteer": 3,
+      "status": "accepted",
+      "message": "Підтверджую, буду о 08:50 біля метро.",
+      "created_at": "2026-05-08T11:20:00+03:00"
+    }
+  },
+  {
+    "model": "requests.response",
+    "pk": 6,
+    "fields": {
+      "help_request": 3,
+      "volunteer": 2,
+      "status": "rejected",
+      "message": "На жаль, далеко від мого району, але можу підказати маршрут.",
+      "created_at": "2026-05-08T11:25:00+03:00"
+    }
+  },
+  {
+    "model": "requests.response",
+    "pk": 7,
+    "fields": {
+      "help_request": 4,
+      "volunteer": 2,
+      "status": "accepted",
+      "message": "Допомогла налаштувати телефон і перевірила дзвінки.",
+      "created_at": "2026-05-06T13:00:00+03:00"
+    }
+  },
+  {
+    "model": "requests.response",
+    "pk": 8,
+    "fields": {
+      "help_request": 5,
+      "volunteer": 4,
+      "status": "pending",
+      "message": "Можу провести дзвінок і пройти форму разом з вами.",
+      "created_at": "2026-05-08T11:30:00+03:00"
+    }
+  },
+  {
+    "model": "requests.response",
+    "pk": 9,
+    "fields": {
+      "help_request": 6,
+      "volunteer": 2,
+      "status": "accepted",
+      "message": "Завдання виконано, усе прибрали разом.",
+      "created_at": "2026-05-04T10:30:00+03:00"
+    }
+  },
+  {
+    "model": "requests.response",
+    "pk": 10,
+    "fields": {
+      "help_request": 7,
+      "volunteer": 4,
+      "status": "pending",
+      "message": "Можу купити корм сьогодні після 17:00.",
+      "created_at": "2026-05-08T11:35:00+03:00"
+    }
+  },
+  {
+    "model": "reviews.review",
+    "pk": 1,
+    "fields": {
+      "author": 5,
+      "target": 2,
+      "help_request": 4,
+      "rating": 5,
+      "comment": "Анна дуже терпляче пояснила всі налаштування смартфона. Дякую за допомогу!",
+      "created_at": "2026-05-07T16:00:00+03:00"
+    }
+  },
+  {
+    "model": "reviews.review",
+    "pk": 2,
+    "fields": {
+      "author": 2,
+      "target": 5,
+      "help_request": 4,
+      "rating": 5,
+      "comment": "Марія чітко пояснила задачу, усе пройшло спокійно та організовано.",
+      "created_at": "2026-05-07T16:05:00+03:00"
+    }
+  },
+  {
+    "model": "reviews.review",
+    "pk": 3,
+    "fields": {
+      "author": 5,
+      "target": 2,
+      "help_request": 6,
+      "rating": 5,
+      "comment": "Дуже вдячна за допомогу з прибиранням. Усе зроблено швидко й уважно.",
+      "created_at": "2026-05-05T15:00:00+03:00"
+    }
+  },
+  {
+    "model": "reviews.review",
+    "pk": 4,
+    "fields": {
+      "author": 2,
+      "target": 5,
+      "help_request": 6,
+      "rating": 5,
+      "comment": "Гарна комунікація, завдання було зрозумілим і безпечним.",
+      "created_at": "2026-05-05T15:05:00+03:00"
+    }
+  }
+]
