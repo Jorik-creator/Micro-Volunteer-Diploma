@@ -8,7 +8,7 @@ import factory
 from django.utils import timezone
 from datetime import timedelta
 
-from apps.accounts.models import User, VolunteerProfile, RecipientProfile
+from apps.accounts.models import User
 from apps.requests.models import Category, HelpRequest, Response
 from apps.reviews.models import Review
 from apps.notifications.models import Notification

@@ -83,7 +83,7 @@ class CreateReviewView(LoginRequiredMixin, CreateView):
         try:
             # Savepoint — щоб IntegrityError не ламала зовнішню транзакцію
             with transaction.atomic():
-                response = super().form_valid(form)
+                super().form_valid(form)
         except IntegrityError:
             # unique_together ['author', 'help_request'] — duplicate review attempt
             messages.error(

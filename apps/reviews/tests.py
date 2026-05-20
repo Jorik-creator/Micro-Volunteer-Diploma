@@ -15,8 +15,6 @@ from apps.requests.models import HelpRequest, Response
 
 from conftest import (
     ReviewFactory,
-    VolunteerFactory,
-    RecipientFactory,
     HelpRequestFactory,
     ResponseFactory,
 )

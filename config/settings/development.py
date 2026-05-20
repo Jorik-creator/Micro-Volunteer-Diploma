@@ -4,8 +4,7 @@ Django development settings for MicroVolunteer project.
 Extends base.py with DEBUG=True, local PostgreSQL, and console email.
 """
 from .base import *  # noqa: F401,F403
-
-from decouple import config
+from .base import BASE_DIR
 
 DEBUG = True
 
@@ -18,6 +17,7 @@ DATABASES = {
 }
 
 # For Docker / PostgreSQL, uncomment below and comment out SQLite above:
+# from decouple import config
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
