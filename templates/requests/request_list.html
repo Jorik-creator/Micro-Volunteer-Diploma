@@ -12,7 +12,7 @@
         <h1 class="page-title">Запити допомоги</h1>
         <p class="page-sub">Знайдіть, кому можете допомогти просто зараз</p>
       </div>
-      {% if user.is_recipient %}
+      {% if user.is_authenticated and user.is_recipient %}
       <a href="{% url 'requests:create' %}" class="btn btn-solid">
         <i class="bi bi-plus-lg"></i> Новий запит
       </a>
@@ -88,7 +88,13 @@
       <p class="request-desc">{{ hr.description|truncatewords:20 }}</p>
       <hr class="request-divider">
       <div class="request-meta-row">
-        <span class="geo"><i class="bi bi-geo-alt"></i> {{ hr.address|truncatechars:35 }}</span>
+        <span class="geo"><i class="bi bi-geo-alt"></i>
+          {% if user.is_authenticated %}
+            {{ hr.address|truncatechars:35 }}
+          {% else %}
+            Приблизна локація на карті
+          {% endif %}
+        </span>
         <span class="time">{{ hr.created_at|timesince }} тому</span>
       </div>
       <a href="{% url 'requests:detail' hr.pk %}" class="btn btn-solid btn-block btn-help">

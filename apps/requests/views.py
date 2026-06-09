@@ -61,11 +61,11 @@ def _urgency_color(urgency: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# List & Map views (authenticated users)
+# List & Map views (public browsing)
 # ---------------------------------------------------------------------------
 
 
-class HelpRequestListView(LoginRequiredMixin, ListView):
+class HelpRequestListView(ListView):
     """Paginated list of active help requests with optional filters."""
 
     model = HelpRequest
@@ -108,13 +108,12 @@ class HelpRequestListView(LoginRequiredMixin, ListView):
         return context
 
 
-class MapView(LoginRequiredMixin, TemplateView):
+class MapView(TemplateView):
     """Leaflet map page — data loaded via AJAX from map_data endpoint."""
 
     template_name = "requests/map.html"
 
 
-@login_required
 def map_data(request):
     """Return active requests as JSON for Leaflet map markers."""
     active = HelpRequest.objects.filter(
@@ -136,7 +135,6 @@ def map_data(request):
                 "urgency": hr.urgency,
                 "urgency_display": hr.get_urgency_display(),
                 "category": hr.category.name if hr.category else "",
-                "address": hr.address,
                 "needed_date": hr.needed_date.strftime("%d.%m.%Y %H:%M"),
                 "duration": hr.get_duration_display(),
                 "lat": lat,
@@ -153,7 +151,7 @@ def map_data(request):
 # ---------------------------------------------------------------------------
 
 
-class HelpRequestDetailView(LoginRequiredMixin, DetailView):
+class HelpRequestDetailView(DetailView):
     """
     Show full request details.
     Recipients see their own responses list.
@@ -180,7 +178,11 @@ class HelpRequestDetailView(LoginRequiredMixin, DetailView):
             status=Response.Status.ACCEPTED
         ).count()
 
-        if user.is_recipient and hr.recipient == user:
+        if not user.is_authenticated:
+            context["is_owner"] = False
+            context["user_response"] = None
+            context["is_accepted"] = False
+        elif user.is_recipient and hr.recipient == user:
             # Recipient sees all responses
             context["responses"] = hr.responses.select_related("volunteer").order_by(
                 "status", "-created_at"
@@ -520,7 +522,6 @@ def cancel_request(request, pk):
 # ---------------------------------------------------------------------------
 
 
-@login_required
 def request_status(request, pk):
     """Повертає поточний статус запиту у форматі JSON для polling."""
     help_request = get_object_or_404(HelpRequest, pk=pk)

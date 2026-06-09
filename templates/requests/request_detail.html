@@ -164,7 +164,7 @@ function fallbackCopy(text) {
       <div class="detail-desc">{{ help_request.description }}</div>
 
       <!-- Volunteer action -->
-      {% if user.is_volunteer %}
+      {% if user.is_authenticated and user.is_volunteer %}
       <div class="detail-section">
         <div class="section-hd">Ваша участь</div>
         {% if user_response %}

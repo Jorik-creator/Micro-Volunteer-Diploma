@@ -247,11 +247,22 @@ class TestResponseForm:
 class TestHelpRequestListView:
     """Tests for the request list view."""
 
-    def test_list_requires_login(self, client):
-        """Unauthenticated user is redirected to login."""
+    def test_list_public_for_anonymous_users(self, client, help_request):
+        """Unauthenticated user can browse active requests."""
         response = client.get("/requests/")
-        assert response.status_code == 302
-        assert "login" in response["Location"]
+        assert response.status_code == 200
+        assert help_request.title.encode() in response.content
+
+    def test_list_hides_exact_address_for_anonymous_users(self, client, help_request):
+        """Anonymous users see public request info without exact address."""
+        help_request.address = "вул. Приватна, 42, Київ"
+        help_request.save()
+
+        response = client.get("/requests/")
+
+        assert response.status_code == 200
+        assert "вул. Приватна".encode() not in response.content
+        assert "Приблизна локація на карті".encode() in response.content
 
     def test_list_shows_active_requests(self, client_logged_in_volunteer, help_request):
         """Logged-in user sees active requests."""
@@ -282,10 +293,25 @@ class TestHelpRequestListView:
 class TestHelpRequestDetailView:
     """Tests for the request detail view."""
 
-    def test_detail_requires_login(self, client, help_request):
-        """Unauthenticated user is redirected."""
+    def test_detail_public_for_anonymous_users(self, client, help_request):
+        """Unauthenticated user can view request detail."""
         response = client.get(f"/requests/{help_request.pk}/")
-        assert response.status_code == 302
+        assert response.status_code == 200
+        assert help_request.title.encode() in response.content
+
+    def test_detail_hides_guest_actions_and_exact_address(self, client, help_request):
+        """Anonymous users cannot see volunteer/owner actions or exact address."""
+        help_request.address = "вул. Таємна, 7, Київ"
+        help_request.save()
+
+        response = client.get(f"/requests/{help_request.pk}/")
+
+        assert response.status_code == 200
+        assert "Відгукнутись".encode() not in response.content
+        assert "Редагувати".encode() not in response.content
+        assert "Скасувати запит".encode() not in response.content
+        assert "вул. Таємна".encode() not in response.content
+        assert "Доступно після підтвердження".encode() in response.content
 
     def test_detail_accessible_to_volunteer(
         self, client_logged_in_volunteer, help_request
@@ -452,6 +478,16 @@ class TestRespondToRequest:
         assert response.status_code == 302
         assert not Response.objects.filter(help_request=help_request).exists()
 
+    def test_anonymous_user_cannot_respond(self, client, help_request):
+        """Anonymous users cannot take/respond to a request."""
+        response = client.post(
+            f"/requests/{help_request.pk}/respond/",
+            {"message": "Можу допомогти"},
+        )
+        assert response.status_code == 302
+        assert "login" in response["Location"]
+        assert not Response.objects.filter(help_request=help_request).exists()
+
 
 @pytest.mark.django_db
 class TestAcceptRejectVolunteer:
@@ -528,6 +564,16 @@ class TestAcceptRejectVolunteer:
             f"/requests/responses/{volunteer_response.pk}/accept/"
         )
         assert response.status_code in (302, 404)
+        volunteer_response.refresh_from_db()
+        assert volunteer_response.status == Response.Status.PENDING
+
+    def test_anonymous_user_cannot_accept(self, client, volunteer_response):
+        """Anonymous users cannot accept volunteer responses."""
+        response = client.post(
+            f"/requests/responses/{volunteer_response.pk}/accept/"
+        )
+        assert response.status_code == 302
+        assert "login" in response["Location"]
         volunteer_response.refresh_from_db()
         assert volunteer_response.status == Response.Status.PENDING
 
@@ -714,10 +760,34 @@ class TestExpireRequestsCommand:
 class TestMapDataView:
     """Tests for the map_data JSON endpoint."""
 
-    def test_map_data_requires_login(self, client):
-        """Unauthenticated request is redirected."""
+    def test_map_page_public_for_anonymous_users(self, client):
+        """Unauthenticated users can open the request map page."""
+        response = client.get("/requests/map/")
+        assert response.status_code == 200
+
+    def test_map_data_public_for_anonymous_users(self, client, help_request):
+        """Unauthenticated users can load public map markers."""
+        help_request.latitude = 50.4501
+        help_request.longitude = 30.5234
+        help_request.save()
+
         response = client.get("/requests/map/data/")
-        assert response.status_code == 302
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["id"] == help_request.pk
+
+    def test_map_data_does_not_expose_exact_address(self, client, help_request):
+        """Public map data omits exact request addresses."""
+        help_request.latitude = 50.4501
+        help_request.longitude = 30.5234
+        help_request.address = "вул. Приватна, 42, Київ"
+        help_request.save()
+
+        response = client.get("/requests/map/data/")
+
+        assert response.status_code == 200
+        assert "address" not in response.json()[0]
 
     def test_map_data_returns_json(self, client_logged_in_volunteer, help_request):
         """Returns valid JSON with active requests."""
