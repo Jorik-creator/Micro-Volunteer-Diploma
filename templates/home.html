@@ -219,7 +219,13 @@
         <p class="request-desc">{{ req.description|truncatewords:15 }}</p>
         <hr class="request-divider">
         <div class="request-meta-row">
-          <span class="geo"><i class="bi bi-geo-alt"></i> {{ req.address|truncatechars:35 }}</span>
+          <span class="geo"><i class="bi bi-geo-alt"></i>
+            {% if user.is_authenticated and req.recipient_id == user.id %}
+              {{ req.address|truncatechars:35 }}
+            {% else %}
+              Приблизна локація на карті
+            {% endif %}
+          </span>
           <span class="time">{{ req.created_at|timesince }} тому</span>
         </div>
         <a href="{% url 'requests:detail' req.pk %}" class="btn btn-solid btn-block btn-help">

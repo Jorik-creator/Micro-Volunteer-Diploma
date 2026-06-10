@@ -89,7 +89,7 @@
       <hr class="request-divider">
       <div class="request-meta-row">
         <span class="geo"><i class="bi bi-geo-alt"></i>
-          {% if user.is_authenticated %}
+          {% if user.is_authenticated and hr.recipient_id == user.id %}
             {{ hr.address|truncatechars:35 }}
           {% else %}
             Приблизна локація на карті

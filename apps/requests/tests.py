@@ -160,6 +160,20 @@ class TestOffsetCoordinates:
         assert abs(new_lat - lat) < 0.002
         assert abs(new_lon - lon) < 0.002
 
+    def test_offset_is_deterministic_with_seed(self):
+        """Same seed → identical offset (prevents averaging out the real point)."""
+        lat, lon = 50.4501, 30.5234
+        first = offset_coordinates(lat, lon, offset_meters=150, seed=42)
+        second = offset_coordinates(lat, lon, offset_meters=150, seed=42)
+        assert first == second
+
+    def test_offset_differs_between_seeds(self):
+        """Different seeds produce different offsets."""
+        lat, lon = 50.4501, 30.5234
+        first = offset_coordinates(lat, lon, offset_meters=150, seed=1)
+        second = offset_coordinates(lat, lon, offset_meters=150, seed=2)
+        assert first != second
+
 
 # ===================================================================
 # FORM TESTS
@@ -270,6 +284,31 @@ class TestHelpRequestListView:
         assert response.status_code == 200
         assert help_request.title.encode() in response.content
 
+    def test_list_hides_exact_address_from_non_owner(
+        self, client_logged_in_volunteer, help_request
+    ):
+        """A logged-in non-owner (volunteer) must not see the exact address."""
+        help_request.address = "вул. Прихована, 99, Київ"
+        help_request.save()
+
+        response = client_logged_in_volunteer.get("/requests/")
+
+        assert response.status_code == 200
+        assert "вул. Прихована".encode() not in response.content
+        assert "Приблизна локація на карті".encode() in response.content
+
+    def test_list_shows_exact_address_to_owner(
+        self, client_logged_in_recipient, help_request
+    ):
+        """The owner (recipient) still sees the exact address in their own card."""
+        help_request.address = "вул. Власника, 5, Київ"
+        help_request.save()
+
+        response = client_logged_in_recipient.get("/requests/")
+
+        assert response.status_code == 200
+        assert "вул. Власника".encode() in response.content
+
     def test_list_filter_by_category(
         self, client_logged_in_volunteer, help_request, db
     ):
@@ -335,6 +374,73 @@ class TestHelpRequestDetailView:
         response = client_logged_in_recipient.get(f"/requests/{help_request.pk}/")
         assert response.status_code == 200
         assert volunteer_response.volunteer.get_full_name().encode() in response.content
+
+    def test_detail_anonymous_404_for_non_active(self, client, db):
+        """Anonymous users get 404 for non-active requests (no pk enumeration)."""
+        hr = HelpRequestFactory(status=HelpRequest.Status.COMPLETED)
+        response = client.get(f"/requests/{hr.pk}/")
+        assert response.status_code == 404
+
+    def test_detail_non_participant_volunteer_404_for_non_active(
+        self, client_logged_in_volunteer, db
+    ):
+        """A volunteer who never responded cannot open a non-active request."""
+        hr = HelpRequestFactory(status=HelpRequest.Status.CANCELLED)
+        response = client_logged_in_volunteer.get(f"/requests/{hr.pk}/")
+        assert response.status_code == 404
+
+    def test_detail_owner_can_view_non_active(
+        self, client_logged_in_recipient, recipient, db
+    ):
+        """The owner can still open their own request in any status."""
+        hr = HelpRequestFactory(
+            recipient=recipient, status=HelpRequest.Status.COMPLETED
+        )
+        response = client_logged_in_recipient.get(f"/requests/{hr.pk}/")
+        assert response.status_code == 200
+
+    def test_detail_responding_volunteer_can_view_in_progress(
+        self, client_logged_in_volunteer, volunteer, db
+    ):
+        """A volunteer who responded keeps access after the request moves on."""
+        hr = HelpRequestFactory(status=HelpRequest.Status.IN_PROGRESS)
+        ResponseFactory(
+            help_request=hr,
+            volunteer=volunteer,
+            status=Response.Status.ACCEPTED,
+        )
+        response = client_logged_in_volunteer.get(f"/requests/{hr.pk}/")
+        assert response.status_code == 200
+
+    def test_detail_hides_recipient_name_from_anonymous(self, client, recipient, db):
+        """Recipient full name (PII) is hidden from anonymous users."""
+        recipient.first_name = "Тарас"
+        recipient.last_name = "Приватний"
+        recipient.save()
+        hr = HelpRequestFactory(
+            recipient=recipient, status=HelpRequest.Status.ACTIVE
+        )
+
+        response = client.get(f"/requests/{hr.pk}/")
+
+        assert response.status_code == 200
+        assert "Тарас Приватний".encode() not in response.content
+
+    def test_detail_shows_recipient_name_to_owner(
+        self, client_logged_in_recipient, recipient, db
+    ):
+        """The owner sees their own name in the request details sidebar."""
+        recipient.first_name = "Тарас"
+        recipient.last_name = "Власник"
+        recipient.save()
+        hr = HelpRequestFactory(
+            recipient=recipient, status=HelpRequest.Status.ACTIVE
+        )
+
+        response = client_logged_in_recipient.get(f"/requests/{hr.pk}/")
+
+        assert response.status_code == 200
+        assert "Тарас Власник".encode() in response.content
 
 
 @pytest.mark.django_db
@@ -813,3 +919,63 @@ class TestMapDataView:
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 0
+
+    def test_map_data_offset_is_stable_across_calls(self, client, help_request):
+        """The offset point is deterministic per request — repeated polling
+        returns the same coordinates so the real location cannot be averaged out."""
+        help_request.latitude = 50.4501
+        help_request.longitude = 30.5234
+        help_request.save()
+
+        first = client.get("/requests/map/data/").json()[0]
+        second = client.get("/requests/map/data/").json()[0]
+
+        assert first["lat"] == second["lat"]
+        assert first["lon"] == second["lon"]
+        # And the offset actually moved the marker away from the exact point.
+        assert (first["lat"], first["lon"]) != (50.4501, 30.5234)
+
+
+# ===================================================================
+# REQUEST STATUS ENDPOINT TESTS
+# ===================================================================
+
+
+@pytest.mark.django_db
+class TestRequestStatus:
+    """Tests for the request_status polling endpoint access control."""
+
+    def test_status_public_for_active_request(self, client, help_request):
+        """Anyone can poll the status of an active (public) request."""
+        response = client.get(f"/requests/{help_request.pk}/status/")
+        assert response.status_code == 200
+        assert response.json()["status"] == HelpRequest.Status.ACTIVE
+
+    def test_status_404_for_non_active_anonymous(self, client, db):
+        """Anonymous users cannot poll the status of non-active requests."""
+        hr = HelpRequestFactory(status=HelpRequest.Status.COMPLETED)
+        response = client.get(f"/requests/{hr.pk}/status/")
+        assert response.status_code == 404
+
+    def test_status_owner_can_poll_non_active(
+        self, client_logged_in_recipient, recipient, db
+    ):
+        """The owner can poll the status of their own non-active request."""
+        hr = HelpRequestFactory(
+            recipient=recipient, status=HelpRequest.Status.COMPLETED
+        )
+        response = client_logged_in_recipient.get(f"/requests/{hr.pk}/status/")
+        assert response.status_code == 200
+
+    def test_status_responding_volunteer_can_poll_non_active(
+        self, client_logged_in_volunteer, volunteer, db
+    ):
+        """A volunteer who responded can still poll after the request moves on."""
+        hr = HelpRequestFactory(status=HelpRequest.Status.IN_PROGRESS)
+        ResponseFactory(
+            help_request=hr,
+            volunteer=volunteer,
+            status=Response.Status.ACCEPTED,
+        )
+        response = client_logged_in_volunteer.get(f"/requests/{hr.pk}/status/")
+        assert response.status_code == 200

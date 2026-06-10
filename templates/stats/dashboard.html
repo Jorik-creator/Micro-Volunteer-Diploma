@@ -96,6 +96,13 @@
 
 
 {% block extra_js %}
+<!-- Chart data passed safely as JSON (auto-escaped, XSS-safe) -->
+{{ status_keys|json_script:"status-keys-data" }}
+{{ status_labels|json_script:"status-labels-data" }}
+{{ status_data|json_script:"status-data-data" }}
+{{ category_labels|json_script:"category-labels-data" }}
+{{ category_data|json_script:"category-data-data" }}
+
 <!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -109,12 +116,12 @@
       '<div class="alert alert-warning">Графік категорій тимчасово недоступний.</div>'
     );
   } else {
-  // Pass Django template variables to JavaScript safely
-  const statusKeys     = {{ status_keys|safe }};
-  const statusLabels   = {{ status_labels|safe }};
-  const statusData     = {{ status_data|safe }};
-  const categoryLabels = {{ category_labels|safe }};
-  const categoryData   = {{ category_data|safe }};
+  // Read Django data from json_script tags (auto-escaped, XSS-safe)
+  const statusKeys     = JSON.parse(document.getElementById('status-keys-data').textContent);
+  const statusLabels   = JSON.parse(document.getElementById('status-labels-data').textContent);
+  const statusData     = JSON.parse(document.getElementById('status-data-data').textContent);
+  const categoryLabels = JSON.parse(document.getElementById('category-labels-data').textContent);
+  const categoryData   = JSON.parse(document.getElementById('category-data-data').textContent);
   const statusSummary = document.getElementById('status-chart-summary');
   const categorySummary = document.getElementById('category-chart-summary');
 

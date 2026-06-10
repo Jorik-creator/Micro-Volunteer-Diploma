@@ -12,7 +12,7 @@ Test class:
 import pytest
 from django.test import Client
 
-from conftest import UserFactory
+from conftest import CategoryFactory, HelpRequestFactory, UserFactory
 
 
 # ===================================================================
@@ -63,6 +63,29 @@ class TestStatsViews:
 
         # Assert
         assert response.status_code == 302
+
+    @pytest.mark.django_db
+    def test_dashboard_category_labels_are_json_escaped(self):
+        """Chart data is emitted via json_script so labels with HTML/JS
+        special characters cannot break out of the <script> context (XSS-safe)."""
+        # Arrange — a malicious category name containing a closing script tag
+        staff_user = UserFactory(is_staff=True)
+        malicious_name = "</script><img src=x onerror=alert(1)>"
+        category = CategoryFactory(name=malicious_name, slug="xss-category")
+        HelpRequestFactory(category=category)
+        client = Client()
+        client.force_login(staff_user)
+
+        # Act
+        response = client.get("/stats/dashboard/")
+
+        # Assert
+        assert response.status_code == 200
+        content = response.content.decode()
+        # json_script renders a dedicated, escaped data island
+        assert 'id="category-labels-data"' in content
+        # The raw closing tag must never appear unescaped in the response
+        assert "</script><img src=x onerror=alert(1)>" not in content
 
     # ------------------------------------------------------------------
     # /stats/data/

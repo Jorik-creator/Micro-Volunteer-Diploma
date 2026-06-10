@@ -273,7 +273,11 @@ function fallbackCopy(text) {
           <div><i class="bi bi-hash"></i> ID: {{ help_request.pk }}</div>
           <div><i class="bi bi-calendar-plus"></i> Створено: {{ help_request.created_at|date:"d.m.Y" }}</div>
           <div><i class="bi bi-calendar-check"></i> Оновлено: {{ help_request.updated_at|date:"d.m.Y H:i" }}</div>
+          {% if can_view_recipient %}
           <div><i class="bi bi-person"></i> Отримувач: {{ help_request.recipient.get_full_name }}</div>
+          {% else %}
+          <div><i class="bi bi-person"></i> Отримувач: <span class="address-hidden">Доступно після підтвердження</span></div>
+          {% endif %}
         </div>
       </div>
     </aside>

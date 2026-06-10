@@ -26,7 +26,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import (
@@ -123,8 +123,12 @@ def map_data(request):
     data = []
     for hr in active:
         if hr.latitude and hr.longitude:
-            # Offset coordinates for privacy
-            lat, lon = offset_coordinates(hr.latitude, hr.longitude, offset_meters=150)
+            # Offset coordinates for privacy. Seed with the request pk so the
+            # offset is stable across repeated calls (prevents averaging out
+            # the true location by polling the endpoint multiple times).
+            lat, lon = offset_coordinates(
+                hr.latitude, hr.longitude, offset_meters=150, seed=hr.pk
+            )
         else:
             continue
 
@@ -165,6 +169,31 @@ class HelpRequestDetailView(DetailView):
     def get_queryset(self):
         return HelpRequest.objects.select_related("recipient", "category")
 
+    def get_object(self, queryset=None):
+        """
+        Role-aware access control:
+          - Owner (recipient) sees their request in any status.
+          - A volunteer who responded sees it in any status (so the page
+            still loads after it moves to in_progress/completed).
+          - Everyone else (anonymous + unrelated users) may only open an
+            ACTIVE request. Non-active requests return 404 to prevent
+            pk-enumeration of completed/cancelled/expired requests.
+        """
+        obj = super().get_object(queryset)
+        user = self.request.user
+
+        if user.is_authenticated and obj.recipient_id == user.id:
+            return obj
+        if (
+            user.is_authenticated
+            and getattr(user, "is_volunteer", False)
+            and obj.responses.filter(volunteer=user).exists()
+        ):
+            return obj
+        if obj.status != HelpRequest.Status.ACTIVE:
+            raise Http404("Запит недоступний.")
+        return obj
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         hr = self.object
@@ -201,6 +230,12 @@ class HelpRequestDetailView(DetailView):
             context["is_owner"] = False
             context["user_response"] = None
             context["is_accepted"] = False
+
+        # Recipient PII (full name) is only revealed to the owner or the
+        # accepted volunteer — never to anonymous or unrelated users.
+        context["can_view_recipient"] = context["is_owner"] or context.get(
+            "is_accepted", False
+        )
 
         return context
 
@@ -523,8 +558,24 @@ def cancel_request(request, pk):
 
 
 def request_status(request, pk):
-    """Повертає поточний статус запиту у форматі JSON для polling."""
+    """
+    Повертає поточний статус запиту у форматі JSON для polling.
+
+    Доступ узгоджений із HelpRequestDetailView: власник і волонтер-учасник
+    бачать будь-який статус; усі інші (включно з анонімами) — лише активні
+    запити. Це не дає перебором pk дізнаватись статус неактивних запитів.
+    """
     help_request = get_object_or_404(HelpRequest, pk=pk)
+    user = request.user
+    is_participant = user.is_authenticated and (
+        help_request.recipient_id == user.id
+        or (
+            getattr(user, "is_volunteer", False)
+            and help_request.responses.filter(volunteer=user).exists()
+        )
+    )
+    if not is_participant and help_request.status != HelpRequest.Status.ACTIVE:
+        raise Http404("Запит недоступний.")
     return JsonResponse({
         "status": help_request.status,
         "status_display": help_request.get_status_display(),
