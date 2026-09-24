@@ -69,7 +69,14 @@ class HelpRequestForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["category"].queryset = Category.objects.all()
-        self.fields["category"].empty_label = "--- Оберіть категорію ---"
+        self.fields["category"].empty_label = "Оберіть категорію"
+        help_format = self.fields["help_format"]
+        help_format.error_messages["required"] = "Оберіть формат допомоги."
+        if self.instance._state.adding:
+            # The model default (home visit) is for legacy rows only: a new request
+            # must not arrive with a format the recipient never chose.
+            help_format.initial = None
+            self.initial["help_format"] = None
 
     def clean_needed_date(self):
         needed_date = self.cleaned_data.get("needed_date")

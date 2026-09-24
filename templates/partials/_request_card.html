@@ -11,7 +11,7 @@ Optional: show_status=True (owner lists), show_address=True (owner / accepted vo
     </div>
   </div>
   <ul class="mv-meta">
-    <li><i class="bi bi-calendar-event" aria-hidden="true"></i><span>{{ hr.needed_date|date:"D, j E, H:i" }} · {{ hr.get_duration_display }}</span></li>
+    <li><i class="bi bi-calendar-event" aria-hidden="true"></i><span>{{ hr.needed_date|when }} · {{ hr.get_duration_display }}</span></li>
     <li>{% format_icon hr %}<span>{{ hr.get_help_format_display }}{% if hr.help_format == 'home_visit' %} · лише перевірені волонтери{% endif %}</span></li>
     {% if hr.is_remote %}
     {% elif show_address or user.is_authenticated and hr.recipient_id == user.pk %}

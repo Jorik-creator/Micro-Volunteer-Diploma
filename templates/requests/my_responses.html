@@ -27,11 +27,12 @@
 
 <div class="container mv-page mv-personal">
   {% if responses %}
-  {# Groups are built from the current page; empty groups and their links are hidden by personal.css #}
-  <nav class="mv-tabs mv-jump" aria-label="Розділи сторінки">
-    <a class="mv-tab" href="#needs"><i class="bi bi-exclamation-circle" aria-hidden="true"></i>Потрібна дія</a>
-    <a class="mv-tab" href="#current"><i class="bi bi-hourglass-split" aria-hidden="true"></i>Очікують рішення</a>
-    <a class="mv-tab" href="#past"><i class="bi bi-clock-history" aria-hidden="true"></i>Історія</a>
+  {# Groups are built from the current page; section_counts (view) uses the same rules. Empty groups are also hidden by personal.css #}
+  <nav class="mv-jump" aria-label="Розділи сторінки">
+    <span class="mv-jump__label">Перейти до:</span>
+    {% if section_counts.needs or not section_counts %}<a href="#needs">Потрібна дія{% if section_counts %} <span class="mv-jump__num">{{ section_counts.needs }}</span>{% endif %}</a>{% endif %}
+    {% if section_counts.current or not section_counts %}<a href="#current">Очікують рішення{% if section_counts %} <span class="mv-jump__num">{{ section_counts.current }}</span>{% endif %}</a>{% endif %}
+    {% if section_counts.past or not section_counts %}<a href="#past">Історія{% if section_counts %} <span class="mv-jump__num">{{ section_counts.past }}</span>{% endif %}</a>{% endif %}
   </nav>
 
   <section class="mv-psec mv-psec--action" id="needs" aria-labelledby="needs-title">
@@ -77,11 +78,11 @@
       {% elif resp.status == 'accepted' and hr.status == 'completed' %}
         {% include "partials/_request_card.html" with show_status=True card_note="Ви допомогли — дякуємо!" %}
       {% elif resp.status == 'rejected' %}
-        {% include "partials/_request_card.html" with show_status=True card_note="Отримувач обрав іншого волонтера." %}
+        {% include "partials/_request_card.html" with show_status=True card_note="На цей запит обрано іншого волонтера." %}
       {% elif resp.status == 'withdrawn' %}
         {% include "partials/_request_card.html" with show_status=True card_note="Ви вийшли із запиту." %}
       {% elif resp.status == 'removed' %}
-        {% include "partials/_request_card.html" with show_status=True card_note="Отримувач зняв вас із запиту." %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Вас знято із запиту." %}
       {% elif resp.status == 'closed' %}
         {% include "partials/_request_card.html" with show_status=True card_note="Набір волонтерів закрито." %}
       {% else %}

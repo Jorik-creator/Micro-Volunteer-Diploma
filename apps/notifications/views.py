@@ -112,7 +112,9 @@ def notification_count(request):
 
 @login_required
 def email_settings(request):
-    form = EmailPreferencesForm(request.POST or None, instance=preferences_for(request.user))
+    form = EmailPreferencesForm(
+        request.POST or None, instance=preferences_for(request.user), user=request.user
+    )
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Налаштування збережено.")

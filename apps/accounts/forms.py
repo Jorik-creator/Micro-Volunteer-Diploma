@@ -188,6 +188,13 @@ class RecipientProfileForm(forms.ModelForm):
             "emergency_contact_phone": forms.TextInput(attrs={"placeholder": "+380..."}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["situation_type"].choices = [
+            ("", "Не вказувати"),
+            *RecipientProfile.SituationType.choices,
+        ]
+
 
 # ---------------------------------------------------------------------------
 # Password change

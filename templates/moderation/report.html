@@ -5,11 +5,11 @@
 
 {% block content %}
 <section class="mv-page-head">
-  <div class="container">
+  <div class="container"><div class="mv-form-col">
     {% if next %}<a class="mv-back" href="{{ next }}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад</a>{% endif %}
     <h1>Поскаржитися</h1>
     <p class="mv-lead">Скаргу бачить лише модератор. Автор не дізнається, хто її надіслав.</p>
-  </div>
+  </div></div>
 </section>
 
 <div class="container mv-page">
@@ -50,7 +50,7 @@
       </div>
     </div>
 
-    <div class="mv-card__foot mv-cluster">
+    <div class="mv-form-actions">
       <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-flag" aria-hidden="true"></i>Надіслати скаргу</button>
       <a class="mv-btn mv-btn--ghost" href="{% if next %}{{ next }}{% else %}{% url 'home' %}{% endif %}">Скасувати</a>
     </div>

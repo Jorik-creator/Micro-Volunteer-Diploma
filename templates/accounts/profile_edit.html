@@ -6,11 +6,11 @@
 
 {% block content %}
 <section class="mv-page-head">
-  <div class="container mv-form-col">
+  <div class="container"><div class="mv-form-col">
     <a class="mv-back" href="{% url 'accounts:profile' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>До профілю</a>
     <h1>Редагувати профіль</h1>
     <p class="mv-lead">Заповнюйте лише те, чим готові поділитися. Контакти й адресу інші користувачі у вашому профілі не бачать.</p>
-  </div>
+  </div></div>
 </section>
 
 <div class="container mv-page">
@@ -64,6 +64,12 @@
           {% for error in form.address.errors %}<p class="mv-field-error">{{ error }}</p>{% endfor %}
         </div>
         {{ form.latitude }}{{ form.longitude }}
+        {% if not role_form %}
+        <div class="mv-form-actions">
+          <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-check-lg" aria-hidden="true"></i>Зберегти зміни</button>
+          <a href="{% url 'accounts:profile' %}" class="mv-btn mv-btn--ghost">Скасувати</a>
+        </div>
+        {% endif %}
       </section>
 
       {% if role_form and user.is_volunteer %}
@@ -72,7 +78,7 @@
 
         <div class="mv-switch-row">
           <label for="{{ role_form.is_available.id_for_label }}">
-            <span class="mv-choice__title d-block">Готовий допомагати</span>
+            <span class="mv-choice__title d-block">Готовність допомагати</span>
             <span class="mv-choice__hint d-block">Вимкніть, якщо якийсь час не можете брати запити.</span>
           </label>
           <div class="form-check form-switch">
@@ -113,6 +119,10 @@
         </fieldset>
 
         {{ role_form.bio|as_crispy_field }}
+        <div class="mv-form-actions">
+          <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-check-lg" aria-hidden="true"></i>Зберегти зміни</button>
+          <a href="{% url 'accounts:profile' %}" class="mv-btn mv-btn--ghost">Скасувати</a>
+        </div>
       </section>
       {% elif role_form %}
       <section class="mv-card" id="role-section" aria-labelledby="role-title">
@@ -123,13 +133,13 @@
           <div class="col-sm-6">{{ role_form.emergency_contact_name|as_crispy_field }}</div>
           <div class="col-sm-6">{{ role_form.emergency_contact_phone|as_crispy_field }}</div>
         </div>
+        <div class="mv-form-actions">
+          <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-check-lg" aria-hidden="true"></i>Зберегти зміни</button>
+          <a href="{% url 'accounts:profile' %}" class="mv-btn mv-btn--ghost">Скасувати</a>
+        </div>
       </section>
       {% endif %}
 
-      <div class="mv-form-actions">
-        <button type="submit" class="mv-btn mv-btn--primary mv-btn--lg"><i class="bi bi-check-lg" aria-hidden="true"></i>Зберегти зміни</button>
-        <a href="{% url 'accounts:profile' %}" class="mv-btn mv-btn--ghost mv-btn--lg">Скасувати</a>
-      </div>
     </form>
   </div>
 </div>

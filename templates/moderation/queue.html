@@ -18,14 +18,14 @@
 
 {% now "U" as now_ts %}
 <div class="container mv-page">
-  <nav class="mv-tabs" aria-label="Черги модерації">
+  <nav class="mv-tabs mv-mod-tabs" aria-label="Черги модерації">
     <a class="mv-tab{% if tab == 'verification' %} is-active{% endif %}" href="?tab=verification"{% if tab == 'verification' %} aria-current="page"{% endif %}>
       <i class="bi bi-patch-check" aria-hidden="true"></i>Перевірка
-      {% if counts.verification %}<span class="mv-count mv-count--blue">{{ counts.verification }}</span>{% endif %}
+      {% if counts.verification %}<span class="mv-count">{{ counts.verification }}</span>{% endif %}
     </a>
     <a class="mv-tab{% if tab == 'requests' %} is-active{% endif %}" href="?tab=requests"{% if tab == 'requests' %} aria-current="page"{% endif %}>
       <i class="bi bi-card-text" aria-hidden="true"></i>Нові запити
-      {% if counts.requests %}<span class="mv-count mv-count--blue">{{ counts.requests }}</span>{% endif %}
+      {% if counts.requests %}<span class="mv-count">{{ counts.requests }}</span>{% endif %}
     </a>
     <a class="mv-tab{% if tab == 'reports' %} is-active{% endif %}" href="?tab=reports"{% if tab == 'reports' %} aria-current="page"{% endif %}>
       <i class="bi bi-flag" aria-hidden="true"></i>Скарги
@@ -41,12 +41,12 @@
     {% for item in items %}
     <article class="mv-card mv-mod-item" aria-labelledby="v-{{ item.pk }}">
       <header class="mv-mod-item__head">
-        <span class="mv-tile" aria-hidden="true"><i class="bi bi-patch-check"></i></span>
+        {% avatar item.user 56 %}
         <div>
           <h3 class="mv-mod-item__title" id="v-{{ item.pk }}"><a href="{% url 'accounts:public-profile' item.user.pk %}">{{ item.user.get_full_name|default:item.user.username }}</a></h3>
           <ul class="mv-meta mv-meta--inline">
-            <li><i class="bi {% if item.user.is_volunteer %}bi-heart{% else %}bi-person{% endif %}" aria-hidden="true"></i>{{ item.user.get_user_type_display }}</li>
-            <li><i class="bi bi-calendar-event" aria-hidden="true"></i>Подано {{ item.created_at|date:"j E, H:i" }}</li>
+            <li><i class="bi {% if item.user.is_volunteer %}bi-hand-thumbs-up{% else %}bi-heart{% endif %}" aria-hidden="true"></i>{{ item.user.get_user_type_display }}</li>
+            <li><i class="bi bi-calendar-event" aria-hidden="true"></i><span>Подано <time datetime="{{ item.created_at|date:'c' }}" title="{{ item.created_at|when }}">{{ item.created_at|ago }}</time></span></li>
             {% if item.created_at|date:"U"|add:86400 < now_ts|add:0 %}
             <li class="is-late"><i class="bi bi-clock-history" aria-hidden="true"></i>Чекає {{ item.created_at|timesince }}</li>
             {% endif %}
@@ -70,7 +70,7 @@
         <label class="form-label" for="note-v-{{ item.pk }}">Коментар для заявника</label>
         <p class="form-text" id="note-v-{{ item.pk }}-hint">Обов'язковий, якщо відхиляєте: людина побачить його в сповіщенні.</p>
         <textarea name="note" id="note-v-{{ item.pk }}" rows="2" maxlength="500" class="form-control" aria-describedby="note-v-{{ item.pk }}-hint"></textarea>
-        <div class="mv-cluster">
+        <div class="mv-form-actions mv-mt-0">
           <button type="submit" name="decision" value="approve" class="mv-btn mv-btn--primary"><i class="bi bi-patch-check" aria-hidden="true"></i>Схвалити</button>
           <button type="submit" name="decision" value="reject" class="mv-btn mv-btn--danger"><i class="bi bi-x-lg" aria-hidden="true"></i>Відхилити</button>
         </div>
@@ -92,7 +92,7 @@
           <h3 class="mv-mod-item__title" id="r-{{ item.pk }}"><a href="{% url 'requests:detail' item.pk %}">{{ item.title }}</a></h3>
           <ul class="mv-meta mv-meta--inline">
             <li>{% avatar item.recipient 40 %}<span><a href="{% url 'accounts:public-profile' item.recipient.pk %}">{{ item.recipient|short_name }}</a> · на платформі з {{ item.recipient.created_at|date:"j E Y" }}</span></li>
-            <li><i class="bi bi-calendar-event" aria-hidden="true"></i>Створено {{ item.created_at|date:"j E, H:i" }}</li>
+            <li><i class="bi bi-calendar-event" aria-hidden="true"></i><span>Створено <time datetime="{{ item.created_at|date:'c' }}" title="{{ item.created_at|when }}">{{ item.created_at|ago }}</time></span></li>
             {% if item.created_at|date:"U"|add:86400 < now_ts|add:0 %}
             <li class="is-late"><i class="bi bi-clock-history" aria-hidden="true"></i>Чекає {{ item.created_at|timesince }}</li>
             {% endif %}
@@ -100,9 +100,9 @@
         </div>
       </header>
       <dl class="mv-summary">
-        <dt><i class="bi bi-grid" aria-hidden="true"></i>Категорія</dt><dd>{{ item.category.name|default:"Інше" }}</dd>
+        <dt>{% category_icon item.category %}Категорія</dt><dd>{{ item.category.name|default:"Інше" }}</dd>
         <dt>{% format_icon item %}Формат</dt><dd>{{ item.get_help_format_display }}</dd>
-        <dt><i class="bi bi-alarm" aria-hidden="true"></i>Коли</dt><dd>{{ item.needed_date|date:"D, j E, H:i" }} · {{ item.get_duration_display }}</dd>
+        <dt><i class="bi bi-calendar-event" aria-hidden="true"></i>Коли</dt><dd>{{ item.needed_date|when }} · {{ item.get_duration_display }}</dd>
         <dt><i class="bi bi-geo-alt" aria-hidden="true"></i>Адреса</dt><dd>{{ item.address|default:"Онлайн" }}</dd>
         <dt>{% urgency_icon item %}Терміновість</dt><dd>{{ item.get_urgency_display }}</dd>
       </dl>
@@ -117,7 +117,7 @@
         <label class="form-label" for="note-r-{{ item.pk }}">Причина відмови</label>
         <p class="form-text" id="note-r-{{ item.pk }}-hint">Обов'язкова, якщо відхиляєте: автор побачить її й зможе виправити запит.</p>
         <textarea name="note" id="note-r-{{ item.pk }}" rows="2" maxlength="500" class="form-control" aria-describedby="note-r-{{ item.pk }}-hint"></textarea>
-        <div class="mv-cluster">
+        <div class="mv-form-actions mv-mt-0">
           <button type="submit" name="decision" value="approve" class="mv-btn mv-btn--primary"><i class="bi bi-check-lg" aria-hidden="true"></i>Опублікувати</button>
           <button type="submit" name="decision" value="reject" class="mv-btn mv-btn--danger"><i class="bi bi-x-lg" aria-hidden="true"></i>Відхилити</button>
         </div>
@@ -141,8 +141,8 @@
         <div>
           <h3 class="mv-mod-item__title" id="c-{{ item.pk }}">{{ item.get_reason_display }}</h3>
           <ul class="mv-meta mv-meta--inline">
-            <li>{% avatar item.reporter 40 %}<span>Від {{ item.reporter.get_full_name|default:item.reporter.username }}</span></li>
-            <li><i class="bi bi-calendar-event" aria-hidden="true"></i>{{ item.created_at|date:"j E, H:i" }}</li>
+            <li>{% avatar item.reporter 40 %}<span>Від {{ item.reporter|short_name }}</span></li>
+            <li><i class="bi bi-calendar-event" aria-hidden="true"></i><span><time datetime="{{ item.created_at|date:'c' }}" title="{{ item.created_at|when }}">{{ item.created_at|ago }}</time></span></li>
             {% if item.created_at|date:"U"|add:86400 < now_ts|add:0 %}
             <li class="is-late"><i class="bi bi-clock-history" aria-hidden="true"></i>Чекає {{ item.created_at|timesince }}</li>
             {% endif %}
@@ -157,7 +157,7 @@
         <dd>
           {% if not target %}<span class="mv-status mv-status--muted"><i class="bi bi-trash3" aria-hidden="true"></i>Видалено</span>
           {% elif kind == 'helprequest' %}<a href="{% url 'requests:detail' item.object_id %}">{{ target }}</a>
-          {% elif kind == 'user' %}<a href="{% url 'accounts:public-profile' item.object_id %}">{{ target.get_full_name|default:target.username }}</a>
+          {% elif kind == 'user' %}<a href="{% url 'accounts:public-profile' item.object_id %}">{{ target|short_name }}</a>
           {% elif kind == 'message' %}{{ target }} <a class="ms-1" href="{% url 'conversations:detail' target.conversation_id %}">Відкрити розмову</a>
           {% else %}{{ target }}{% endif %}
         </dd>
@@ -173,7 +173,7 @@
         <label class="form-label" for="note-c-{{ item.pk }}">Коментар до рішення</label>
         <p class="form-text" id="note-c-{{ item.pk }}-hint">Необов'язково. Зберігається в історії модерації.</p>
         <textarea name="note" id="note-c-{{ item.pk }}" rows="2" maxlength="500" class="form-control" aria-describedby="note-c-{{ item.pk }}-hint"></textarea>
-        <div class="mv-cluster">
+        <div class="mv-form-actions mv-mt-0">
           {% if item.measure %}<button type="submit" name="decision" value="act" class="mv-btn mv-btn--danger" data-confirm-submit="{{ item.measure }}?"><i class="bi bi-slash-circle" aria-hidden="true"></i>{{ item.measure }}</button>{% endif %}
           <button type="submit" name="decision" value="dismiss" class="mv-btn mv-btn--secondary"><i class="bi bi-check2" aria-hidden="true"></i>Порушень немає</button>
         </div>

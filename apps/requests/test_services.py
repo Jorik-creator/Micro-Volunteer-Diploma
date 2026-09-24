@@ -574,7 +574,7 @@ class TestLifecycleSteps:
         help_request.status = Status.AWAITING_CONFIRMATION
         steps = lifecycle_steps(help_request, 1)
         assert [s["state"] for s in steps] == ["done", "done", "current", "todo"]
-        assert steps[2]["note"] == "очікує підтвердження"
+        assert steps[2]["note"] == "чекає підтвердження"
 
     def test_closed_requests_have_no_stepper(self, help_request):
         from apps.requests.views import lifecycle_steps

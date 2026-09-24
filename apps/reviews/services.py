@@ -28,10 +28,6 @@ class ReviewError(Exception):
     """The user may not leave this review."""
 
 
-def _name(user):
-    return user.get_full_name() or user.username
-
-
 def review_deadline(help_request):
     return help_request.completed_at + REVIEW_WINDOW
 
@@ -79,8 +75,8 @@ def _publish(reviews, now):
             review.target,
             Notification.Type.NEW_REVIEW,
             "Нова оцінка про вас",
-            f"Оцінка від {_name(review.author)}: {review.rating}/5 "
-            f"за запитом «{review.help_request.title}».",
+            f"Оцінка {review.rating}/5 за запитом «{review.help_request.title}». "
+            f"Автор: {review.author.short_name}.",
             review.help_request,
         )
 
@@ -119,8 +115,8 @@ def submit_review(author, help_request, target, rating, tags=(), comment=""):
             target,
             Notification.Type.REVIEW_REMINDER,
             "Вас оцінили — оцініть і ви",
-            f"Нова оцінка від {_name(author)} за запитом «{help_request.title}». "
-            "Вона стане видимою, щойно ви залишите свою, або через 14 днів.",
+            f"Запит «{help_request.title}». Автор оцінки: {author.short_name}. "
+            "Її буде видно, щойно ви залишите свою, або через 14 днів.",
             help_request,
         )
     return review

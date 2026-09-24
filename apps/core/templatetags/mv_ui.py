@@ -210,3 +210,36 @@ def demo_mode():
     from django.conf import settings
 
     return settings.DEMO_MODE
+
+
+@register.filter
+def when(value):
+    """One date format for the whole site: 'Пт, 25 вересня, 19:57' (year only if not current)."""
+    from django.utils import timezone
+    from django.utils.formats import date_format
+
+    if not value:
+        return ""
+    local = timezone.localtime(value)
+    pattern = "D, j E, H:i" if local.year == timezone.localtime().year else "D, j E Y, H:i"
+    return date_format(local, pattern)
+
+
+@register.filter
+def ago(value):
+    """'щойно', '5 хв тому', '3 год тому', otherwise the date — for feeds and chats."""
+    from django.utils import timezone
+    from django.utils.formats import date_format
+
+    if not value:
+        return ""
+    seconds = (timezone.now() - value).total_seconds()
+    if seconds < 60:
+        return "щойно"
+    if seconds < 3600:
+        return f"{int(seconds // 60)} хв тому"
+    if seconds < 86400:
+        return f"{int(seconds // 3600)} год тому"
+    local = timezone.localtime(value)
+    pattern = "j E, H:i" if local.year == timezone.localtime().year else "j E Y"
+    return date_format(local, pattern)

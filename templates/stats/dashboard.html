@@ -75,9 +75,9 @@
           {% avatar vol 40 %}
           <div class="mv-row__body">
             <p class="mv-row__title mv-mb-0">
-              {% if is_moderator %}<a href="{% url 'accounts:public-profile' vol.pk %}">{{ vol.get_full_name|default:vol.username }}</a>{% else %}{{ vol.get_full_name|default:vol.username }}{% endif %}
+              {% if is_moderator %}<a href="{% url 'accounts:public-profile' vol.pk %}">{{ vol|short_name }}</a>{% else %}{{ vol|short_name }}{% endif %}
             </p>
-            {% if vol.is_verified %}<span class="mv-micro"><i class="bi bi-patch-check-fill me-1" aria-hidden="true"></i>Перевірений</span>{% endif %}
+            {% if vol.is_verified %}<span class="mv-micro"><i class="bi bi-patch-check-fill me-1" aria-hidden="true"></i>Профіль перевірено</span>{% endif %}
           </div>
           <div class="mv-row__side">
             {% if vol.avg_rating %}<span class="mv-rating"><i class="bi bi-star-fill" aria-hidden="true"></i>{{ vol.avg_rating|floatformat:1 }}</span>{% endif %}

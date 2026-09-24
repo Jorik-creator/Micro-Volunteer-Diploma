@@ -15,7 +15,7 @@
       <ul class="mv-meta mv-meta--inline" aria-label="Коротко про вас">
         <li><i class="bi {% if profile_user.is_volunteer %}bi-hand-thumbs-up{% else %}bi-heart{% endif %}" aria-hidden="true"></i>{{ profile_user.get_user_type_display|default:"Адміністратор" }}</li>
         {% if profile_user.is_verified %}
-        <li><i class="bi bi-patch-check-fill" aria-hidden="true"></i>Перевірений{% if verified_organization %} · {{ verified_organization }}{% endif %}</li>
+        <li><i class="bi bi-patch-check-fill" aria-hidden="true"></i>Профіль перевірено{% if verified_organization %} · {{ verified_organization }}{% endif %}</li>
         {% elif profile_user.email_verified_at %}
         <li class="is-good"><i class="bi bi-envelope-check" aria-hidden="true"></i>Email підтверджено</li>
         {% else %}
@@ -25,13 +25,6 @@
         <li><i class="bi bi-star-fill" aria-hidden="true"></i>{{ rating.average }} · {{ rating.count }} {{ rating.count|uk_plural:"оцінка,оцінки,оцінок" }}</li>
         {% else %}
         <li class="is-off"><i class="bi bi-star" aria-hidden="true"></i>Оцінок поки немає</li>
-        {% endif %}
-        {% if profile_user.is_volunteer and volunteer_profile %}
-        {% if volunteer_profile.is_available %}
-        <li class="is-good"><i class="bi bi-check-circle" aria-hidden="true"></i>Готовий допомагати</li>
-        {% else %}
-        <li class="is-off"><i class="bi bi-pause-circle" aria-hidden="true"></i>Зараз не бере нових запитів</li>
-        {% endif %}
         {% endif %}
         <li><i class="bi bi-calendar3" aria-hidden="true"></i>На платформі з {{ profile_user.created_at|date:"E Y" }}</li>
       </ul>
@@ -55,7 +48,6 @@
       <div class="mv-stat"><span class="mv-stat__num">{{ requests_count }}</span><span class="mv-stat__label">{{ requests_count|uk_plural:"запит створено,запити створено,запитів створено" }}</span></div>
       <div class="mv-stat"><span class="mv-stat__num">{{ completed_count }}</span><span class="mv-stat__label">виконано</span></div>
       {% endif %}
-      <div class="mv-stat"><span class="mv-stat__num">{{ review_count }}</span><span class="mv-stat__label">{{ review_count|uk_plural:"оцінку отримано,оцінки отримано,оцінок отримано" }}</span></div>
     </div>
   </section>
 
@@ -83,7 +75,7 @@
       {% endif %}
 
       <section class="mv-card" aria-labelledby="trust-title">
-        <h2 class="mv-card__title" id="trust-title"><i class="bi bi-shield-check" aria-hidden="true"></i>Рівень довіри<span class="mv-card__title-aside">{{ profile_user.get_trust_level_display }}</span></h2>
+        <h2 class="mv-card__title" id="trust-title"><i class="bi bi-shield-check" aria-hidden="true"></i>Рівень довіри</h2>
         <ol class="mv-stepper mv-stepper--rail">
           <li class="is-done">
             <span class="mv-step__dot" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
@@ -92,7 +84,7 @@
           </li>
           <li class="{% if profile_user.email_verified_at %}is-done{% else %}is-current{% endif %}"{% if not profile_user.email_verified_at %} aria-current="step"{% endif %}>
             <span class="mv-step__dot" aria-hidden="true">{% if profile_user.email_verified_at %}<i class="bi bi-check-lg"></i>{% else %}2{% endif %}</span>
-            Email підтверджено{% if profile_user.email_verified_at %} <span class="visually-hidden">(виконано)</span>{% endif %}
+            Підтвердження email{% if profile_user.email_verified_at %} <span class="visually-hidden">(виконано)</span>{% endif %}
             <small>{% if profile_user.is_volunteer %}Можна відгукуватися на запити без візиту додому.{% else %}Можна публікувати запити (перші — після перевірки модератором).{% endif %}</small>
             {% if not profile_user.email_verified_at %}
             <div class="mv-step__cta">
@@ -106,7 +98,7 @@
           </li>
           <li class="{% if profile_user.is_verified %}is-done{% elif profile_user.email_verified_at %}is-current{% endif %}"{% if profile_user.email_verified_at and not profile_user.is_verified %} aria-current="step"{% endif %}>
             <span class="mv-step__dot" aria-hidden="true">{% if profile_user.is_verified %}<i class="bi bi-check-lg"></i>{% else %}3{% endif %}</span>
-            Перевірений{% if profile_user.is_verified %} <span class="visually-hidden">(виконано)</span>{% endif %}
+            Перевірка профілю{% if profile_user.is_verified %} <span class="visually-hidden">(виконано)</span>{% endif %}
             <small>{% if profile_user.is_volunteer %}Відкриває запити з візитом додому.{% else %}Запити публікуються одразу, без премодерації.{% endif %}{% if verified_organization %} Перевірено від імені «{{ verified_organization }}».{% endif %}</small>
             {% if profile_user.email_verified_at and not profile_user.is_verified %}
             <div class="mv-step__cta">
@@ -132,7 +124,7 @@
         <h2 class="mv-card__title" id="volunteer-title"><i class="bi bi-hand-thumbs-up" aria-hidden="true"></i>Волонтерський профіль</h2>
         <ul class="mv-meta">
           {% if volunteer_profile.is_available %}
-          <li class="is-good"><i class="bi bi-check-circle" aria-hidden="true"></i><span>Готовий допомагати</span></li>
+          <li class="is-good"><i class="bi bi-check-circle" aria-hidden="true"></i><span>Готовність допомагати</span></li>
           {% else %}
           <li class="is-off"><i class="bi bi-pause-circle" aria-hidden="true"></i><span>Зараз не бере нових запитів</span></li>
           {% endif %}
@@ -158,22 +150,30 @@
       </section>
       {% endif %}
 
+      {% if rating.count %}
+      {# The average and the count live in the header; here — what people noted and the latest reviews #}
       <section class="mv-card" aria-labelledby="rating-title">
-        <h2 class="mv-card__title" id="rating-title"><i class="bi bi-star-half" aria-hidden="true"></i>Оцінки</h2>
-        {% include "partials/_rating_summary.html" %}
+        <h2 class="mv-card__title" id="rating-title"><i class="bi bi-star-half" aria-hidden="true"></i>Відгуки про вас</h2>
+        {% if rating.top_tags %}
+        <ul class="mv-meta mv-meta--inline">
+          {% for tag in rating.top_tags %}
+          <li{% if tag.negative %} class="is-negative"{% endif %}><i class="bi {% if tag.negative %}bi-exclamation-circle{% else %}bi-hand-thumbs-up{% endif %}" aria-hidden="true"></i>{{ tag.label }} · {{ tag.count }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
         {% if reviews %}
-        <h3 class="mv-card__sub">Останні відгуки</h3>
-        <ul class="mv-rows">
+        <ul class="mv-rows{% if rating.top_tags %} mt-3{% endif %}">
           {% for review in reviews %}{% include "partials/_review.html" %}{% endfor %}
         </ul>
         {% endif %}
       </section>
+      {% endif %}
     </div>
 
     <div class="mv-stack--lg">
       <section class="mv-card" aria-labelledby="personal-title">
         <h2 class="mv-card__title" id="personal-title"><i class="bi bi-person-vcard" aria-hidden="true"></i>Особисті дані</h2>
-        <p class="mv-micro"><i class="bi bi-lock me-1" aria-hidden="true"></i>Бачите лише ви. Адресу й телефон волонтер отримує тільки після прийняття.</p>
+        <p class="mv-micro"><i class="bi bi-lock me-1" aria-hidden="true"></i>Бачите лише ви. {% if profile_user.is_volunteer %}Ваш телефон бачить отримувач лише якщо ви поділитеся ним у розмові.{% else %}Адресу й телефон волонтер отримує тільки після прийняття.{% endif %}</p>
         <dl class="mv-summary mv-summary--stacked">
           <dt><i class="bi bi-person" aria-hidden="true"></i>Ім'я користувача</dt>
           <dd>{{ profile_user.get_username }}</dd>

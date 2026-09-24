@@ -61,7 +61,7 @@ class TestHelpRequestModel:
 
     def test_help_request_str(self, help_request):
         """HelpRequest __str__ returns title with status."""
-        expected = f"{help_request.title} (Активний)"
+        expected = f"{help_request.title} (Шукає волонтерів)"
         assert str(help_request) == expected
 
     def test_help_request_default_status(self, db):

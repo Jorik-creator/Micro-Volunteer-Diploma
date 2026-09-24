@@ -28,7 +28,7 @@
         </a>
 
         <div class="d-flex align-items-center gap-1 order-lg-3 ms-auto ms-lg-0">
-          <div class="dropdown">
+          <div class="dropdown mv-a11y-in-bar">
             <button type="button" class="mv-icon-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
                     aria-expanded="false" aria-label="Налаштування зручності" title="Зручність">
               <i class="bi bi-universal-access-circle" aria-hidden="true"></i>
@@ -115,6 +115,11 @@
             <li class="nav-item"><a class="{% nav_class 'moderation:queue' %}" href="{% url 'moderation:queue' %}"><i class="bi bi-shield-check" aria-hidden="true"></i>Модерація</a></li>
             {% endif %}
           </ul>
+          <div class="mv-a11y-in-menu" role="group" aria-label="Зручність сайту">
+            <button type="button" class="mv-a11y-option" data-a11y-toggle="largeText" aria-pressed="false"><i class="bi bi-type" aria-hidden="true"></i><span><strong>Більший текст</strong></span></button>
+            <button type="button" class="mv-a11y-option" data-a11y-toggle="highContrast" aria-pressed="false"><i class="bi bi-circle-half" aria-hidden="true"></i><span><strong>Високий контраст</strong></span></button>
+            <button type="button" class="mv-a11y-option" data-a11y-toggle="calmMode" aria-pressed="false"><i class="bi bi-pause-circle" aria-hidden="true"></i><span><strong>Без анімацій</strong></span></button>
+          </div>
           {% if not user.is_authenticated %}
           <div class="d-flex gap-2 py-2 py-lg-0 ms-lg-3">
             <a class="mv-btn mv-btn--ghost mv-btn--sm" href="{% url 'accounts:login' %}">Увійти</a>

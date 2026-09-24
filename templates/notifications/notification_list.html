@@ -11,14 +11,14 @@
         <h1>Сповіщення</h1>
         <p class="mv-lead">Відгуки, рішення, повідомлення й зміни статусів ваших запитів.</p>
       </div>
-      <div class="mv-cluster">
-        <a class="mv-btn mv-btn--ghost" href="{% url 'notifications:email-settings' %}"><i class="bi bi-envelope" aria-hidden="true"></i>Листи на пошту</a>
+      <div class="mv-cluster mv-notifs__actions">
         {% if unread_count %}
         <form method="post" action="{% url 'notifications:mark-all-read' %}" class="m-0">
           {% csrf_token %}
           <button type="submit" class="mv-btn mv-btn--secondary"><i class="bi bi-check2-all" aria-hidden="true"></i>Позначити всі прочитаними</button>
         </form>
         {% endif %}
+        <a class="mv-btn mv-btn--ghost" href="{% url 'notifications:email-settings' %}"><i class="bi bi-envelope" aria-hidden="true"></i>Листи на пошту</a>
       </div>
     </div>
   </div>
@@ -41,7 +41,7 @@
           <h3 class="mv-row__title">{% if not n.is_read %}<span class="visually-hidden">Непрочитане: </span>{% endif %}{{ n.title }}</h3>
           {% if n.message %}<p class="mv-row__text">{{ n.message }}</p>{% endif %}
           <div class="mv-notifs__foot">
-            <time class="mv-micro" datetime="{{ n.created_at|date:'c' }}" title="{{ n.created_at|date:'j E Y, H:i' }}">{% if day.grouper == today %}{{ n.created_at|timesince }} тому{% else %}{{ n.created_at|date:"H:i" }}{% endif %}</time>
+            <time class="mv-notifs__time" datetime="{{ n.created_at|date:'c' }}" title="{{ n.created_at|when }}">{% if day.grouper == today %}{{ n.created_at|ago }}{% else %}{{ n.created_at|date:"H:i" }}{% endif %}</time>
             {% if n.url != request.path %}
             <a class="mv-link-btn mv-link-btn--sm" href="{{ n.url }}">Відкрити<span class="visually-hidden">: {{ n.title }}</span><i class="bi bi-arrow-right" aria-hidden="true"></i></a>
             {% endif %}

@@ -13,7 +13,11 @@
   let lastId = parseInt(log.dataset.lastId, 10) || 0;
   let busy = false;
 
-  log.scrollTop = log.scrollHeight;
+  // The log grows with its content (personal.css caps it); scroll only once it overflows
+  function scrollToEnd() {
+    if (log.scrollHeight > log.clientHeight) log.scrollTop = log.scrollHeight;
+  }
+  scrollToEnd();
 
   function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -89,7 +93,7 @@
           render(m);
           lastId = m.id;
         });
-        if (nearBottom) log.scrollTop = log.scrollHeight;
+        if (nearBottom) scrollToEnd();
       }
       if (!data.writable) closeComposer();
     } catch (_) {

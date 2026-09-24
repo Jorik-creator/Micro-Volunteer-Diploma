@@ -82,12 +82,16 @@
     const option = select.options[select.selectedIndex];
     return option ? option.text : '';
   }
+  // Same wording as the |when filter: 'Пт, 25 вересня, 19:57' (year only if not current)
+  const WEEKDAYS = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+  const MONTHS = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня',
+    'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
   function formatDate(value) {
     const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/.exec(value || '');
     if (!m) return value || '';
     const date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-    const day = date.toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' });
-    return day.charAt(0).toUpperCase() + day.slice(1) + ', ' + m[4];
+    const year = date.getFullYear() === new Date().getFullYear() ? '' : ' ' + date.getFullYear();
+    return WEEKDAYS[date.getDay()] + ', ' + date.getDate() + ' ' + MONTHS[date.getMonth()] + year + ', ' + m[4];
   }
   function shorten(value, limit) {
     const clean = (value || '').replace(/\s+/g, ' ').trim();

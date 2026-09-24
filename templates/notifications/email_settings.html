@@ -42,7 +42,7 @@
               <span class="mv-tile{% if field.name == 'nearby' %} mv-tile--muted{% endif %}" aria-hidden="true"><i class="bi {% if field.name == 'responses' %}bi-people{% elif field.name == 'lifecycle' %}bi-arrow-repeat{% elif field.name == 'messages' %}bi-chat-dots{% elif field.name == 'reviews' %}bi-star{% elif field.name == 'nearby' %}bi-geo-alt{% else %}bi-shield-check{% endif %}"></i></span>
               <span class="mv-toggle__text">
                 <span class="mv-toggle__title">{{ field.label }}</span>
-                <span class="mv-toggle__hint">{% if field.name == 'responses' %}Хтось відгукнувся на ваш запит, вас прийняли або обрали іншого волонтера.{% elif field.name == 'lifecycle' %}Волонтер вийшов чи позначив виконання, запит завершено, скасовано або прострочено.{% elif field.name == 'messages' %}Співрозмовник написав вам у розмові щодо запиту.{% elif field.name == 'reviews' %}Вам поставили оцінку або час оцінити допомогу.{% elif field.name == 'nearby' %}Може бути кілька листів на день, тому типово вимкнено.{% else %}Рішення щодо перевірки профілю, ваших запитів і скарг.{% endif %}</span>
+                {% if field.help_text %}<span class="mv-toggle__hint">{{ field.help_text }}</span>{% endif %}
               </span>
               <span class="form-check form-switch">{{ field }}</span>
             </label>
@@ -50,8 +50,9 @@
           {% endfor %}
         </ul>
       </fieldset>
-      <div class="mv-card__foot">
+      <div class="mv-form-actions">
         <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-check-lg" aria-hidden="true"></i>Зберегти</button>
+        <a href="{% url 'notifications:notification-list' %}" class="mv-btn mv-btn--ghost">Скасувати</a>
       </div>
     </form>
   </div>

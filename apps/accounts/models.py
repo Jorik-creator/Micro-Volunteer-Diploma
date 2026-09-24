@@ -63,6 +63,12 @@ class User(AbstractUser):
         return self.TrustLevel(self.trust_level).label
 
     @property
+    def short_name(self):
+        """'Анна К.' — the public form of a name, safe in any grammatical case."""
+        first = self.first_name or self.username
+        return f"{first} {self.last_name[:1]}." if self.last_name else first
+
+    @property
     def is_volunteer(self):
         return self.user_type == self.UserType.VOLUNTEER
 

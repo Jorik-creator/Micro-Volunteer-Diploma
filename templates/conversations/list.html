@@ -16,7 +16,6 @@
 <div class="container mv-page">
   <div class="mv-narrow">
     {% if conversations %}
-    {% now "Y-m-d" as today %}
     <ul class="mv-rows mv-rows--joined mv-convs">
       {% for conversation in conversations %}
       {% with partner=conversation.partner last=conversation.last_message_at|default:conversation.created_at %}
@@ -27,7 +26,7 @@
           <p class="mv-convs__req"><i class="bi bi-card-text" aria-hidden="true"></i><span>{{ conversation.help_request.title }}</span></p>
         </div>
         <div class="mv-row__side">
-          <time class="mv-micro" datetime="{{ last|date:'c' }}">{% if last|date:"Y-m-d" == today %}{{ last|date:"H:i" }}{% else %}{{ last|date:"j E" }}{% endif %}</time>
+          <time class="mv-micro" datetime="{{ last|date:'c' }}" title="{{ last|when }}">{{ last|ago }}</time>
           {% if conversation.unread %}
           <span class="mv-status mv-status--blue" aria-hidden="true"><i class="bi bi-envelope-fill"></i>Нове</span>
           {% elif not conversation.is_writable %}

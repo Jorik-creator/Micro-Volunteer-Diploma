@@ -127,7 +127,7 @@ button { font-family: inherit; }
   min-height: 48px; padding: 10px 20px; border-radius: var(--mv-r-sm);
   font: 600 17px/1.2 var(--mv-font); text-decoration: none; cursor: pointer;
   border: 1.5px solid transparent; transition: background-color .15s, border-color .15s, color .15s, box-shadow .15s;
-  white-space: nowrap;
+  text-align: center;
 }
 .mv-btn i { font-size: 1.05em; }
 .mv-btn--primary { background: var(--mv-blue-600); color: #fff; }
@@ -233,16 +233,18 @@ button { font-family: inherit; }
 .mv-avatar--56 { width: 56px; height: 56px; font-size: 19px; }
 .mv-avatar--96 { width: 96px; height: 96px; font-size: 32px; }
 .mv-avatar--128 { width: 128px; height: 128px; font-size: 42px; }
-.mv-avatar__badge {
-  position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px; border-radius: 50%;
-  background: #fff; display: grid; place-items: center; color: var(--mv-blue-600); font-size: 18px; line-height: 1;
+.mv-avatar__badge { /* ~35% of the avatar, pushed outside so initials stay readable */
+  position: absolute; right: -3px; bottom: -3px; width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 0 2px #fff; display: grid; place-items: center;
+  color: var(--mv-blue-600); font-size: 14px; line-height: 1;
 }
+.mv-avatar--56 .mv-avatar__badge { width: 20px; height: 20px; font-size: 18px; }
 .mv-avatar--96 .mv-avatar__badge, .mv-avatar--128 .mv-avatar__badge { width: 32px; height: 32px; font-size: 26px; right: 2px; bottom: 2px; }
 .mv-count {
   display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px;
   border-radius: var(--mv-r-pill); background: var(--mv-danger); color: #fff; font-size: 13px; font-weight: 700; line-height: 1;
 }
-.mv-count--blue { background: var(--mv-blue-600); }
+.mv-count--blue { background: var(--mv-danger); } /* one colour for every unread counter */
 .mv-stars { display: inline-flex; gap: 2px; color: var(--mv-star); }
 .mv-rating { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--mv-navy-900); }
 .mv-rating i { color: var(--mv-star); }
@@ -350,7 +352,8 @@ textarea.form-control { min-height: 120px; }
 .mv-note--muted > i { color: var(--mv-muted); }
 .mv-note__close { margin-left: auto; background: none; border: 0; min-width: 44px; min-height: 44px; margin: -12px -12px -12px 0; color: inherit; cursor: pointer; }
 
-.mv-messages { position: relative; z-index: 5; margin-top: 16px; display: grid; gap: 10px; }
+.mv-messages { position: relative; z-index: 5; padding-top: 16px; padding-bottom: 16px; display: grid; gap: 10px; }
+.mv-messages + main > .mv-profile-band:first-child { margin-top: -16px; }
 
 .mv-toast {
   position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 1080;
@@ -462,7 +465,7 @@ textarea.form-control { min-height: 120px; }
 .mv-footer .mv-brand b, .mv-footer .mv-brand i { color: #93B4FF; }
 .mv-footer__grid { position: relative; display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 40px; }
 @media (max-width: 767.98px) { .mv-footer__grid { grid-template-columns: 1fr 1fr; } .mv-footer__grid > :first-child { grid-column: 1 / -1; } }
-.mv-footer h2 { font-size: 14px; font-weight: 700; color: #C7D2E3; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
+.mv-footer h2 { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 12px; }
 .mv-footer ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
 .mv-footer a { color: #DBEAFE; text-decoration: none; display: inline-flex; min-height: 36px; align-items: center; }
 .mv-footer a:hover { color: #fff; text-decoration: underline; }
@@ -652,9 +655,35 @@ html.a11y-calm-mode *, html.a11y-calm-mode *::before, html.a11y-calm-mode *::aft
 .mv-meta li.is-negative > i { color: var(--mv-warning); }
 /* Narrow phones: keep the logged-in navbar on one row */
 @media (max-width: 419.98px) {
-  .mv-brand span { display: none; }
+  .mv-nav .mv-brand span { display: none; }
   .mv-nav .container { padding-inline: 12px; }
   .mv-icon-btn { width: 40px; }
 }
 /* crispy wraps each error in <p>/<strong>: keep the icon on the same line */
 .invalid-feedback > p, .invalid-feedback > strong { display: inline; margin: 0; }
+
+/* ---------- 26. Review round fixes ---------- */
+/* Standard form ending: primary action, then a plain secondary, left-aligned */
+.mv-form-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 24px; }
+@media (max-width: 575.98px) {
+  .mv-form-actions { flex-direction: column; align-items: stretch; }
+  .mv-form-actions > .mv-btn { width: 100%; }
+}
+/* Compact stats: 2×2 on phones instead of squeezed columns */
+@media (max-width: 575.98px) {
+  .mv-stats--compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mv-stats--compact .mv-stat { border-left: 0 !important; border-top: 0; padding: 12px 8px; }
+  .mv-stats--compact .mv-stat:nth-child(n+3) { border-top: 1px solid var(--mv-line) !important; }
+  .mv-stats--compact .mv-stat:nth-child(even) { border-left: 1px solid var(--mv-line) !important; }
+}
+/* Footer columns: emergency numbers get the full width on phones */
+@media (max-width: 575.98px) { .mv-footer__grid > :last-child { grid-column: 1 / -1; } }
+/* Mobile header: accessibility lives in the menu, not in the crowded bar */
+.mv-a11y-in-menu { display: none; }
+@media (max-width: 991.98px) {
+  .mv-a11y-in-bar { display: none; }
+  .mv-a11y-in-menu { display: block; padding: 8px 0 4px; border-top: 1px solid var(--mv-line); margin-top: 8px; }
+}
+/* Hero/CTA buttons stretch on phones */
+@media (max-width: 575.98px) { .mv-hero .mv-cluster > .mv-btn, .mv-cta .mv-btn { width: 100%; } }
+.mv-nowrap { white-space: nowrap; }

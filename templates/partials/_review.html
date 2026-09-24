@@ -2,7 +2,7 @@
   {% avatar review.author 40 %}
   <div class="mv-row__body">
     <p class="mv-row__title">{{ review.author|short_name }}</p>
-    <div class="mv-cluster mv-cluster--tight">{% include "partials/_stars.html" with value=review.rating %}<span class="mv-micro">{{ review.published_at|date:"j E Y" }}</span></div>
+    <div class="mv-cluster mv-cluster--tight">{% include "partials/_stars.html" with value=review.rating %}<span class="mv-micro">{{ review.published_at|ago }}</span></div>
     {% if review.tags %}
     <ul class="mv-meta mv-meta--inline mt-2">{% for label in review.get_tags_display %}<li><i class="bi bi-check2" aria-hidden="true"></i>{{ label }}</li>{% endfor %}</ul>
     {% endif %}

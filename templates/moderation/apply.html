@@ -5,11 +5,11 @@
 
 {% block content %}
 <section class="mv-page-head">
-  <div class="container">
+  <div class="container"><div class="mv-form-col">
     <a class="mv-back" href="{% url 'accounts:profile' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад до профілю</a>
-    <h1>Стати перевіреним</h1>
-    <p class="mv-lead">Позначка «Перевірений» відкриває волонтерам візити додому, а отримувачам — публікацію запитів без премодерації.</p>
-  </div>
+    <h1>Перевірка профілю</h1>
+    <p class="mv-lead">Перевірений профіль відкриває волонтерам візити додому, а отримувачам — публікацію запитів без премодерації.</p>
+  </div></div>
 </section>
 
 <div class="container mv-page">
@@ -51,8 +51,9 @@
         {% csrf_token %}
         {% include "partials/_form_errors.html" %}
         {{ form|crispy }}
-        <div class="mv-card__foot">
+        <div class="mv-form-actions">
           <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-send" aria-hidden="true"></i>Надіслати заявку</button>
+          <a href="{% url 'accounts:profile' %}" class="mv-btn mv-btn--ghost">Скасувати</a>
         </div>
       </form>
     </section>

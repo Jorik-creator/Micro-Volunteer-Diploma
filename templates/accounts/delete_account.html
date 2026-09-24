@@ -6,11 +6,11 @@
 
 {% block content %}
 <section class="mv-page-head">
-  <div class="container mv-form-col">
+  <div class="container"><div class="mv-form-col">
     <a class="mv-back" href="{% url 'accounts:profile' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>До профілю</a>
     <h1>Видалити акаунт</h1>
     <p class="mv-lead">Це остаточно: відновити акаунт після видалення неможливо.</p>
-  </div>
+  </div></div>
 </section>
 
 <div class="container mv-page">
@@ -29,7 +29,7 @@
         {% csrf_token %}
         {{ form.password|as_crispy_field }}
         {{ form.confirm|as_crispy_field }}
-        <div class="mv-form-actions mt-4">
+        <div class="mv-form-actions">
           <button type="submit" class="mv-btn mv-btn--danger-solid"><i class="bi bi-trash3" aria-hidden="true"></i>Видалити акаунт назавжди</button>
           <a href="{% url 'accounts:profile' %}" class="mv-btn mv-btn--ghost">Скасувати</a>
         </div>

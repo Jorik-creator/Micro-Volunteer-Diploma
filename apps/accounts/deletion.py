@@ -37,15 +37,24 @@ def delete_account(user):
         raise DeletionError("Акаунт адміністратора видаляється вручну.")
 
     with transaction.atomic():
-        full_name = user.get_full_name()
+        full_name = user.get_full_name().strip()
+        names = [name for name in (full_name, user.short_name.strip()) if name]
         request_services.close_open_work_of(user, "Користувач видалив акаунт.")
-        if full_name.strip():
-            # Other people's notifications mention the user by name
-            for notification in Notification.objects.filter(
-                Q(title__contains=full_name) | Q(message__contains=full_name)
-            ):
-                notification.title = notification.title.replace(full_name, ANONYMOUS)
-                notification.message = notification.message.replace(full_name, ANONYMOUS)
+        # Other people's notifications mention the user by name: the full name in
+        # older ones, the short "Анна К." form in newer ones. The short form is
+        # common, so it is only replaced in notifications about shared requests.
+        mentions = Q(related_request__recipient=user) | Q(
+            related_request__responses__volunteer=user
+        )
+        if full_name:
+            mentions |= Q(title__contains=full_name) | Q(message__contains=full_name)
+        for notification in Notification.objects.filter(mentions).exclude(user=user).distinct():
+            title, message = notification.title, notification.message
+            for name in names:
+                title = title.replace(name, ANONYMOUS)
+                message = message.replace(name, ANONYMOUS)
+            if (title, message) != (notification.title, notification.message):
+                notification.title, notification.message = title, message
                 notification.save(update_fields=["title", "message"])
         Report.objects.filter(reporter=user).update(comment="")
         for help_request in HelpRequest.objects.filter(recipient=user):

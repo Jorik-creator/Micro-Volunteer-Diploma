@@ -52,7 +52,7 @@
             {% for choice in form.help_format %}
             <label class="mv-choice" for="{{ choice.id_for_label }}">
               <input type="radio" name="{{ form.help_format.html_name }}" id="{{ choice.id_for_label }}" value="{{ choice.data.value }}"
-                     {% if choice.data.selected %}checked{% endif %} required
+                     {% if choice.data.selected and form.is_bound or choice.data.selected and form.instance.pk %}checked{% endif %} required
                      {% if form.help_format.errors %}aria-invalid="true"{% endif %}>
               <span class="mv-tile" aria-hidden="true"><i class="bi {% if choice.data.value == 'home_visit' %}bi-house-door{% elif choice.data.value == 'doorstep' %}bi-door-closed{% elif choice.data.value == 'public_place' %}bi-signpost-2{% else %}bi-telephone{% endif %}"></i></span>
               <span class="mv-choice__text">
@@ -129,12 +129,9 @@
       <section class="mv-card mv-rq-step" data-step="2" aria-labelledby="step3-title">
         <h2 class="mv-card__title mv-rq-step__title" id="step3-title" tabindex="-1">Перевірка</h2>
         <div id="wizard-summary" class="mv-rq-review" data-js-only hidden></div>
-        <div class="mv-rq-nav">
-          <button type="button" class="mv-btn mv-btn--ghost" data-back data-js-only hidden><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад</button>
-          <div class="mv-rq-nav__end">
-            <a href="{{ cancel_url }}" class="mv-link-btn mv-link-btn--muted">Скасувати</a>
-            <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-send" aria-hidden="true"></i>{{ submit_label }}</button>
-          </div>
+        <div class="mv-form-actions">
+          <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-send" aria-hidden="true"></i>{{ submit_label }}</button>
+          <a href="{{ cancel_url }}" class="mv-btn mv-btn--ghost">Скасувати</a>
         </div>
       </section>
     </form>

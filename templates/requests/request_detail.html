@@ -77,7 +77,7 @@
         <h2 class="visually-hidden" id="facts-title">Деталі запиту</h2>
         <dl class="mv-summary mv-rq-facts">
           <dt><i class="bi bi-calendar-event" aria-hidden="true"></i>Коли</dt>
-          <dd>{{ help_request.needed_date|date:"l, j E, H:i"|capfirst }}</dd>
+          <dd>{{ help_request.needed_date|when }}</dd>
 
           <dt><i class="bi bi-stopwatch" aria-hidden="true"></i>Тривалість</dt>
           <dd>{{ help_request.get_duration_display }}</dd>
@@ -108,8 +108,8 @@
           <dt><i class="bi bi-people" aria-hidden="true"></i>Волонтери</dt>
           <dd><span class="mv-num">{{ accepted_count }} з {{ help_request.volunteers_needed }}</span> <span class="mv-rq-dd-muted">прийнято</span></dd>
 
-          <dt>{% urgency_icon help_request %}Терміновість</dt>
-          <dd><span class="mv-urg mv-urg--{{ help_request.urgency }}">{{ help_request.get_urgency_display }}</span></dd>
+          <dt><i class="bi bi-speedometer2" aria-hidden="true"></i>Терміновість</dt>
+          <dd class="mv-rq-urgency">{% urgency help_request label=False %}{{ help_request.get_urgency_display }}</dd>
 
           {% if help_request.on_behalf %}
           <dt><i class="bi bi-person-heart" aria-hidden="true"></i>Для кого</dt>
@@ -137,7 +137,7 @@
       <section class="mv-card" aria-labelledby="reviews-title" id="reviews">
         <h2 class="mv-card__title" id="reviews-title"><i class="bi bi-star" aria-hidden="true"></i>Оцінки</h2>
         {% if review_open %}
-        <p class="mv-muted">Оцінку можна залишити до {{ review_deadline|date:"j E" }}. Її побачать, коли інша сторона теж оцінить вас.</p>
+        <p class="mv-muted">Оцінку можна залишити до {{ review_deadline|when }}. Її побачать, коли інша сторона теж оцінить вас.</p>
         {% endif %}
         <ul class="mv-rows">
           {% for item in review_items %}
@@ -173,19 +173,28 @@
         <ul class="mv-rows">
           {% for resp in responses %}
           <li class="mv-row mv-rq-response" id="response-{{ resp.pk }}">
-            {% avatar resp.volunteer 56 %}
-            <div class="mv-row__body">
-              <div class="mv-rq-response__head">
+            <div class="mv-rq-response__head">
+              {% avatar resp.volunteer 56 %}
+              <div class="mv-rq-response__who">
                 <h3 class="mv-row__title"><a href="{% url 'accounts:public-profile' resp.volunteer.pk %}">{{ resp.volunteer.get_full_name|default:resp.volunteer.username }}</a></h3>
-                {% response_status resp %}
+                <p class="mv-rq-response__rating">
+                  {% if resp.volunteer_rating %}{% with rating=resp.volunteer_rating %}
+                  {% if rating.count %}<span class="mv-rating"><i class="bi bi-star-fill" aria-hidden="true"></i>{{ rating.average|floatformat:1 }}</span><span class="mv-muted"> · {{ rating.count }} {{ rating.count|uk_plural:"оцінка,оцінки,оцінок" }}</span>
+                  {% else %}<span class="mv-muted">Оцінок поки немає</span>{% endif %}
+                  <span class="mv-muted" aria-hidden="true"> · </span>{% endwith %}{% endif %}
+                  <a href="{% url 'accounts:public-profile' resp.volunteer.pk %}">Профіль<span class="visually-hidden"> волонтера {{ resp.volunteer.get_full_name|default:resp.volunteer.username }}</span></a>
+                </p>
               </div>
-              <p class="mv-micro mv-mb-0">Відгук від {{ resp.created_at|date:"j E, H:i" }}{% if resp.volunteer.is_verified %} · <i class="bi bi-patch-check-fill mv-rq-verified" aria-hidden="true"></i>Перевірений волонтер{% endif %}</p>
+              <div class="mv-rq-response__status">{% response_status resp %}</div>
+            </div>
+            <div class="mv-rq-response__body">
+              <p class="mv-rq-response__meta">Відгук: {{ resp.created_at|when }}{% if resp.volunteer.is_verified %} · <i class="bi bi-patch-check-fill mv-rq-verified" aria-hidden="true"></i>Перевірений волонтер{% endif %}</p>
               {% if resp.message %}<p class="mv-row__text mv-rq-quote">{{ resp.message }}</p>{% endif %}
               {% if resp.status_reason %}<p class="mv-row__text mv-muted"><i class="bi bi-chat-left-text me-1" aria-hidden="true"></i>{{ resp.status_reason }}</p>{% endif %}
-              {% if resp.done_at %}<p class="mv-row__text"><span class="mv-status mv-status--success"><i class="bi bi-check2-all" aria-hidden="true"></i>Позначено виконаним {{ resp.done_at|date:"j E, H:i" }}</span></p>{% endif %}
+              {% if resp.done_at %}<p class="mv-row__text"><span class="mv-status mv-status--success"><i class="bi bi-check2-all" aria-hidden="true"></i>Позначено виконаним: {{ resp.done_at|when }}</span></p>{% endif %}
 
               {% if resp.status == 'pending' and help_request.status == 'active' or resp.status == 'accepted' and resp.conversation_id %}
-              <div class="mv-row__actions">
+              <div class="mv-row__actions mv-rq-response__actions">
                 {% if resp.status == 'pending' and help_request.status == 'active' %}
                 <form method="post" action="{% url 'requests:accept' resp.pk %}">{% csrf_token %}
                   <button type="submit" class="mv-btn mv-btn--primary mv-btn--sm" aria-label="Прийняти волонтера {{ resp.volunteer.get_full_name|default:resp.volunteer.username }}"><i class="bi bi-check-lg" aria-hidden="true"></i>Прийняти</button>
@@ -207,7 +216,7 @@
                   {% csrf_token %}
                   <p class="mv-micro">Наприклад, якщо волонтер не прийшов. Запит знову відкриється для інших.</p>
                   {{ reason_form|crispy }}
-                  <button type="submit" class="mv-btn mv-btn--danger mv-btn--sm"><i class="bi bi-person-dash" aria-hidden="true"></i>Зняти</button>
+                  <button type="submit" class="mv-btn mv-btn--danger mv-btn--sm"><i class="bi bi-person-dash" aria-hidden="true"></i>Зняти волонтера</button>
                 </form>
               </details>
               {% endif %}
@@ -243,7 +252,7 @@
           <li class="{% if step.state == 'done' %}is-done{% elif step.state == 'current' %}is-current{% endif %}"{% if step.state == 'current' %} aria-current="step"{% endif %}>
             <span class="mv-step__dot" aria-hidden="true">{% if step.state == 'done' %}<i class="bi bi-check-lg"></i>{% else %}{{ step.number }}{% endif %}</span>
             {{ step.label }}{% if step.state == 'done' %}<span class="visually-hidden"> — виконано</span>{% endif %}
-            {% if step.note %}<small>{{ step.note }}</small>{% endif %}
+            {% if step.note and step.number != 2 and step.note != 'очікує підтвердження' %}<small>{{ step.note }}</small>{% endif %}
           </li>
           {% endfor %}
         </ol>
@@ -282,7 +291,7 @@
           <p class="mv-muted">Коли допомогу буде надано, волонтер позначить її виконаною, а ви підтвердите.</p>
           <form method="post" action="{% url 'requests:confirm' help_request.pk %}">
             {% csrf_token %}
-            <button type="submit" class="mv-btn mv-btn--secondary mv-btn--block" data-confirm-submit="Позначити запит завершеним?"><i class="bi bi-check2-circle" aria-hidden="true"></i>Допомогу вже отримано — завершити</button>
+            <button type="submit" class="mv-btn mv-btn--secondary mv-btn--block" data-confirm-submit="Позначити запит завершеним?"><i class="bi bi-check2-circle" aria-hidden="true"></i>Завершити запит</button>
           </form>
           {% else %}
           <h2 class="mv-card__title" id="action-title">Керування запитом</h2>
@@ -344,7 +353,7 @@
             {% if help_request.status == 'in_progress' and not user_response.done_at %}
             <form method="post" action="{% url 'requests:complete' help_request.pk %}">
               {% csrf_token %}
-              <button type="submit" class="mv-btn mv-btn--primary mv-btn--block" data-confirm-submit="Позначити вашу допомогу виконаною?"><i class="bi bi-check2-circle" aria-hidden="true"></i>Я допоміг — позначити виконаним</button>
+              <button type="submit" class="mv-btn mv-btn--primary mv-btn--block" data-confirm-submit="Позначити вашу допомогу виконаною?"><i class="bi bi-check2-circle" aria-hidden="true"></i>Позначити виконаним</button>
             </form>
             {% if my_conversation %}
             <a href="{% url 'conversations:detail' my_conversation.pk %}" class="mv-btn mv-btn--secondary mv-btn--block"><i class="bi bi-chat-dots" aria-hidden="true"></i>Написати отримувачу</a>
@@ -357,7 +366,7 @@
           {% if user_response.done_at and help_request.is_open %}
           <div class="mv-note mv-note--muted">
             <i class="bi bi-clock-history" aria-hidden="true"></i>
-            <div class="mv-note__body">Ви позначили допомогу виконаною {{ user_response.done_at|date:"j E, H:i" }}. Чекаємо на підтвердження отримувача.</div>
+            <div class="mv-note__body">Ви позначили допомогу виконаною: {{ user_response.done_at|when }}. Чекаємо на підтвердження отримувача.</div>
           </div>
           {% endif %}
 

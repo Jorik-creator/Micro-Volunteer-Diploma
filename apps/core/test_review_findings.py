@@ -181,13 +181,16 @@ class TestProfilesAndDeletion:
     def test_deleted_name_disappears_from_other_peoples_notifications(self, recipient, volunteer):
         help_request = HelpRequestFactory(recipient=recipient)
         services.respond(help_request, volunteer, "Допоможу")
-        name = volunteer.get_full_name()
+        name, full_name = volunteer.short_name, volunteer.get_full_name()
         assert Notification.objects.filter(user=recipient, title__contains=name).exists()
+        # Older notifications carried the full name
+        Notification.objects.create(user=recipient, type="reminder", title=full_name, message="-")
 
         delete_account(volunteer)
 
-        assert not Notification.objects.filter(title__contains=name).exists()
-        assert not Notification.objects.filter(message__contains=name).exists()
+        for gone in (name, full_name):
+            assert not Notification.objects.filter(title__contains=gone).exists()
+            assert not Notification.objects.filter(message__contains=gone).exists()
 
 
 class TestCityFilter:
@@ -460,7 +463,7 @@ class TestNeutralWording:
     def test_new_response_title(self, recipient, volunteer):
         services.respond(HelpRequestFactory(recipient=recipient), volunteer)
         title = Notification.objects.get(user=recipient).title
-        assert title == f"Новий відгук від волонтера: {volunteer.get_full_name()}"
+        assert title == f"Новий відгук волонтера: {volunteer.short_name}"
 
 
 class TestExpiredInModeration:

@@ -38,10 +38,6 @@ class TransitionError(Exception):
     """The requested action is not allowed in the current state or for this user."""
 
 
-def _name(user):
-    return user.get_full_name() or user.username
-
-
 def _lock(help_request):
     """Re-read the request with a row lock inside the current transaction."""
     return HelpRequest.objects.select_for_update().get(pk=help_request.pk)
@@ -311,7 +307,7 @@ def respond(help_request, volunteer, message=""):
     notify(
         help_request.recipient,
         Notification.Type.NEW_RESPONSE,
-        f"Новий відгук від волонтера: {_name(volunteer)}",
+        f"Новий відгук волонтера: {volunteer.short_name}",
         f"Запит «{help_request.title}». Перегляньте відгук і прийміть або відхиліть його.",
         help_request,
     )
@@ -426,7 +422,7 @@ def withdraw(response, volunteer, reason=""):
         return
 
     reopened = _reopen_if_short(help_request)
-    message = f"{_name(volunteer)} більше не може допомогти із запитом «{help_request.title}»."
+    message = f"{volunteer.short_name} більше не може допомогти із запитом «{help_request.title}»."
     if reason:
         message += f" Причина: {reason}"
     if reopened:
@@ -512,7 +508,7 @@ def mark_done(response, volunteer):
     notify(
         help_request.recipient,
         Notification.Type.MARKED_DONE,
-        f"Допомогу позначено виконаною: {_name(volunteer)}",
+        f"Допомогу позначено виконаною: {volunteer.short_name}",
         f"Запит «{help_request.title}». "
         + (
             "Підтвердьте завершення або повідомте, якщо щось не так. "

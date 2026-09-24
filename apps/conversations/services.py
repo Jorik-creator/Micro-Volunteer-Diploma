@@ -29,10 +29,6 @@ class ConversationError(Exception):
     """The message cannot be sent."""
 
 
-def _name(user):
-    return user.get_full_name() or user.username
-
-
 def open_for(response):
     """Create (or reopen) the conversation when a volunteer is accepted."""
     conversation, created = Conversation.objects.get_or_create(
@@ -44,7 +40,7 @@ def open_for(response):
         _system(
             conversation,
             "Волонтера прийнято. Тут можна домовитися про деталі. "
-            "Номери телефонів приховані — поділіться своїм кнопкою, якщо потрібно.",
+            "Номери телефонів приховані — поділитися своїм можна кнопкою під розмовою.",
         )
     return conversation
 
@@ -73,7 +69,7 @@ def _notify_other(conversation, sender, preview):
         notify(
             other,
             Notification.Type.NEW_MESSAGE,
-            f"Нове повідомлення від {_name(sender)}",
+            f"Нове повідомлення: {sender.short_name}",
             f"Запит «{conversation.help_request.title}»: {preview[:120]}",
             conversation.help_request,
             link=reverse("conversations:detail", args=[conversation.pk]),

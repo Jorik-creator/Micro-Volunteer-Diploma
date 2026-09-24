@@ -6,14 +6,14 @@
 
 {% block content %}
 <section class="mv-page-head">
-  <div class="container mv-form-col">
+  <div class="container"><div class="mv-form-col">
     <a class="mv-back" href="{% url 'requests:detail' help_request.pk %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад до запиту</a>
-    <h1>Оцінити: {{ target.first_name|default:target.username }}</h1>
+    <h1>Оцінити: {{ target|short_name }}</h1>
     <p class="mv-lead" id="review-help">
       Оцінку побачать, коли {{ target.first_name|default:"інша сторона" }} теж залишить свою, або після {{ deadline|date:"j E" }}.
       Так ніхто не підлаштовує оцінку у відповідь.
     </p>
-  </div>
+  </div></div>
 </section>
 
 <div class="container mv-page">
@@ -22,7 +22,7 @@
       <span class="mv-tile" aria-hidden="true">{% category_icon help_request.category %}</span>
       <div>
         <p class="mv-review-req__title">{{ help_request.title }}</p>
-        <p class="mv-micro"><i class="bi bi-check2-all me-1" aria-hidden="true"></i>Завершено {{ help_request.completed_at|date:"j E Y" }}</p>
+        <p class="mv-micro"><i class="bi bi-check2-all me-1" aria-hidden="true"></i>Завершено {{ help_request.completed_at|when }}</p>
       </div>
       <span class="mv-hide-mobile">{% avatar target 56 %}</span>
     </section>
@@ -60,15 +60,15 @@
         </div>
       </fieldset>
 
-      <div class="mb-4">
+      <div>
         <label for="{{ form.comment.id_for_label }}" class="form-label">Коментар <span class="mv-muted fw-normal">— необов'язково</span></label>
         <textarea name="{{ form.comment.html_name }}" id="{{ form.comment.id_for_label }}" class="form-control" rows="4" maxlength="1000"
                   placeholder="Що було добре? Що можна покращити?">{{ form.comment.value|default:"" }}</textarea>
       </div>
 
       <div class="mv-form-actions">
-        <button type="submit" class="mv-btn mv-btn--primary mv-btn--lg"><i class="bi bi-send" aria-hidden="true"></i>Надіслати оцінку</button>
-        <a href="{% url 'requests:detail' help_request.pk %}" class="mv-btn mv-btn--ghost mv-btn--lg">Скасувати</a>
+        <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-send" aria-hidden="true"></i>Надіслати оцінку</button>
+        <a href="{% url 'requests:detail' help_request.pk %}" class="mv-btn mv-btn--ghost">Скасувати</a>
       </div>
     </form>
   </div>

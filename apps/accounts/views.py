@@ -7,9 +7,10 @@ from django.contrib.auth.views import (
     LogoutView,
     PasswordChangeView,
 )
+from django.db.models import Count, Q
 from django.http import Http404
 from django.shortcuts import redirect
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, FormView, TemplateView, UpdateView
@@ -30,7 +31,7 @@ from .forms import (
     VolunteerProfileForm,
 )
 from .models import User
-from .permissions import MODERATORS_GROUP, can_view_profile
+from .permissions import MODERATORS_GROUP, can_view_profile, is_moderator
 
 # ---------------------------------------------------------------------------
 # Home page
@@ -55,8 +56,232 @@ class HomeView(TemplateView):
         context["verified_volunteers_count"] = User.objects.filter(
             user_type=User.UserType.VOLUNTEER, is_verified=True, is_active=True
         ).count()
-        context["recent_requests"] = active.select_related("category").order_by("-published_at")[:6]
+        recent = active.select_related("category").order_by("-published_at")
+        user = self.request.user
+        if user.is_authenticated and user.is_recipient:
+            recent = recent.exclude(recipient=user)
+        context["recent_requests"] = recent[:6]
+        context["action_items"] = action_items(user) if user.is_authenticated else []
         return context
+
+
+MAX_ACTION_ITEMS = 4
+
+
+def _item(icon, title, text, url, tone=""):
+    return {"icon": icon, "title": title, "text": text, "url": url, "tone": tone}
+
+
+def _single_or_list(requests, list_url):
+    """The request page when there is exactly one, otherwise the list."""
+    return reverse("requests:detail", args=[requests[0].pk]) if len(requests) == 1 else list_url
+
+
+def action_items(user, now=None):
+    """
+    What the signed-in user should do next, most pressing first (at most
+    MAX_ACTION_ITEMS). Each item: {icon, title, text, url, tone}, where tone is
+    "" | "warning" | "success". Empty when there is nothing to do.
+    """
+    now = now or timezone.now()
+    items = _moderator_items(user)
+    if not user.email_verified_at:
+        items.append(
+            _item(
+                "bi-envelope-exclamation",
+                "Підтвердіть email",
+                "Без цього не можна публікувати запити чи відгукуватися на них.",
+                reverse("accounts:profile"),
+                "warning",
+            )
+        )
+    if user.is_recipient:
+        items += _recipient_items(user)
+    elif user.is_volunteer:
+        items += _volunteer_items(user, now)
+    items += _review_items(user, now)
+    return items[:MAX_ACTION_ITEMS]
+
+
+def _moderator_items(user):
+    if not is_moderator(user):
+        return []
+    from apps.moderation.models import Report, VerificationRequest
+    from apps.requests.models import HelpRequest
+
+    queue = reverse("moderation:queue")
+    counts = [
+        (
+            VerificationRequest.objects.filter(status=VerificationRequest.Status.PENDING).count(),
+            "bi-patch-check",
+            "Заявки на перевірку",
+            "verification",
+            "",
+        ),
+        (
+            HelpRequest.objects.filter(status=HelpRequest.Status.PENDING_MODERATION).count(),
+            "bi-file-earmark-text",
+            "Запити на модерації",
+            "requests",
+            "",
+        ),
+        (
+            Report.objects.filter(status=Report.Status.OPEN).count(),
+            "bi-flag",
+            "Скарги",
+            "reports",
+            "warning",
+        ),
+    ]
+    return [
+        _item(
+            icon,
+            f"{title}: {count}",
+            "Черга модерації чекає на розгляд.",
+            f"{queue}?tab={tab}",
+            tone,
+        )
+        for count, icon, title, tab, tone in counts
+        if count
+    ]
+
+
+def _recipient_items(user):
+    from apps.requests.models import HelpRequest, Response
+
+    S = HelpRequest.Status
+    mine = list(
+        HelpRequest.objects.filter(
+            recipient=user,
+            status__in=[S.AWAITING_CONFIRMATION, S.ACTIVE, S.REJECTED, S.DRAFT],
+        )
+        .annotate(pending=Count("responses", filter=Q(responses__status=Response.Status.PENDING)))
+        .order_by("-status_changed_at")
+    )
+    my_requests = reverse("requests:my-requests")
+    items = []
+
+    awaiting = [hr for hr in mine if hr.status == S.AWAITING_CONFIRMATION]
+    if awaiting:
+        items.append(
+            _item(
+                "bi-check2-circle",
+                "Підтвердіть виконання",
+                f"«{awaiting[0].title}» — волонтери позначили допомогу виконаною."
+                if len(awaiting) == 1
+                else f"Запитів, де волонтери позначили допомогу виконаною: {len(awaiting)}.",
+                _single_or_list(awaiting, my_requests),
+                "warning",
+            )
+        )
+
+    with_responses = [hr for hr in mine if hr.status == S.ACTIVE and hr.pending]
+    if with_responses:
+        items.append(
+            _item(
+                "bi-people",
+                f"Нові відгуки волонтерів: {sum(hr.pending for hr in with_responses)}",
+                f"«{with_responses[0].title}» — перегляньте й оберіть волонтера."
+                if len(with_responses) == 1
+                else "Перегляньте відгуки й оберіть волонтерів.",
+                _single_or_list(with_responses, my_requests),
+            )
+        )
+
+    rejected = [hr for hr in mine if hr.status == S.REJECTED]
+    if rejected:
+        items.append(
+            _item(
+                "bi-pencil",
+                "Виправте запит",
+                "Модератор повернув запит — відредагуйте його, і він піде на повторну перевірку.",
+                _single_or_list(rejected, my_requests),
+                "warning",
+            )
+        )
+
+    drafts = [hr for hr in mine if hr.status == S.DRAFT]
+    if drafts:
+        items.append(
+            _item(
+                "bi-pencil",
+                "Опублікуйте чернетку",
+                f"«{drafts[0].title}» ще не бачать волонтери."
+                if len(drafts) == 1
+                else f"Неопублікованих чернеток: {len(drafts)}.",
+                _single_or_list(drafts, my_requests),
+            )
+        )
+    return items
+
+
+def _volunteer_items(user, now):
+    from apps.conversations.services import unread_count
+    from apps.moderation.services import application_error
+    from apps.requests.models import HelpRequest, Response
+
+    items = []
+    to_mark = [
+        response.help_request
+        for response in Response.objects.filter(
+            volunteer=user,
+            status=Response.Status.ACCEPTED,
+            done_at__isnull=True,
+            help_request__status=HelpRequest.Status.IN_PROGRESS,
+        )
+        .select_related("help_request")
+        .order_by("help_request__needed_date")
+    ]
+    if to_mark:
+        first = to_mark[0]
+        items.append(
+            _item(
+                "bi-check2-circle",
+                "Позначте виконання після допомоги",
+                f"«{first.title}», {timezone.localtime(first.needed_date):%d.%m о %H:%M}."
+                if len(to_mark) == 1
+                else f"Запитів у процесі: {len(to_mark)}. Найближчий — «{first.title}».",
+                _single_or_list(to_mark, reverse("requests:my-responses")),
+                # Once the help time has come, this is the next thing to do
+                "warning" if first.needed_date <= now else "",
+            )
+        )
+
+    unread = unread_count(user)
+    if unread:
+        items.append(
+            _item(
+                "bi-chat-dots",
+                f"Нові повідомлення: {unread}",
+                "Відкрийте розмови, щоб відповісти.",
+                reverse("conversations:list"),
+            )
+        )
+
+    if user.email_verified_at and application_error(user) is None:
+        items.append(
+            _item(
+                "bi-patch-check",
+                "Пройдіть перевірку",
+                "Перевіреним волонтерам доступні візити додому.",
+                reverse("moderation:apply"),
+            )
+        )
+    return items
+
+
+def _review_items(user, now):
+    pending = pending_reviews(user, now)
+    if not pending:
+        return []
+    help_request, target = pending[0]
+    if len(pending) == 1:
+        text = f"Як пройшла допомога із запитом «{help_request.title}»?"
+        url = reverse("reviews:review-create", args=[help_request.pk, target.pk])
+    else:
+        text = f"Оцінок, які ви ще можете залишити: {len(pending)}."
+        url = reverse("accounts:profile")
+    return [_item("bi-star", "Залиште оцінку", text, url, "success")]
 
 
 # ---------------------------------------------------------------------------

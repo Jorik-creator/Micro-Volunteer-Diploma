@@ -19,8 +19,15 @@
 .mv-mod-item__title a:hover { text-decoration: underline; }
 .mv-mod-item__head .mv-meta--inline li { align-items: center; }
 .mv-mod-item__head .mv-meta--inline li > i { margin-top: 0; }
-.mv-mod-item__head .mv-avatar { width: 24px; height: 24px; font-size: 11px; }
-.mv-mod-item__head .mv-avatar__badge { display: none; }
+/* Queue tabs: on phones they wrap into rows instead of hiding behind a scroll */
+@media (max-width: 575.98px) {
+  .mv-mod-tabs { flex-wrap: wrap; overflow: visible; border-bottom: 0; gap: 0; }
+  .mv-mod-tabs .mv-tab { flex: 1 1 auto; justify-content: center; padding: 0 12px; margin-bottom: 0; border-bottom: 1px solid var(--mv-line); }
+  .mv-mod-tabs .mv-tab.is-active { border-bottom: 3px solid var(--mv-blue-600); }
+}
+/* Category icon may be the paw SVG */
+.mv-summary > dt svg { width: 18px; height: 18px; flex: none; fill: currentColor; color: var(--mv-blue-600); }
+.mv-mod-item__head .mv-meta--inline li { gap: 8px; }
 .mv-mod-item .mv-meta li.is-late { color: var(--mv-warning-ink); font-weight: 600; }
 .mv-mod-item .mv-meta li.is-late > i { color: var(--mv-warning); }
 .mv-mod-item .mv-meta li.is-alert { color: var(--mv-danger-ink); font-weight: 600; }
@@ -53,7 +60,7 @@
 .mv-code-row__code { display: flex; align-items: center; gap: 4px; flex: none; min-width: 190px; }
 .mv-code-row__code .mv-icon-btn { font-size: 18px; color: var(--mv-blue-700); }
 .mv-code-row__code .mv-icon-btn.is-done { color: var(--mv-success); }
-.mv-copy-flash { font-size: 14px; font-weight: 600; color: var(--mv-success-ink); }
+.mv-copy-flash { font-size: 15px; font-weight: 600; color: var(--mv-success-ink); }
 .mv-code-row .mv-row__side { flex-direction: row; align-items: center; gap: 20px; }
 .mv-code-row form { margin: 0; }
 .mv-code-row.is-off .mv-code { color: var(--mv-muted); text-decoration: line-through; text-decoration-thickness: 1.5px; }
@@ -114,7 +121,9 @@
 @media (max-width: 575.98px) { .mv-top-row { flex-wrap: nowrap; } .mv-top-row .mv-row__side { width: auto; flex-direction: column; align-items: flex-end; gap: 2px; } }
 
 /* ---------- Legal pages ---------- */
-.mv-legal { display: grid; gap: 8px; }
+.mv-legal { display: grid; gap: 16px; }
+.mv-legal > .mv-prose { max-width: none; } /* same width as the "Коротко" card and the note */
+.mv-legal > .mv-note p { margin: 0; }
 .mv-brief { margin-bottom: 8px; }
 .mv-brief h2 { font-size: 20px; margin: 0 0 16px; display: flex; gap: 10px; align-items: center; }
 .mv-brief h2 i { color: var(--mv-blue-600); }
@@ -142,3 +151,4 @@
   .mv-stats-card .mv-stats { grid-template-columns: 1fr 1fr; row-gap: 8px; }
   .mv-stats-card .mv-stat { border: 0; padding: 8px 16px; }
 }
+.mv-legal > .mv-prose > h2:first-child { margin-top: 16px; }

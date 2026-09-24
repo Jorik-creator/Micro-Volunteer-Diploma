@@ -245,9 +245,15 @@ class HelpRequestDetailView(DetailView):
             if user.is_authenticated and user.is_volunteer
             else None
         )
+        review_context = (
+            _review_context(hr, user) if hr.completed_at and (is_owner or is_accepted) else {}
+        )
+        review_pending = review_context.get("review_open", False) and any(
+            not item["done"] for item in review_context["review_items"]
+        )
         context.update(
             {
-                "lifecycle": lifecycle_steps(hr, len(accepted)),
+                "lifecycle": lifecycle_steps(hr, len(accepted), review_pending=review_pending),
                 "respond_blocked_reason": trust_error,
                 "is_moderator": is_moderator(user),
                 "response_form": ResponseForm(),
@@ -269,8 +275,7 @@ class HelpRequestDetailView(DetailView):
                 ),
             }
         )
-        if hr.completed_at and (is_owner or is_accepted):
-            context.update(_review_context(hr, user))
+        context.update(review_context)
         conversations = {
             c.volunteer_id: c.pk
             for c in Conversation.objects.filter(help_request=hr).only("pk", "volunteer_id")
@@ -282,6 +287,9 @@ class HelpRequestDetailView(DetailView):
                 help_request=hr, volunteer=user
             ).first()
         if is_owner:
+            # The recipient chooses between volunteers: show each one's rating
+            for response in responses:
+                response.volunteer_rating = review_services.rating_summary(response.volunteer)
             context["responses"] = sorted(
                 responses,
                 key=lambda r: (r.status != Response.Status.ACCEPTED, r.status != "pending"),
@@ -289,10 +297,11 @@ class HelpRequestDetailView(DetailView):
         return context
 
 
-def lifecycle_steps(help_request, accepted_count):
+def lifecycle_steps(help_request, accepted_count, review_pending=False):
     """
     Steps for the progress bar on the request page. Returns None for closed
     requests (cancelled / expired / rejected), which get a banner instead.
+    review_pending: the viewer can still rate someone on this request.
     """
     s = HelpRequest.Status
     status = help_request.status
@@ -316,12 +325,17 @@ def lifecycle_steps(help_request, accepted_count):
     notes = [
         first_note or "",
         f"{accepted_count} з {help_request.volunteers_needed}",
-        "очікує підтвердження"
+        "чекає підтвердження"
         if status == s.AWAITING_CONFIRMATION
         else f"{timezone.localtime(help_request.needed_date):%d.%m, %H:%M}",
-        "залиште оцінку" if status == s.COMPLETED else "",
+        _completed_note(help_request, review_pending),
     ]
-    labels = ["Опубліковано", "Волонтерів набрано", "Допомога", "Завершено"]
+    labels = [
+        "Опубліковано",
+        "Волонтерів набрано" if order > 1 else "Набір волонтерів",
+        "Допомога",
+        "Завершено",
+    ]
     steps = []
     for index, (label, note) in enumerate(zip(labels, notes, strict=True)):
         if index < order or (index == order == 3):
@@ -332,6 +346,16 @@ def lifecycle_steps(help_request, accepted_count):
             state = "todo"
         steps.append({"number": index + 1, "label": label, "note": note, "state": state})
     return steps
+
+
+def _completed_note(help_request, review_pending):
+    if help_request.status != HelpRequest.Status.COMPLETED:
+        return ""
+    if review_pending:
+        return "залиште оцінку"
+    if help_request.completed_at:
+        return f"{timezone.localtime(help_request.completed_at):%d.%m}"
+    return ""
 
 
 def _review_context(help_request, user):
@@ -494,6 +518,7 @@ class MyRequestsView(RecipientOnlyMixin, ListView):
         context["active_count"] = counts["active"]
         context["in_progress_count"] = counts["in_progress"]
         context["completed_count"] = counts["completed"]
+        context["section_counts"] = _section_counts(context["object_list"], request_section)
         return context
 
 
@@ -522,7 +547,42 @@ class MyResponsesView(VolunteerOnlyMixin, ListView):
             status=Response.Status.ACCEPTED,
             help_request__status=HelpRequest.Status.COMPLETED,
         ).count()
+        context["section_counts"] = _section_counts(context["object_list"], response_section)
         return context
+
+
+def request_section(help_request):
+    """Which tab of "Мої запити" a request belongs to: needs / current / past."""
+    s = HelpRequest.Status
+    status = help_request.status
+    if status in (s.COMPLETED, s.CANCELLED, s.EXPIRED):
+        return "past"
+    if status in (s.AWAITING_CONFIRMATION, s.DRAFT, s.REJECTED) or (
+        status == s.ACTIVE and getattr(help_request, "pending_count", 0)
+    ):
+        return "needs"
+    return "current"
+
+
+def response_section(response):
+    """Which tab of "Мої відгуки" a response belongs to: needs / current / past."""
+    accepted = response.status == Response.Status.ACCEPTED
+    request_status = response.help_request.status
+    if accepted and request_status == HelpRequest.Status.IN_PROGRESS:
+        return "current" if response.done_at else "needs"
+    if response.status == Response.Status.PENDING or (
+        accepted and request_status == HelpRequest.Status.AWAITING_CONFIRMATION
+    ):
+        return "current"
+    return "past"
+
+
+def _section_counts(items, section_of):
+    """{"needs": n, "current": n, "past": n} for the items on the current page."""
+    counts = {"needs": 0, "current": 0, "past": 0}
+    for item in items:
+        counts[section_of(item)] += 1
+    return counts
 
 
 # ---------------------------------------------------------------------------

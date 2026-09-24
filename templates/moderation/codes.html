@@ -8,7 +8,7 @@
   <div class="container">
     <a class="mv-back" href="{% url 'moderation:queue' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад до модерації</a>
     <h1>Коди організацій</h1>
-    <p class="mv-lead">Код одразу надає статус «Перевірений». Видавайте його лише партнерам, яким довіряєте.</p>
+    <p class="mv-lead">Код одразу підтверджує профіль людини, яка його ввела. Видавайте коди лише партнерам, яким довіряєте.</p>
   </div>
 </section>
 
@@ -23,7 +23,9 @@
         <div class="col-sm-6 col-lg-3">{{ form.max_uses|as_crispy_field }}</div>
         <div class="col-sm-6 col-lg-3">{{ form.expires_at|as_crispy_field }}</div>
       </div>
-      <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-key" aria-hidden="true"></i>Створити код</button>
+      <div class="mv-form-actions">
+        <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-key" aria-hidden="true"></i>Створити код</button>
+      </div>
     </form>
 
     <section aria-labelledby="codes-title">
@@ -46,7 +48,7 @@
             <p class="mv-row__title">{{ code.organization }}</p>
             <ul class="mv-meta mv-meta--inline">
               <li><i class="bi bi-people" aria-hidden="true"></i><span class="mv-num">Використано {{ code.uses_count }} з {{ code.max_uses }}</span></li>
-              <li><i class="bi bi-calendar-event" aria-hidden="true"></i>{% if code.expires_at %}Діє до {{ code.expires_at|date:"j E Y" }}{% else %}Без терміну{% endif %}</li>
+              <li><i class="bi bi-calendar-event" aria-hidden="true"></i>{% if code.expires_at %}Діє до {{ code.expires_at|when }}{% else %}Без терміну{% endif %}</li>
             </ul>
           </div>
           <div class="mv-row__side">

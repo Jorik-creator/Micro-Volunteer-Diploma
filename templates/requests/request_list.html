@@ -64,7 +64,7 @@
         <p class="mv-mb-0">
           Знайдено <strong class="mv-num">{{ paginator.count }}</strong> {{ paginator.count|uk_plural:"запит,запити,запитів" }}
         </p>
-        {% if paginator.count %}<p class="mv-micro mv-mb-0"><i class="bi bi-sort-down me-1" aria-hidden="true"></i>Спершу найтерміновіші</p>{% endif %}
+        {% if paginator.count %}<p class="bw-results-bar__sort mv-mb-0"><i class="bi bi-sort-down me-1" aria-hidden="true"></i>Спершу найтерміновіші</p>{% endif %}
       </div>
 
       {% if requests %}

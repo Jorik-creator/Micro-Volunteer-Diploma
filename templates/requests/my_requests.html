@@ -17,7 +17,7 @@
     </div>
     {% if requests %}
     <dl class="mv-stats mv-stats--compact mv-head-stats" aria-label="Мої запити в цифрах">
-      <div class="mv-stat"><dt class="mv-stat__label">Шукають волонтера</dt><dd class="mv-stat__num">{{ active_count }}</dd></div>
+      <div class="mv-stat"><dt class="mv-stat__label">Шукають волонтерів</dt><dd class="mv-stat__num">{{ active_count }}</dd></div>
       <div class="mv-stat"><dt class="mv-stat__label">У процесі</dt><dd class="mv-stat__num">{{ in_progress_count }}</dd></div>
       <div class="mv-stat"><dt class="mv-stat__label">Виконано</dt><dd class="mv-stat__num">{{ completed_count }}</dd></div>
     </dl>
@@ -27,11 +27,12 @@
 
 <div class="container mv-page mv-personal">
   {% if requests %}
-  {# Groups are built from the current page; empty groups and their links are hidden by personal.css #}
-  <nav class="mv-tabs mv-jump" aria-label="Розділи сторінки">
-    <a class="mv-tab" href="#needs"><i class="bi bi-exclamation-circle" aria-hidden="true"></i>Потребують дії</a>
-    <a class="mv-tab" href="#current"><i class="bi bi-circle-half" aria-hidden="true"></i>Активні</a>
-    <a class="mv-tab" href="#past"><i class="bi bi-archive" aria-hidden="true"></i>Завершені</a>
+  {# Groups are built from the current page; section_counts (view) uses the same rules. Empty groups are also hidden by personal.css #}
+  <nav class="mv-jump" aria-label="Розділи сторінки">
+    <span class="mv-jump__label">Перейти до:</span>
+    {% if section_counts.needs or not section_counts %}<a href="#needs">Потребують дії{% if section_counts %} <span class="mv-jump__num">{{ section_counts.needs }}</span>{% endif %}</a>{% endif %}
+    {% if section_counts.current or not section_counts %}<a href="#current">Активні{% if section_counts %} <span class="mv-jump__num">{{ section_counts.current }}</span>{% endif %}</a>{% endif %}
+    {% if section_counts.past or not section_counts %}<a href="#past">Завершені{% if section_counts %} <span class="mv-jump__num">{{ section_counts.past }}</span>{% endif %}</a>{% endif %}
   </nav>
 
   <section class="mv-psec mv-psec--action" id="needs" aria-labelledby="needs-title">
@@ -42,7 +43,7 @@
     <div class="mv-grid mv-grid--cards">
       {% for hr in requests %}
       {% if hr.status == 'awaiting_confirmation' %}
-        {% include "partials/_request_card.html" with show_status=True card_note="Волонтер позначив допомогу виконаною — підтвердьте, що допомогу отримано." card_action="Підтвердити" %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Допомогу позначено виконаною — підтвердьте, що її отримано." card_action="Підтвердити" %}
       {% elif hr.status == 'active' and hr.pending_count %}
         {% include "partials/_request_card.html" with show_status=True card_note="Нових відгуків волонтерів: " card_note_value=hr.pending_count card_action="Переглянути відгуки" %}
       {% elif hr.status == 'draft' %}
@@ -66,7 +67,7 @@
       {% elif hr.status == 'active' and not hr.pending_count %}
         {% include "partials/_request_card.html" with show_status=True card_note="Запит бачать волонтери поруч — ми сповістимо про відгуки." %}
       {% elif hr.status == 'in_progress' %}
-        {% include "partials/_request_card.html" with show_status=True card_note="Волонтер допомагає — деталі узгоджуйте в розмові." %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Допомога в процесі — деталі узгоджуйте в розмові." %}
       {% endif %}
       {% endfor %}
     </div>
