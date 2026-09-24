@@ -2410,3 +2410,23 @@ html.a11y-calm-mode .filters-bar { box-shadow: none; }
   background: var(--mv-gray-100); color: var(--mv-gray-700); font-weight: 700; }
 .trust-steps .done .dot { background: var(--mv-success-bg); color: #15803D; }
 .trust-steps .current .dot { background: var(--mv-blue-600); color: #fff; }
+
+/* Conversations */
+.chat-shell { max-width: 760px; margin: 0 auto; }
+.chat-log { display: flex; flex-direction: column; gap: 10px; min-height: 240px; max-height: 60vh;
+  overflow-y: auto; padding: 16px; background: var(--mv-gray-50); border-radius: var(--mv-radius-md); }
+.chat-msg { max-width: 80%; padding: 10px 14px; border-radius: 16px; background: #fff;
+  box-shadow: var(--mv-shadow-card); white-space: pre-wrap; overflow-wrap: anywhere; font-size: 16px; }
+.chat-msg.mine { align-self: flex-end; background: var(--mv-blue-600); color: #fff; }
+.chat-msg.system { align-self: center; background: transparent; box-shadow: none; color: var(--mv-gray-700);
+  font-size: 14px; text-align: center; }
+.chat-msg.phone { border: 2px solid var(--mv-success); }
+.chat-msg .meta { display: block; font-size: 12px; opacity: .75; margin-top: 4px; }
+.chat-form { display: grid; gap: 8px; margin-top: 12px; }
+.chat-form textarea { min-height: 72px; font-size: 16px; }
+.chat-list { display: grid; gap: 10px; }
+.chat-list-item { display: flex; justify-content: space-between; gap: 12px; align-items: center;
+  padding: 14px 16px; border-radius: var(--mv-radius-sm); background: #fff; box-shadow: var(--mv-shadow-card);
+  color: inherit; text-decoration: none; }
+.chat-list-item.unread { border-left: 4px solid var(--mv-blue-600); }
+.on-behalf-box { border: 0; padding: 0; }

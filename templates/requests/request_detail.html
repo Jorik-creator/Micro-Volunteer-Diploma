@@ -257,9 +257,15 @@ function fallbackCopy(text) {
         {% elif is_accepted %}
           <div class="alert alert-success">
             <i class="bi bi-check-circle me-2"></i>Вас прийнято!
-            {% if help_request.is_open %}
+            {% if help_request.on_behalf and help_request.is_open %}
             <div class="mt-2">
-              <strong>Телефон отримувача:</strong> {% if help_request.recipient.phone %}{{ help_request.recipient.phone }}{% else %}не вказано{% endif %}
+              <strong>Кому допомагаємо:</strong> {{ help_request.beneficiary_name }},
+              <a href="tel:{{ help_request.beneficiary_phone }}">{{ help_request.beneficiary_phone }}</a>
+            </div>
+            {% endif %}
+            {% if my_conversation %}
+            <div class="mt-2">
+              <a href="{% url 'conversations:detail' my_conversation.pk %}" class="btn btn-solid btn-sm"><i class="bi bi-chat-dots"></i> Написати отримувачу</a>
             </div>
             {% endif %}
           </div>
@@ -325,6 +331,9 @@ function fallbackCopy(text) {
               {% if resp.message %}<div class="s">{{ resp.message }}</div>{% endif %}
               {% if resp.status_reason %}<div class="s"><em>{{ resp.status_reason }}</em></div>{% endif %}
               <div class="when when-tight">{{ resp.created_at|date:"d.m.Y H:i" }}</div>
+              {% if resp.status == 'accepted' and resp.conversation_id %}
+              <a href="{% url 'conversations:detail' resp.conversation_id %}" class="btn btn-ghost btn-sm mt-2"><i class="bi bi-chat-dots"></i> Розмова</a>
+              {% endif %}
               {% if resp.status == 'accepted' and help_request.is_open %}
               <details class="mt-2">
                 <summary>Зняти волонтера</summary>

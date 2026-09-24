@@ -29,6 +29,7 @@ from django.views.generic import CreateView, DetailView, ListView, TemplateView,
 
 from apps.accounts.decorators import recipient_required, volunteer_required
 from apps.accounts.permissions import is_moderator
+from apps.conversations.models import Conversation
 from apps.reviews import services as review_services
 from apps.reviews.models import Review
 
@@ -232,6 +233,16 @@ class HelpRequestDetailView(DetailView):
         )
         if hr.completed_at and (is_owner or is_accepted):
             context.update(_review_context(hr, user))
+        conversations = {
+            c.volunteer_id: c.pk
+            for c in Conversation.objects.filter(help_request=hr).only("pk", "volunteer_id")
+        }
+        for response in responses:
+            response.conversation_id = conversations.get(response.volunteer_id)
+        if is_accepted:
+            context["my_conversation"] = Conversation.objects.filter(
+                help_request=hr, volunteer=user
+            ).first()
         if is_owner:
             context["responses"] = sorted(
                 responses,

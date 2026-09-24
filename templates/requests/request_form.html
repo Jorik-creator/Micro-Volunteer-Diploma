@@ -69,6 +69,16 @@
 
       {{ form.volunteers_needed|as_crispy_field }}
 
+      <fieldset class="on-behalf-box mb-3">
+        <legend class="visually-hidden">Для кого запит</legend>
+        {{ form.on_behalf|as_crispy_field }}
+        <div id="beneficiary-fields" class="row">
+          <p class="text-muted small">Контакт цієї людини побачить лише прийнятий волонтер — щоб зателефонувати перед візитом.</p>
+          <div class="col-md-6">{{ form.beneficiary_name|as_crispy_field }}</div>
+          <div class="col-md-6">{{ form.beneficiary_phone|as_crispy_field }}</div>
+        </div>
+      </fieldset>
+
       <!-- Address with Nominatim autocomplete -->
       <div class="mb-3 position-relative" id="address-wrapper">
         {{ form.address|as_crispy_field }}
@@ -266,6 +276,12 @@
   }
   radios.forEach(function (r) { r.addEventListener('change', sync); });
   sync();
+
+  const onBehalf = document.getElementById('id_on_behalf');
+  const beneficiary = document.getElementById('beneficiary-fields');
+  function syncBehalf() { if (onBehalf && beneficiary) beneficiary.hidden = !onBehalf.checked; }
+  if (onBehalf) onBehalf.addEventListener('change', syncBehalf);
+  syncBehalf();
 })();
 </script>
 {% endblock %}

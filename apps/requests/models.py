@@ -128,6 +128,10 @@ class HelpRequest(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(10)],
     )
     address = models.CharField("Адреса", max_length=255, blank=True)
+    # Filed by a relative or social worker for someone without an account (ROADMAP, Q22)
+    on_behalf = models.BooleanField("Подаю від імені іншої людини", default=False)
+    beneficiary_name = models.CharField("Кому допомагаємо (ім'я)", max_length=100, blank=True)
+    beneficiary_phone = models.CharField("Телефон цієї людини", max_length=20, blank=True)
     latitude = models.FloatField(
         "Широта", null=True, blank=True, validators=[MinValueValidator(-90), MaxValueValidator(90)]
     )

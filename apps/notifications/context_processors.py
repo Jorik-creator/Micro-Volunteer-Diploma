@@ -15,8 +15,13 @@ from .models import Notification
 def navigation(request):
     """Flags the navigation needs on every page."""
     from apps.accounts.permissions import is_moderator
+    from apps.conversations.services import unread_count
 
-    return {"is_moderator": is_moderator(request.user)}
+    user = request.user
+    return {
+        "is_moderator": is_moderator(user),
+        "unread_conversations": unread_count(user) if user.is_authenticated else 0,
+    }
 
 
 def unread_notifications(request):

@@ -23,6 +23,7 @@ class Notification(models.Model):
         REQUEST_CANCELLED = "request_cancelled", "Запит скасовано"
         REQUEST_EXPIRED = "request_expired", "Запит прострочено"
         REMINDER = "reminder", "Нагадування"
+        NEW_MESSAGE = "new_message", "Нове повідомлення"
         NEW_REVIEW = "new_review", "Нова оцінка"
         VERIFICATION_DECISION = "verification", "Рішення щодо перевірки"
         REPORT_RESOLVED = "report_resolved", "Скаргу розглянуто"

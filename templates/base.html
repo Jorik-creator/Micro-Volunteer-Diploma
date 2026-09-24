@@ -68,6 +68,11 @@
             <a class="nav-link" href="{% url 'requests:my-responses' %}">Мої відгуки</a>
           </li>
           {% endif %}
+          {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'conversations:list' %}">Розмови{% if unread_conversations %} <span class="badge rounded-pill text-bg-primary" aria-label="непрочитаних: {{ unread_conversations }}">{{ unread_conversations }}</span>{% endif %}</a>
+          </li>
+          {% endif %}
           {% if is_moderator %}
           <li class="nav-item">
             <a class="nav-link" href="{% url 'moderation:queue' %}"><i class="bi bi-shield-check"></i> Модерація</a>

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Розмова — MicroVolunteer{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container chat-shell">
+    <a href="{% url 'requests:detail' conversation.help_request.pk %}" class="btn btn-muted btn-sm toolbar-row"><i class="bi bi-arrow-left"></i> До запиту</a>
+    <h1 class="page-title">{{ partner.first_name|default:partner.username }} {{ partner.last_name|first }}.</h1>
+    <p class="page-sub">Запит «{{ conversation.help_request.title }}»</p>
+  </div>
+</section>
+
+<div class="container page-shell chat-shell">
+  {% if as_moderator %}
+  <div class="alert alert-warning" role="status"><i class="bi bi-shield-exclamation me-2"></i>Ви переглядаєте розмову як модератор через скаргу. Писати тут не можна.</div>
+  {% endif %}
+
+  <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-label="Повідомлення"
+       data-url="{% url 'conversations:messages' conversation.pk %}" data-last-id="{{ last_id }}">
+    {% for message in history %}
+      {# Plain text only: links are never turned into clickable anchors (ADR 0007) #}
+      <div class="chat-msg {{ message.kind }}{% if message.sender_id == user.pk %} mine{% endif %}">{% if message.kind == 'phone' %}<i class="bi bi-telephone"></i> {% endif %}{{ message.body }}{% if message.kind != 'system' %}<span class="meta">{% if message.sender_id != user.pk %}{{ message.sender.first_name }} · {% endif %}{{ message.created_at|date:"d.m H:i" }}{% if not as_moderator and message.sender_id != user.pk %} · <a href="{% url 'moderation:report' 'message' message.pk %}?next={{ request.path|urlencode }}">поскаржитися</a>{% endif %}</span>{% endif %}</div>
+    {% empty %}
+      <p class="text-muted text-center my-auto">Повідомлень ще немає.</p>
+    {% endfor %}
+  </div>
+
+  {% if can_write %}
+  <form method="post" class="chat-form" id="chat-form">
+    {% csrf_token %}
+    <label for="chat-body" class="form-label">Ваше повідомлення</label>
+    <textarea name="body" id="chat-body" class="form-control" maxlength="{{ max_length }}" required
+              aria-describedby="chat-hint"></textarea>
+    <div id="chat-hint" class="text-muted small">Не надсилайте паролі, коди з SMS чи дані картки. Посилання в розмові не відкриваються — з міркувань безпеки.</div>
+    <div class="d-flex gap-2 flex-wrap">
+      <button type="submit" class="btn btn-solid"><i class="bi bi-send"></i> Надіслати</button>
+    </div>
+  </form>
+  {% if not phone_shared %}
+  <form method="post" action="{% url 'conversations:share-phone' conversation.pk %}" class="mt-2">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-ghost btn-sm" data-confirm-submit="Показати ваш номер телефону співрозмовнику?"><i class="bi bi-telephone"></i> Поділитися моїм номером</button>
+  </form>
+  {% endif %}
+  {% elif not as_moderator %}
+  <p class="text-muted mt-3"><i class="bi bi-lock"></i> Розмова закрита — запит завершено або участь волонтера припинено. Історія доступна для читання 14 днів.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const log = document.getElementById('chat-log');
+  if (!log) return;
+  log.scrollTop = log.scrollHeight;
+  const url = log.dataset.url;
+  let lastId = parseInt(log.dataset.lastId, 10) || 0;
+
+  function render(m) {
+    // textContent only: message bodies are never interpreted as HTML
+    const el = document.createElement('div');
+    el.className = 'chat-msg ' + m.kind + (m.mine ? ' mine' : '');
+    el.textContent = (m.kind === 'phone' ? '☎ ' : '') + m.body;
+    if (m.kind !== 'system') {
+      const meta = document.createElement('span');
+      meta.className = 'meta';
+      meta.textContent = (m.mine ? '' : m.sender + ' · ') + m.time;
+      el.appendChild(meta);
+    }
+    log.appendChild(el);
+  }
+
+  async function poll() {
+    if (document.hidden) return;
+    try {
+      const response = await fetch(url + '?after=' + lastId, { credentials: 'same-origin' });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.messages.length) {
+        const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+        data.messages.forEach(function (m) { render(m); lastId = Math.max(lastId, m.id); });
+        if (nearBottom) log.scrollTop = log.scrollHeight;
+      }
+      if (!data.writable) {
+        const form = document.getElementById('chat-form');
+        if (form) form.remove();
+      }
+    } catch (e) { /* offline — try again later */ }
+  }
+  setInterval(poll, 5000);
+  document.addEventListener('visibilitychange', poll);
+})();
+</script>
+{% endblock %}

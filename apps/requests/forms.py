@@ -35,6 +35,9 @@ class HelpRequestForm(forms.ModelForm):
             "needed_date",
             "duration",
             "volunteers_needed",
+            "on_behalf",
+            "beneficiary_name",
+            "beneficiary_phone",
             "address",
             "latitude",
             "longitude",
@@ -80,6 +83,16 @@ class HelpRequestForm(forms.ModelForm):
             cleaned["longitude"] = None
         elif not cleaned.get("address"):
             self.add_error("address", "Вкажіть адресу — її побачить лише прийнятий волонтер.")
+        if cleaned.get("on_behalf"):
+            if not cleaned.get("beneficiary_name"):
+                self.add_error("beneficiary_name", "Вкажіть, кому потрібна допомога.")
+            if not cleaned.get("beneficiary_phone"):
+                self.add_error(
+                    "beneficiary_phone", "Потрібен телефон — волонтер зателефонує перед візитом."
+                )
+        else:
+            cleaned["beneficiary_name"] = ""
+            cleaned["beneficiary_phone"] = ""
         return cleaned
 
     def clean_photo(self):

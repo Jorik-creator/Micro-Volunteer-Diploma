@@ -20,6 +20,7 @@ urlpatterns = [
     path("notifications/", include("apps.notifications.urls")),
     path("stats/", include("apps.stats.urls")),
     path("moderation/", include("apps.moderation.urls")),
+    path("conversations/", include("apps.conversations.urls")),
     path("tasks/", include("apps.core.urls")),
 ]
 

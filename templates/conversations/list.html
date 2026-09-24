@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Розмови — MicroVolunteer{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container">
+    <h1 class="page-title">Розмови</h1>
+    <p class="page-sub">Розмова відкривається, коли волонтера прийнято на запит.</p>
+  </div>
+</section>
+
+<div class="container page-shell chat-shell">
+  {% if conversations %}
+  <div class="chat-list">
+    {% for conversation in conversations %}
+    <a href="{% url 'conversations:detail' conversation.pk %}" class="chat-list-item{% if conversation.unread %} unread{% endif %}">
+      <span>
+        <strong>{{ conversation.partner.first_name|default:conversation.partner.username }} {{ conversation.partner.last_name|first }}.</strong>
+        <span class="d-block text-muted small">«{{ conversation.help_request.title }}»</span>
+      </span>
+      <span class="text-end small">
+        {% if conversation.unread %}<span class="badge rounded-pill text-bg-primary">нове</span>{% endif %}
+        <span class="d-block text-muted">{{ conversation.last_message_at|date:"d.m H:i" }}</span>
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-chat-dots empty-icon"></i>
+    <p>Розмов поки немає.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

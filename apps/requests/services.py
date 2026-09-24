@@ -16,6 +16,7 @@ from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 
+from apps.conversations import services as conversation_services
 from apps.notifications.models import Notification
 from apps.notifications.services import notify, notify_many, notify_nearby_volunteers
 
@@ -300,6 +301,7 @@ def accept(response, recipient):
         raise TransitionError("Цей відгук уже розглянуто.")
 
     _set_response_status(response, RStatus.ACCEPTED)
+    conversation_services.open_for(response)
     notify(
         response.volunteer,
         Notification.Type.REQUEST_ACCEPTED,
