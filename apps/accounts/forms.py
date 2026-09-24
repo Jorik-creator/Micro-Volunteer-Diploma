@@ -2,8 +2,10 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import (
     AuthenticationForm,
-    PasswordChangeForm as DjangoPasswordChangeForm,
     UserCreationForm,
+)
+from django.contrib.auth.forms import (
+    PasswordChangeForm as DjangoPasswordChangeForm,
 )
 
 from .models import RecipientProfile, VolunteerProfile
@@ -68,9 +70,7 @@ class RegisterForm(UserCreationForm):
     def clean_email(self):
         email = self.cleaned_data.get("email")
         if User.objects.filter(email=email).exists():
-            raise forms.ValidationError(
-                "Користувач з такою електронною поштою вже існує."
-            )
+            raise forms.ValidationError("Користувач з такою електронною поштою вже існує.")
         return email
 
 
@@ -147,9 +147,7 @@ class UserProfileForm(forms.ModelForm):
         if avatar and hasattr(avatar, "size"):
             max_size = 2 * 1024 * 1024  # 2 MB
             if avatar.size > max_size:
-                raise forms.ValidationError(
-                    "Розмір зображення не повинен перевищувати 2 МБ."
-                )
+                raise forms.ValidationError("Розмір зображення не повинен перевищувати 2 МБ.")
         return avatar
 
 
@@ -161,9 +159,7 @@ class VolunteerProfileForm(forms.ModelForm):
         fields = ["categories", "radius_km", "is_available", "bio"]
         widgets = {
             "categories": forms.CheckboxSelectMultiple,
-            "bio": forms.Textarea(
-                attrs={"rows": 3, "placeholder": "Розкажіть про себе..."}
-            ),
+            "bio": forms.Textarea(attrs={"rows": 3, "placeholder": "Розкажіть про себе..."}),
         }
 
 
@@ -174,9 +170,7 @@ class RecipientProfileForm(forms.ModelForm):
         model = RecipientProfile
         fields = ["situation_type", "emergency_contact_name", "emergency_contact_phone"]
         widgets = {
-            "emergency_contact_phone": forms.TextInput(
-                attrs={"placeholder": "+380..."}
-            ),
+            "emergency_contact_phone": forms.TextInput(attrs={"placeholder": "+380..."}),
         }
 
 
@@ -190,12 +184,6 @@ class CustomPasswordChangeForm(DjangoPasswordChangeForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["old_password"].widget.attrs.update(
-            {"autocomplete": "current-password"}
-        )
-        self.fields["new_password1"].widget.attrs.update(
-            {"autocomplete": "new-password"}
-        )
-        self.fields["new_password2"].widget.attrs.update(
-            {"autocomplete": "new-password"}
-        )
+        self.fields["old_password"].widget.attrs.update({"autocomplete": "current-password"})
+        self.fields["new_password1"].widget.attrs.update({"autocomplete": "new-password"})
+        self.fields["new_password2"].widget.attrs.update({"autocomplete": "new-password"})

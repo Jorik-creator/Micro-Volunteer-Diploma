@@ -39,6 +39,7 @@ from django.views.generic import (
 
 from apps.accounts.decorators import recipient_required, volunteer_required
 from apps.notifications.signals import create_response_status_notification
+
 from .forms import FilterForm, HelpRequestForm, ResponseForm
 from .models import HelpRequest, Response
 from .utils import offset_coordinates
@@ -126,9 +127,7 @@ def map_data(request):
             # Offset coordinates for privacy. Seed with the request pk so the
             # offset is stable across repeated calls (prevents averaging out
             # the true location by polling the endpoint multiple times).
-            lat, lon = offset_coordinates(
-                hr.latitude, hr.longitude, offset_meters=150, seed=hr.pk
-            )
+            lat, lon = offset_coordinates(hr.latitude, hr.longitude, offset_meters=150, seed=hr.pk)
         else:
             continue
 
@@ -203,9 +202,7 @@ class HelpRequestDetailView(DetailView):
         context["urgency_color"] = _urgency_color(hr.urgency)
 
         # Count accepted responses
-        context["accepted_count"] = hr.responses.filter(
-            status=Response.Status.ACCEPTED
-        ).count()
+        context["accepted_count"] = hr.responses.filter(status=Response.Status.ACCEPTED).count()
 
         if not user.is_authenticated:
             context["is_owner"] = False
@@ -233,9 +230,7 @@ class HelpRequestDetailView(DetailView):
 
         # Recipient PII (full name) is only revealed to the owner or the
         # accepted volunteer — never to anonymous or unrelated users.
-        context["can_view_recipient"] = context["is_owner"] or context.get(
-            "is_accepted", False
-        )
+        context["can_view_recipient"] = context["is_owner"] or context.get("is_accepted", False)
 
         return context
 
@@ -256,9 +251,7 @@ class HelpRequestCreateView(LoginRequiredMixin, CreateView):
         if not request.user.is_authenticated:
             return redirect("accounts:login")
         if not request.user.is_recipient:
-            messages.error(
-                request, "Ця сторінка доступна тільки для отримувачів допомоги."
-            )
+            messages.error(request, "Ця сторінка доступна тільки для отримувачів допомоги.")
             return redirect("home")
         # Max active requests guard
         active_count = HelpRequest.objects.filter(
@@ -338,9 +331,7 @@ class MyRequestsView(LoginRequiredMixin, ListView):
         if not request.user.is_authenticated:
             return redirect("accounts:login")
         if not request.user.is_recipient:
-            messages.error(
-                request, "Ця сторінка доступна тільки для отримувачів допомоги."
-            )
+            messages.error(request, "Ця сторінка доступна тільки для отримувачів допомоги.")
             return redirect("home")
         return super().dispatch(request, *args, **kwargs)
 
@@ -357,12 +348,8 @@ class MyRequestsView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         qs = self.get_queryset()
         context["active_count"] = qs.filter(status=HelpRequest.Status.ACTIVE).count()
-        context["in_progress_count"] = qs.filter(
-            status=HelpRequest.Status.IN_PROGRESS
-        ).count()
-        context["completed_count"] = qs.filter(
-            status=HelpRequest.Status.COMPLETED
-        ).count()
+        context["in_progress_count"] = qs.filter(status=HelpRequest.Status.IN_PROGRESS).count()
+        context["completed_count"] = qs.filter(status=HelpRequest.Status.COMPLETED).count()
         return context
 
 
@@ -374,9 +361,7 @@ class MyRequestsView(LoginRequiredMixin, ListView):
 @volunteer_required
 def respond_to_request(request, pk):
     """Volunteer submits a response to an active request."""
-    help_request = get_object_or_404(
-        HelpRequest, pk=pk, status=HelpRequest.Status.ACTIVE
-    )
+    help_request = get_object_or_404(HelpRequest, pk=pk, status=HelpRequest.Status.ACTIVE)
 
     # Prevent author from responding to own request (safety check)
     if help_request.recipient == request.user:
@@ -384,9 +369,7 @@ def respond_to_request(request, pk):
         return redirect("requests:detail", pk=pk)
 
     # Prevent duplicate responses (view-level check before DB constraint fires)
-    if Response.objects.filter(
-        volunteer=request.user, help_request=help_request
-    ).exists():
+    if Response.objects.filter(volunteer=request.user, help_request=help_request).exists():
         messages.warning(request, "Ви вже відгукнулись на цей запит.")
         return redirect("requests:detail", pk=pk)
 
@@ -501,9 +484,7 @@ def complete_request(request, pk):
     if request.method != "POST":
         return redirect("requests:detail", pk=pk)
 
-    help_request = get_object_or_404(
-        HelpRequest, pk=pk, status=HelpRequest.Status.IN_PROGRESS
-    )
+    help_request = get_object_or_404(HelpRequest, pk=pk, status=HelpRequest.Status.IN_PROGRESS)
 
     is_accepted_volunteer = Response.objects.filter(
         help_request=help_request,
@@ -576,7 +557,9 @@ def request_status(request, pk):
     )
     if not is_participant and help_request.status != HelpRequest.Status.ACTIVE:
         raise Http404("Запит недоступний.")
-    return JsonResponse({
-        "status": help_request.status,
-        "status_display": help_request.get_status_display(),
-    })
+    return JsonResponse(
+        {
+            "status": help_request.status,
+            "status_display": help_request.get_status_display(),
+        }
+    )

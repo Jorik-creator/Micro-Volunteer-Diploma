@@ -5,17 +5,16 @@ Covers: models, signals, forms, views, decorators.
 """
 
 import pytest
-from django.test import RequestFactory
-from django.contrib.sessions.middleware import SessionMiddleware
 from django.contrib.messages.middleware import MessageMiddleware
 from django.contrib.messages.storage.fallback import FallbackStorage
+from django.contrib.sessions.middleware import SessionMiddleware
+from django.db import IntegrityError
+from django.test import RequestFactory
 
-from apps.accounts.models import User, VolunteerProfile, RecipientProfile
+from apps.accounts.decorators import recipient_required, volunteer_required
 from apps.accounts.forms import LoginForm, RegisterForm, UserProfileForm
-from apps.accounts.decorators import volunteer_required, recipient_required
-
+from apps.accounts.models import RecipientProfile, User, VolunteerProfile
 from conftest import VolunteerFactory
-
 
 # ===================================================================
 # MODEL TESTS
@@ -42,7 +41,7 @@ class TestUserModel:
 
     def test_email_is_unique(self, volunteer, db):
         """Cannot create two users with the same email."""
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             User.objects.create_user(
                 username="duplicate",
                 email=volunteer.email,
@@ -164,9 +163,7 @@ class TestLoginForm:
         form = LoginForm()
 
         assert form.fields["username"].widget.attrs["autocomplete"] == "username"
-        assert (
-            form.fields["password"].widget.attrs["autocomplete"] == "current-password"
-        )
+        assert form.fields["password"].widget.attrs["autocomplete"] == "current-password"
 
 
 class TestUserProfileForm:
@@ -239,9 +236,7 @@ class TestRegisterView:
         assert response.status_code == 302  # redirect
         assert User.objects.filter(username="newvolunteer").exists()
 
-    def test_authenticated_user_redirected_from_register(
-        self, client_logged_in_volunteer
-    ):
+    def test_authenticated_user_redirected_from_register(self, client_logged_in_volunteer):
         """Authenticated users are redirected away from registration page."""
         response = client_logged_in_volunteer.get("/accounts/register/")
         assert response.status_code == 302
@@ -276,9 +271,7 @@ class TestLogoutView:
 
         assert response.status_code == 405
 
-    def test_logout_post_redirects_home_and_clears_session(
-        self, client_logged_in_volunteer
-    ):
+    def test_logout_post_redirects_home_and_clears_session(self, client_logged_in_volunteer):
         """POST logout signs the user out and redirects to the homepage."""
         response = client_logged_in_volunteer.post("/accounts/logout/")
 
@@ -286,9 +279,7 @@ class TestLogoutView:
         assert response.url == "/"
         assert "_auth_user_id" not in client_logged_in_volunteer.session
 
-    def test_authenticated_home_renders_post_logout_form(
-        self, client_logged_in_volunteer
-    ):
+    def test_authenticated_home_renders_post_logout_form(self, client_logged_in_volunteer):
         """Authenticated navbar renders logout as a POST form, not a GET link."""
         response = client_logged_in_volunteer.get("/")
         content = response.content.decode()
@@ -358,7 +349,7 @@ def _build_request(user=None):
     # Add messages
     messages_middleware = MessageMiddleware(lambda req: None)
     messages_middleware.process_request(request)
-    setattr(request, "_messages", FallbackStorage(request))
+    request._messages = FallbackStorage(request)
 
     if user:
         request.user = user

@@ -3,9 +3,9 @@ from django.dispatch import receiver
 
 from apps.accounts.models import User
 from apps.notifications.models import Notification
-from apps.reviews.models import Review
 from apps.requests.models import HelpRequest, Response
 from apps.requests.utils import haversine_distance
+from apps.reviews.models import Review
 
 
 def _display_name(user):
@@ -27,9 +27,12 @@ def _volunteer_matches_request(volunteer, help_request):
     if profile is None or not profile.is_available:
         return False
 
-    if help_request.category_id and profile.categories.exists():
-        if not profile.categories.filter(pk=help_request.category_id).exists():
-            return False
+    if (
+        help_request.category_id
+        and profile.categories.exists()
+        and not profile.categories.filter(pk=help_request.category_id).exists()
+    ):
+        return False
 
     if (
         volunteer.latitude is not None
@@ -77,8 +80,7 @@ def create_response_status_notification(response):
             defaults={
                 "title": "Ваш відгук не прийнято",
                 "message": (
-                    f"На жаль, ваш відгук на запит "
-                    f"'{response.help_request.title}' відхилено."
+                    f"На жаль, ваш відгук на запит '{response.help_request.title}' відхилено."
                 ),
             },
         )
@@ -134,8 +136,7 @@ def on_response_received(sender, instance, created, **kwargs):
         defaults={
             "title": f"{_display_name(instance.volunteer)} відгукнувся(лась) на ваш запит",
             "message": (
-                f"Запит: '{instance.help_request.title}'. "
-                "Перегляньте відгуки та оберіть волонтера."
+                f"Запит: '{instance.help_request.title}'. Перегляньте відгуки та оберіть волонтера."
             ),
         },
     )

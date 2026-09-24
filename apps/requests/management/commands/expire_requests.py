@@ -41,9 +41,7 @@ class Command(BaseCommand):
         count = qs.count()
 
         if options["dry_run"]:
-            self.stdout.write(
-                self.style.WARNING(f"[dry-run] Would expire {count} request(s).")
-            )
+            self.stdout.write(self.style.WARNING(f"[dry-run] Would expire {count} request(s)."))
             return
 
         if count == 0:
@@ -51,6 +49,4 @@ class Command(BaseCommand):
             return
 
         updated = qs.update(status=HelpRequest.Status.EXPIRED)
-        self.stdout.write(
-            self.style.SUCCESS(f"Successfully expired {updated} request(s).")
-        )
+        self.stdout.write(self.style.SUCCESS(f"Successfully expired {updated} request(s)."))

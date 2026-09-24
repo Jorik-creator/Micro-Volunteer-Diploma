@@ -70,9 +70,8 @@ class HelpRequestForm(forms.ModelForm):
 
     def clean_photo(self):
         photo = self.cleaned_data.get("photo")
-        if photo and hasattr(photo, "size"):
-            if photo.size > 5 * 1024 * 1024:  # 5 MB
-                raise forms.ValidationError("Розмір фото не повинен перевищувати 5 МБ.")
+        if photo and hasattr(photo, "size") and photo.size > 5 * 1024 * 1024:  # 5 MB
+            raise forms.ValidationError("Розмір фото не повинен перевищувати 5 МБ.")
         return photo
 
 
@@ -87,12 +86,12 @@ class FilterForm(forms.Form):
     )
     urgency = forms.ChoiceField(
         label="Терміновість",
-        choices=[("", "Будь-яка")] + HelpRequest.Urgency.choices,
+        choices=[("", "Будь-яка"), *HelpRequest.Urgency.choices],
         required=False,
     )
     duration = forms.ChoiceField(
         label="Тривалість",
-        choices=[("", "Будь-яка")] + HelpRequest.Duration.choices,
+        choices=[("", "Будь-яка"), *HelpRequest.Duration.choices],
         required=False,
     )
     city = forms.CharField(

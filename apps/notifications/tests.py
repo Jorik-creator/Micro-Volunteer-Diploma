@@ -4,14 +4,14 @@ Tests for the notifications app.
 Covers: Notification model, defaults, string representation.
 """
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 from django.utils import timezone
 
 from apps.notifications.models import Notification
 from apps.notifications.signals import on_new_request_created
 from apps.requests.models import HelpRequest
-
 from conftest import (
     CategoryFactory,
     HelpRequestFactory,
@@ -19,7 +19,6 @@ from conftest import (
     RecipientFactory,
     VolunteerFactory,
 )
-
 
 # ===================================================================
 # NOTIFICATION MODEL TESTS
@@ -49,9 +48,7 @@ class TestNotificationModel:
         user = RecipientFactory()
         NotificationFactory(user=user, title="First")
         n2 = NotificationFactory(user=user, title="Second")
-        notifications = list(
-            Notification.objects.filter(user=user, title__in=["First", "Second"])
-        )
+        notifications = list(Notification.objects.filter(user=user, title__in=["First", "Second"]))
         assert notifications[0] == n2  # Second created → first in queryset
 
     def test_ordering_when_same_timestamp(self, db):
@@ -86,9 +83,7 @@ class TestNotificationViews:
     """Tests for NotificationListView, mark_read, and mark_all_read views."""
 
     @pytest.mark.django_db
-    def test_notification_list_shows_own_only(
-        self, client_logged_in_volunteer, volunteer
-    ):
+    def test_notification_list_shows_own_only(self, client_logged_in_volunteer, volunteer):
         """Notification list returns only the current user's notifications."""
         # Arrange — 2 notifications for the logged-in volunteer, 1 for another user
         n1 = NotificationFactory(user=volunteer)
@@ -113,9 +108,7 @@ class TestNotificationViews:
         notif = NotificationFactory(user=volunteer, is_read=False)
 
         # Act
-        response = client_logged_in_volunteer.post(
-            f"/notifications/mark-read/{notif.pk}/"
-        )
+        response = client_logged_in_volunteer.post(f"/notifications/mark-read/{notif.pk}/")
 
         # Assert — notification is now read and response is a redirect
         notif.refresh_from_db()
@@ -130,9 +123,7 @@ class TestNotificationViews:
         notif = NotificationFactory(user=other_user, is_read=False)
 
         # Act
-        response = client_logged_in_volunteer.post(
-            f"/notifications/mark-read/{notif.pk}/"
-        )
+        response = client_logged_in_volunteer.post(f"/notifications/mark-read/{notif.pk}/")
 
         # Assert — 404 because the notification does not belong to the requester
         assert response.status_code == 404
@@ -291,8 +282,11 @@ class TestNotificationSignals:
         )
 
         # Assert
-        assert Notification.objects.filter(
-            user=volunteer,
-            type=Notification.Type.NEW_NEARBY_REQUEST,
-            related_request=help_request,
-        ).count() == 1
+        assert (
+            Notification.objects.filter(
+                user=volunteer,
+                type=Notification.Type.NEW_NEARBY_REQUEST,
+                related_request=help_request,
+            ).count()
+            == 1
+        )

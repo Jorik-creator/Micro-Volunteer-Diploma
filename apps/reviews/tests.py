@@ -5,20 +5,17 @@ Covers: Review model, constraints, validation.
 """
 
 import pytest
-from django.db import IntegrityError
 from django.core.exceptions import ValidationError
-
-from apps.reviews.models import Review
-from apps.reviews.forms import ReviewForm
+from django.db import IntegrityError
 
 from apps.requests.models import HelpRequest, Response
-
+from apps.reviews.forms import ReviewForm
+from apps.reviews.models import Review
 from conftest import (
-    ReviewFactory,
     HelpRequestFactory,
     ResponseFactory,
+    ReviewFactory,
 )
-
 
 # ===================================================================
 # REVIEW MODEL TESTS
@@ -211,26 +208,17 @@ class TestReviewViews:
 
         # Assert: redirects (no 500 crash) and still only one review exists
         assert response.status_code == 302
-        assert (
-            Review.objects.filter(help_request=help_request, author=recipient).count()
-            == 1
-        )
+        assert Review.objects.filter(help_request=help_request, author=recipient).count() == 1
 
     @pytest.mark.django_db
-    def test_review_list_view(
-        self, client_logged_in_volunteer, volunteer, recipient, category
-    ):
+    def test_review_list_view(self, client_logged_in_volunteer, volunteer, recipient, category):
         """ReviewListView returns 200 and exposes all reviews targeting the requested user."""
         # Arrange: two reviews where the volunteer is the target
         help_request_1 = HelpRequestFactory(recipient=recipient, category=category)
         help_request_2 = HelpRequestFactory(recipient=recipient, category=category)
 
-        ReviewFactory(
-            author=recipient, target=volunteer, help_request=help_request_1, rating=4
-        )
-        ReviewFactory(
-            author=recipient, target=volunteer, help_request=help_request_2, rating=5
-        )
+        ReviewFactory(author=recipient, target=volunteer, help_request=help_request_1, rating=4)
+        ReviewFactory(author=recipient, target=volunteer, help_request=help_request_2, rating=5)
 
         # Act
         response = client_logged_in_volunteer.get(f"/reviews/list/{volunteer.pk}/")

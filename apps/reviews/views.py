@@ -20,7 +20,6 @@ from apps.requests.models import HelpRequest, Response
 from .forms import ReviewForm
 from .models import Review
 
-
 # ---------------------------------------------------------------------------
 # Create review (recipient only, after request is completed)
 # ---------------------------------------------------------------------------

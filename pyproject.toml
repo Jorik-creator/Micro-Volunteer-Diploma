@@ -1,0 +1,17 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "SIM", "UP", "DJ", "RUF"]
+ignore = [
+    "E501",    # long Ukrainian strings; formatter handles code
+    "RUF001",  # Ukrainian text contains ambiguous-looking Cyrillic letters
+    "RUF002",
+    "RUF003",
+    "RUF012",  # Django Meta/admin class attributes are idiomatic
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]

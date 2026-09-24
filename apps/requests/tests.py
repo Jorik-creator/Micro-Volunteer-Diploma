@@ -9,23 +9,22 @@ Covers:
   Management   — expire_requests command
 """
 
+from datetime import timedelta
+
 import pytest
 from django.core.management import call_command
 from django.db import IntegrityError
 from django.utils import timezone
-from datetime import timedelta
 
 from apps.notifications.models import Notification
 from apps.requests.models import Category, HelpRequest, Response
 from apps.requests.utils import haversine_distance, offset_coordinates
-
 from conftest import (
     CategoryFactory,
     HelpRequestFactory,
     ResponseFactory,
     VolunteerFactory,
 )
-
 
 # ===================================================================
 # CATEGORY MODEL TESTS
@@ -41,7 +40,7 @@ class TestCategoryModel:
 
     def test_category_slug_unique(self, category, db):
         """Category slug must be unique."""
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             CategoryFactory(slug=category.slug)
 
     def test_category_ordering(self, db):
@@ -193,9 +192,7 @@ class TestHelpRequestForm:
             "description": "Детальний опис запиту",
             "category": category.pk,
             "urgency": "medium",
-            "needed_date": (timezone.now() + timedelta(days=1)).strftime(
-                "%Y-%m-%dT%H:%M"
-            ),
+            "needed_date": (timezone.now() + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M"),
             "duration": "1h",
             "volunteers_needed": 1,
             "address": "вул. Хрещатик, 1, Київ",
@@ -212,9 +209,7 @@ class TestHelpRequestForm:
             "description": "Опис",
             "category": category.pk,
             "urgency": "medium",
-            "needed_date": (timezone.now() - timedelta(days=1)).strftime(
-                "%Y-%m-%dT%H:%M"
-            ),
+            "needed_date": (timezone.now() - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M"),
             "duration": "1h",
             "volunteers_needed": 1,
             "address": "вул. Хрещатик, 1",
@@ -297,9 +292,7 @@ class TestHelpRequestListView:
         assert "вул. Прихована".encode() not in response.content
         assert "Приблизна локація на карті".encode() in response.content
 
-    def test_list_shows_exact_address_to_owner(
-        self, client_logged_in_recipient, help_request
-    ):
+    def test_list_shows_exact_address_to_owner(self, client_logged_in_recipient, help_request):
         """The owner (recipient) still sees the exact address in their own card."""
         help_request.address = "вул. Власника, 5, Київ"
         help_request.save()
@@ -309,15 +302,11 @@ class TestHelpRequestListView:
         assert response.status_code == 200
         assert "вул. Власника".encode() in response.content
 
-    def test_list_filter_by_category(
-        self, client_logged_in_volunteer, help_request, db
-    ):
+    def test_list_filter_by_category(self, client_logged_in_volunteer, help_request, db):
         """Filter by category returns only matching requests."""
         other_cat = CategoryFactory(name="Інше", slug="other")
         HelpRequestFactory(category=other_cat)
-        response = client_logged_in_volunteer.get(
-            f"/requests/?category={help_request.category.pk}"
-        )
+        response = client_logged_in_volunteer.get(f"/requests/?category={help_request.category.pk}")
         assert response.status_code == 200
         assert help_request.title.encode() in response.content
 
@@ -352,17 +341,13 @@ class TestHelpRequestDetailView:
         assert "вул. Таємна".encode() not in response.content
         assert "Доступно після підтвердження".encode() in response.content
 
-    def test_detail_accessible_to_volunteer(
-        self, client_logged_in_volunteer, help_request
-    ):
+    def test_detail_accessible_to_volunteer(self, client_logged_in_volunteer, help_request):
         """Volunteer can view request detail."""
         response = client_logged_in_volunteer.get(f"/requests/{help_request.pk}/")
         assert response.status_code == 200
         assert help_request.title.encode() in response.content
 
-    def test_detail_accessible_to_recipient_owner(
-        self, client_logged_in_recipient, help_request
-    ):
+    def test_detail_accessible_to_recipient_owner(self, client_logged_in_recipient, help_request):
         """Recipient owner can view their own request."""
         response = client_logged_in_recipient.get(f"/requests/{help_request.pk}/")
         assert response.status_code == 200
@@ -389,13 +374,9 @@ class TestHelpRequestDetailView:
         response = client_logged_in_volunteer.get(f"/requests/{hr.pk}/")
         assert response.status_code == 404
 
-    def test_detail_owner_can_view_non_active(
-        self, client_logged_in_recipient, recipient, db
-    ):
+    def test_detail_owner_can_view_non_active(self, client_logged_in_recipient, recipient, db):
         """The owner can still open their own request in any status."""
-        hr = HelpRequestFactory(
-            recipient=recipient, status=HelpRequest.Status.COMPLETED
-        )
+        hr = HelpRequestFactory(recipient=recipient, status=HelpRequest.Status.COMPLETED)
         response = client_logged_in_recipient.get(f"/requests/{hr.pk}/")
         assert response.status_code == 200
 
@@ -417,25 +398,19 @@ class TestHelpRequestDetailView:
         recipient.first_name = "Тарас"
         recipient.last_name = "Приватний"
         recipient.save()
-        hr = HelpRequestFactory(
-            recipient=recipient, status=HelpRequest.Status.ACTIVE
-        )
+        hr = HelpRequestFactory(recipient=recipient, status=HelpRequest.Status.ACTIVE)
 
         response = client.get(f"/requests/{hr.pk}/")
 
         assert response.status_code == 200
         assert "Тарас Приватний".encode() not in response.content
 
-    def test_detail_shows_recipient_name_to_owner(
-        self, client_logged_in_recipient, recipient, db
-    ):
+    def test_detail_shows_recipient_name_to_owner(self, client_logged_in_recipient, recipient, db):
         """The owner sees their own name in the request details sidebar."""
         recipient.first_name = "Тарас"
         recipient.last_name = "Власник"
         recipient.save()
-        hr = HelpRequestFactory(
-            recipient=recipient, status=HelpRequest.Status.ACTIVE
-        )
+        hr = HelpRequestFactory(recipient=recipient, status=HelpRequest.Status.ACTIVE)
 
         response = client_logged_in_recipient.get(f"/requests/{hr.pk}/")
 
@@ -465,9 +440,7 @@ class TestHelpRequestCreateView:
             "description": "Опис тестового запиту",
             "category": category.pk,
             "urgency": "medium",
-            "needed_date": (timezone.now() + timedelta(days=2)).strftime(
-                "%Y-%m-%dT%H:%M"
-            ),
+            "needed_date": (timezone.now() + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M"),
             "duration": "1h",
             "volunteers_needed": 1,
             "address": "вул. Тестова, 1",
@@ -480,16 +453,14 @@ class TestHelpRequestCreateView:
         self, client_logged_in_recipient, recipient, category
     ):
         """Creating more than 10 active requests is blocked."""
-        for i in range(10):
+        for _i in range(10):
             HelpRequestFactory(recipient=recipient, status=HelpRequest.Status.ACTIVE)
         data = {
             "title": "Зайвий запит",
             "description": "Опис",
             "category": category.pk,
             "urgency": "low",
-            "needed_date": (timezone.now() + timedelta(days=1)).strftime(
-                "%Y-%m-%dT%H:%M"
-            ),
+            "needed_date": (timezone.now() + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M"),
             "duration": "30min",
             "volunteers_needed": 1,
             "address": "Адреса",
@@ -503,25 +474,19 @@ class TestHelpRequestCreateView:
 class TestHelpRequestUpdateView:
     """Tests for editing a help request."""
 
-    def test_edit_by_owner_active(
-        self, client_logged_in_recipient, help_request, category
-    ):
+    def test_edit_by_owner_active(self, client_logged_in_recipient, help_request, category):
         """Owner can edit an active request."""
         data = {
             "title": "Оновлена назва",
             "description": "Оновлений опис",
             "category": category.pk,
             "urgency": "high",
-            "needed_date": (timezone.now() + timedelta(days=3)).strftime(
-                "%Y-%m-%dT%H:%M"
-            ),
+            "needed_date": (timezone.now() + timedelta(days=3)).strftime("%Y-%m-%dT%H:%M"),
             "duration": "30min",
             "volunteers_needed": 1,
             "address": "Нова адреса",
         }
-        response = client_logged_in_recipient.post(
-            f"/requests/{help_request.pk}/edit/", data
-        )
+        response = client_logged_in_recipient.post(f"/requests/{help_request.pk}/edit/", data)
         assert response.status_code == 302
         help_request.refresh_from_db()
         assert help_request.title == "Оновлена назва"
@@ -531,9 +496,7 @@ class TestHelpRequestUpdateView:
         response = client_logged_in_volunteer.get(f"/requests/{help_request.pk}/edit/")
         assert response.status_code == 302
 
-    def test_edit_blocked_for_completed(
-        self, client_logged_in_recipient, recipient, category
-    ):
+    def test_edit_blocked_for_completed(self, client_logged_in_recipient, recipient, category):
         """Completed request cannot be edited."""
         hr = HelpRequestFactory(
             recipient=recipient,
@@ -562,9 +525,7 @@ class TestRespondToRequest:
             == 1
         )
 
-    def test_duplicate_response_blocked(
-        self, client_logged_in_volunteer, help_request, volunteer
-    ):
+    def test_duplicate_response_blocked(self, client_logged_in_volunteer, help_request, volunteer):
         """Volunteer cannot respond twice to the same request."""
         ResponseFactory(help_request=help_request, volunteer=volunteer)
         response = client_logged_in_volunteer.post(
@@ -613,9 +574,7 @@ class TestAcceptRejectVolunteer:
     ):
         """When accepted count reaches volunteers_needed, request → in_progress."""
         # volunteers_needed=1, accept one volunteer
-        client_logged_in_recipient.post(
-            f"/requests/responses/{volunteer_response.pk}/accept/"
-        )
+        client_logged_in_recipient.post(f"/requests/responses/{volunteer_response.pk}/accept/")
         help_request.refresh_from_db()
         assert help_request.status == HelpRequest.Status.IN_PROGRESS
 
@@ -662,9 +621,7 @@ class TestAcceptRejectVolunteer:
         volunteer_response.refresh_from_db()
         assert volunteer_response.status == Response.Status.REJECTED
 
-    def test_non_owner_cannot_accept(
-        self, client_logged_in_volunteer, volunteer_response
-    ):
+    def test_non_owner_cannot_accept(self, client_logged_in_volunteer, volunteer_response):
         """Non-owner cannot accept a volunteer response."""
         response = client_logged_in_volunteer.post(
             f"/requests/responses/{volunteer_response.pk}/accept/"
@@ -675,9 +632,7 @@ class TestAcceptRejectVolunteer:
 
     def test_anonymous_user_cannot_accept(self, client, volunteer_response):
         """Anonymous users cannot accept volunteer responses."""
-        response = client.post(
-            f"/requests/responses/{volunteer_response.pk}/accept/"
-        )
+        response = client.post(f"/requests/responses/{volunteer_response.pk}/accept/")
         assert response.status_code == 302
         assert "login" in response["Location"]
         volunteer_response.refresh_from_db()
@@ -699,22 +654,16 @@ class TestCompleteRequest:
             volunteer=volunteer,
             status=Response.Status.ACCEPTED,
         )
-        response = client_logged_in_volunteer.post(
-            f"/requests/{help_request.pk}/complete/"
-        )
+        response = client_logged_in_volunteer.post(f"/requests/{help_request.pk}/complete/")
         assert response.status_code == 302
         help_request.refresh_from_db()
         assert help_request.status == HelpRequest.Status.COMPLETED
 
-    def test_non_accepted_volunteer_cannot_complete(
-        self, client_logged_in_volunteer, help_request
-    ):
+    def test_non_accepted_volunteer_cannot_complete(self, client_logged_in_volunteer, help_request):
         """Volunteer without accepted response cannot complete request."""
         help_request.status = HelpRequest.Status.IN_PROGRESS
         help_request.save()
-        client_logged_in_volunteer.post(
-            f"/requests/{help_request.pk}/complete/"
-        )
+        client_logged_in_volunteer.post(f"/requests/{help_request.pk}/complete/")
         help_request.refresh_from_db()
         assert help_request.status == HelpRequest.Status.IN_PROGRESS
 
@@ -722,9 +671,7 @@ class TestCompleteRequest:
         """Recipient cannot mark request as completed."""
         help_request.status = HelpRequest.Status.IN_PROGRESS
         help_request.save()
-        client_logged_in_recipient.post(
-            f"/requests/{help_request.pk}/complete/"
-        )
+        client_logged_in_recipient.post(f"/requests/{help_request.pk}/complete/")
         help_request.refresh_from_db()
         assert help_request.status == HelpRequest.Status.IN_PROGRESS
 
@@ -735,16 +682,12 @@ class TestCancelRequest:
 
     def test_owner_can_cancel_active(self, client_logged_in_recipient, help_request):
         """Recipient can cancel their active request."""
-        response = client_logged_in_recipient.post(
-            f"/requests/{help_request.pk}/cancel/"
-        )
+        response = client_logged_in_recipient.post(f"/requests/{help_request.pk}/cancel/")
         assert response.status_code == 302
         help_request.refresh_from_db()
         assert help_request.status == HelpRequest.Status.CANCELLED
 
-    def test_owner_can_cancel_in_progress(
-        self, client_logged_in_recipient, help_request
-    ):
+    def test_owner_can_cancel_in_progress(self, client_logged_in_recipient, help_request):
         """Recipient can cancel an in_progress request."""
         help_request.status = HelpRequest.Status.IN_PROGRESS
         help_request.save()
@@ -762,9 +705,7 @@ class TestCancelRequest:
 
     def test_non_owner_cannot_cancel(self, client_logged_in_volunteer, help_request):
         """Volunteer cannot cancel someone else's request."""
-        client_logged_in_volunteer.post(
-            f"/requests/{help_request.pk}/cancel/"
-        )
+        client_logged_in_volunteer.post(f"/requests/{help_request.pk}/cancel/")
         help_request.refresh_from_db()
         assert help_request.status == HelpRequest.Status.ACTIVE
 
@@ -778,9 +719,7 @@ class TestMyRequestsView:
         response = client_logged_in_volunteer.get("/requests/my/")
         assert response.status_code == 302
 
-    def test_my_requests_shows_own_requests(
-        self, client_logged_in_recipient, help_request
-    ):
+    def test_my_requests_shows_own_requests(self, client_logged_in_recipient, help_request):
         """Recipient sees their own requests."""
         response = client_logged_in_recipient.get("/requests/my/")
         assert response.status_code == 200
@@ -910,9 +849,7 @@ class TestMapDataView:
         assert len(data) == 1
         assert data[0]["id"] == help_request.pk
 
-    def test_map_data_excludes_requests_without_coordinates(
-        self, client_logged_in_volunteer, db
-    ):
+    def test_map_data_excludes_requests_without_coordinates(self, client_logged_in_volunteer, db):
         """Requests without lat/lon are excluded from map data."""
         HelpRequestFactory(latitude=None, longitude=None)
         response = client_logged_in_volunteer.get("/requests/map/data/")
@@ -957,13 +894,9 @@ class TestRequestStatus:
         response = client.get(f"/requests/{hr.pk}/status/")
         assert response.status_code == 404
 
-    def test_status_owner_can_poll_non_active(
-        self, client_logged_in_recipient, recipient, db
-    ):
+    def test_status_owner_can_poll_non_active(self, client_logged_in_recipient, recipient, db):
         """The owner can poll the status of their own non-active request."""
-        hr = HelpRequestFactory(
-            recipient=recipient, status=HelpRequest.Status.COMPLETED
-        )
+        hr = HelpRequestFactory(recipient=recipient, status=HelpRequest.Status.COMPLETED)
         response = client_logged_in_recipient.get(f"/requests/{hr.pk}/status/")
         assert response.status_code == 200
 

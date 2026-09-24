@@ -3,16 +3,17 @@ Django development settings for MicroVolunteer project.
 
 Extends base.py with DEBUG=True, local PostgreSQL, and console email.
 """
-from .base import *  # noqa: F401,F403
+
+from .base import *  # noqa: F403
 from .base import BASE_DIR
 
 DEBUG = True
 
 # For local development without Docker, fallback to SQLite
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
@@ -29,4 +30,4 @@ DATABASES = {
 #     }
 # }
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

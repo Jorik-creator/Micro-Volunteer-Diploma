@@ -17,7 +17,6 @@ from apps.accounts.models import User
 from apps.requests.models import HelpRequest
 from apps.reviews.models import Review
 
-
 # ---------------------------------------------------------------------------
 # Staff dashboard (CBV)
 # ---------------------------------------------------------------------------
@@ -68,12 +67,9 @@ class StatsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         # --- Requests grouped by category name ---
         # category__name is None when category was deleted (SET_NULL)
-        category_qs = HelpRequest.objects.values("category__name").annotate(
-            count=Count("id")
-        )
+        category_qs = HelpRequest.objects.values("category__name").annotate(count=Count("id"))
         requests_by_category = {
-            (row["category__name"] or "Без категорії"): row["count"]
-            for row in category_qs
+            (row["category__name"] or "Без категорії"): row["count"] for row in category_qs
         }
         context["requests_by_category"] = requests_by_category
 
@@ -122,17 +118,11 @@ def stats_data(request):
     status_map = {row["status"]: row["count"] for row in status_qs}
 
     # Ensure all Status choices are present in the response (even if count is 0)
-    statuses = {
-        choice[0]: status_map.get(choice[0], 0) for choice in HelpRequest.Status.choices
-    }
+    statuses = {choice[0]: status_map.get(choice[0], 0) for choice in HelpRequest.Status.choices}
 
     # Category counts (null category → "Без категорії")
-    category_qs = HelpRequest.objects.values("category__name").annotate(
-        count=Count("id")
-    )
-    categories = {
-        (row["category__name"] or "Без категорії"): row["count"] for row in category_qs
-    }
+    category_qs = HelpRequest.objects.values("category__name").annotate(count=Count("id"))
+    categories = {(row["category__name"] or "Без категорії"): row["count"] for row in category_qs}
 
     # Average rating — return null (None → JSON null) when no reviews exist
     avg_result = Review.objects.aggregate(avg=Avg("rating"))["avg"]

@@ -14,7 +14,6 @@ from django.test import Client
 
 from conftest import CategoryFactory, HelpRequestFactory, UserFactory
 
-
 # ===================================================================
 # STATS VIEW TESTS
 # ===================================================================
