@@ -2013,3 +2013,9 @@ html.a11y-calm-mode .filters-bar { box-shadow: none; }
   padding: 16px; background: var(--mv-gray-50); border-radius: var(--mv-radius-sm); }
 .wizard-summary dt { color: var(--mv-gray-600); font-weight: 500; }
 .wizard-summary dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+
+/* Legal pages */
+.legal-page { max-width: 760px; }
+.legal-page h2 { font-size: 22px; font-weight: 800; margin: 28px 0 10px; }
+.legal-page li { margin-bottom: 8px; }
+.danger-zone { border: 2px solid var(--mv-danger-bg); }

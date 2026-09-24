@@ -10,6 +10,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 from apps.accounts.views import HomeView
+from apps.core import views as core_views
 
 urlpatterns = [
     path("", HomeView.as_view(), name="home"),
@@ -22,6 +23,8 @@ urlpatterns = [
     path("moderation/", include("apps.moderation.urls")),
     path("conversations/", include("apps.conversations.urls")),
     path("tasks/", include("apps.core.urls")),
+    path("privacy/", core_views.privacy, name="privacy"),
+    path("rules/", core_views.rules, name="rules"),
 ]
 
 if settings.DEBUG:

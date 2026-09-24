@@ -11,6 +11,7 @@ from django.contrib.auth.forms import (
 from django.contrib.auth.forms import (
     PasswordResetForm as DjangoPasswordResetForm,
 )
+from django.utils.safestring import mark_safe
 
 from .models import RecipientProfile, VolunteerProfile
 
@@ -43,6 +44,13 @@ class RegisterForm(UserCreationForm):
         label="Тип акаунту",
         choices=User.UserType.choices,
         widget=forms.RadioSelect,
+    )
+    accept_terms = forms.BooleanField(
+        label=mark_safe(
+            'Я погоджуюся з <a href="/rules/" target="_blank">Правилами</a> та '
+            '<a href="/privacy/" target="_blank">Політикою конфіденційності</a>'
+        ),
+        error_messages={"required": "Без згоди з правилами зареєструватися не можна."},
     )
 
     class Meta:
@@ -217,3 +225,21 @@ class StyledSetPasswordForm(SetPasswordForm):
         super().__init__(*args, **kwargs)
         self.fields["new_password1"].widget.attrs.update({"autocomplete": "new-password"})
         self.fields["new_password2"].widget.attrs.update({"autocomplete": "new-password"})
+
+
+class DeleteAccountForm(forms.Form):
+    password = forms.CharField(
+        label="Ваш пароль",
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+    )
+    confirm = forms.BooleanField(label="Я розумію, що це незворотно")
+
+    def __init__(self, *args, user, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_password(self):
+        password = self.cleaned_data["password"]
+        if not self.user.check_password(password):
+            raise forms.ValidationError("Невірний пароль.")
+        return password

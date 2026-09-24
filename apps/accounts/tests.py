@@ -101,6 +101,7 @@ class TestRegisterForm:
             "user_type": User.UserType.VOLUNTEER,
             "password1": "SecurePass123!",
             "password2": "SecurePass123!",
+            "accept_terms": "on",
         }
         form = RegisterForm(data=data)
         assert form.is_valid(), form.errors
@@ -230,6 +231,7 @@ class TestRegisterView:
             "user_type": User.UserType.VOLUNTEER,
             "password1": "SecurePass123!",
             "password2": "SecurePass123!",
+            "accept_terms": "on",
         }
         response = client.post("/accounts/register/", data)
         assert response.status_code == 302  # redirect

@@ -30,6 +30,7 @@ class User(AbstractUser):
     email_verified_at = models.DateTimeField("Email підтверджено", null=True, blank=True)
     # Level L2 "Перевірений" — granted by a moderator or an invite code (see ADR 0002)
     is_verified = models.BooleanField("Перевірений", default=False)
+    terms_accepted_at = models.DateTimeField("Згода з правилами", null=True, blank=True)
     is_demo = models.BooleanField(
         "Демо-акаунт",
         default=False,

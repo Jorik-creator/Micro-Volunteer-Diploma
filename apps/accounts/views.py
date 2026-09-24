@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import (
     LoginView,
@@ -10,16 +10,19 @@ from django.contrib.auth.views import (
 from django.http import Http404
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.decorators.http import require_POST
-from django.views.generic import CreateView, DetailView, TemplateView, UpdateView
+from django.views.generic import CreateView, DetailView, FormView, TemplateView, UpdateView
 
 from apps.moderation.services import latest_verification, verified_organization
 from apps.reviews.models import Review
 from apps.reviews.services import pending_reviews, rating_summary
 
 from . import emails
+from .deletion import DeletionError, delete_account
 from .forms import (
     CustomPasswordChangeForm,
+    DeleteAccountForm,
     LoginForm,
     RecipientProfileForm,
     RegisterForm,
@@ -79,6 +82,7 @@ class RegisterView(CreateView):
         return {"user_type": role} if role in User.UserType.values else {}
 
     def form_valid(self, form):
+        form.instance.terms_accepted_at = timezone.now()
         response = super().form_valid(form)
         login(self.request, self.object, backend="django.contrib.auth.backends.ModelBackend")
         emails.send_confirmation(self.request, self.object)
@@ -383,3 +387,27 @@ def demo_login(request, role):
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
     messages.info(request, f"Ви увійшли як демо-користувач: {user.get_full_name()}.")
     return redirect("home")
+
+
+# ---------------------------------------------------------------------------
+# Account deletion (privacy by design)
+# ---------------------------------------------------------------------------
+
+
+class DeleteAccountView(LoginRequiredMixin, FormView):
+    template_name = "accounts/delete_account.html"
+    form_class = DeleteAccountForm
+
+    def get_form_kwargs(self):
+        return {**super().get_form_kwargs(), "user": self.request.user}
+
+    def form_valid(self, form):
+        user = self.request.user
+        try:
+            delete_account(user)
+        except DeletionError as error:
+            messages.error(self.request, str(error))
+            return redirect("accounts:profile")
+        logout(self.request)
+        messages.success(self.request, "Акаунт видалено. Дякуємо, що були з нами.")
+        return redirect("home")

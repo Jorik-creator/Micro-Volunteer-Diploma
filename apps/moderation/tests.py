@@ -186,6 +186,7 @@ class TestEmailConfirmation:
                 "user_type": "volunteer",
                 "password1": "Str0ng-pass-123",
                 "password2": "Str0ng-pass-123",
+                "accept_terms": "on",
             },
         )
         assert len(mail.outbox) == 1

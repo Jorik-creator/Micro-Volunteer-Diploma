@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Видалити акаунт — MicroVolunteer{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container">
+    <a href="{% url 'accounts:profile' %}" class="btn btn-muted btn-sm toolbar-row"><i class="bi bi-arrow-left"></i> Профіль</a>
+    <h1 class="page-title">Видалити акаунт</h1>
+  </div>
+</section>
+
+<div class="container page-shell form-shell-sm">
+  <div class="card-panel danger-zone">
+    <p><strong>Що станеться:</strong></p>
+    <ul>
+      <li>ваші відкриті запити буде скасовано, а з запитів, де ви волонтер, вас буде знято — інших учасників сповістимо;</li>
+      <li>ім'я, email, телефон, адреси, фото, тексти повідомлень і заявка на перевірку будуть стерті;</li>
+      <li>ваші оцінки інших людей залишаться з підписом «Видалений користувач»;</li>
+      <li>увійти в акаунт більше не вийде, відновити його неможливо.</li>
+    </ul>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ form|crispy }}
+      <div class="form-actions">
+        <button type="submit" class="btn btn-danger btn-lg">Видалити акаунт назавжди</button>
+        <a href="{% url 'accounts:profile' %}" class="btn btn-muted btn-lg">Скасувати</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

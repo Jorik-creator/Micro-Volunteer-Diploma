@@ -15,6 +15,7 @@ urlpatterns = [
     path("logout/", views.CustomLogoutView.as_view(), name="logout"),
     path("profile/", views.ProfileView.as_view(), name="profile"),
     path("users/<int:pk>/", views.PublicProfileView.as_view(), name="public-profile"),
+    path("delete/", views.DeleteAccountView.as_view(), name="delete"),
     path("profile/edit/", views.ProfileEditView.as_view(), name="profile-edit"),
     path("password-change/", views.CustomPasswordChangeView.as_view(), name="password-change"),
     # Password reset (standard Django flow with our templates)
