@@ -2,8 +2,12 @@
 Django test settings for MicroVolunteer project.
 
 Uses SQLite in-memory database for fast, isolated test runs.
-No PostgreSQL dependency required.
+No PostgreSQL or .env file required.
 """
+
+import os
+
+os.environ.setdefault("SECRET_KEY", "test-only-insecure-key")
 
 from .base import *  # noqa: F403
 
@@ -17,6 +21,14 @@ DATABASES = {
     }
 }
 
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
+
+# WhiteNoise is irrelevant for tests and warns about the missing STATIC_ROOT
+MIDDLEWARE = [m for m in MIDDLEWARE if "whitenoise" not in m]  # noqa: F405
+
 # Faster password hashing for tests
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.MD5PasswordHasher",
@@ -25,8 +37,4 @@ PASSWORD_HASHERS = [
 # Disable axes during tests (avoids lockout issues)
 AXES_ENABLED = False
 
-# Console email backend
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
-
-# Disable CSRF checks in tests for simpler POST requests
-MIDDLEWARE = [m for m in MIDDLEWARE if "csrf" not in m.lower()]  # noqa: F405

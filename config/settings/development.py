@@ -1,33 +1,15 @@
 """
 Django development settings for MicroVolunteer project.
 
-Extends base.py with DEBUG=True, local PostgreSQL, and console email.
+Extends base.py with DEBUG=True. Uses SQLite unless DATABASE_URL is set.
 """
 
 from .base import *  # noqa: F403
-from .base import BASE_DIR
 
 DEBUG = True
 
-# For local development without Docker, fallback to SQLite
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+# Serve static files straight from app directories without collectstatic
+STORAGES = {
+    **STORAGES,  # noqa: F405
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
-
-# For Docker / PostgreSQL, uncomment below and comment out SQLite above:
-# from decouple import config
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': config('POSTGRES_DB', default='microvolunteer'),
-#         'USER': config('POSTGRES_USER', default='microvolunteer'),
-#         'PASSWORD': config('POSTGRES_PASSWORD', default='microvolunteer'),
-#         'HOST': config('DB_HOST', default='localhost'),
-#         'PORT': config('DB_PORT', default='5432'),
-#     }
-# }
-
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

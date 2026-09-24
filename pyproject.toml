@@ -15,3 +15,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["apps", "config"]
+
+[tool.coverage.run]
+source = ["apps", "config"]
+omit = ["*/migrations/*", "*/tests.py", "*/tests/*", "config/wsgi.py", "config/asgi.py"]

@@ -10,4 +10,10 @@ media/
 *.md
 .docs/
 !README.md
-.playwright-mcp/
+.playwright-mcp/.venv
+venv
+db.sqlite3
+staticfiles
+.coverage
+.ruff_cache
+.pytest_cache
