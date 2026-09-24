@@ -11,7 +11,7 @@
   <dl class="req-card-facts">
     <dt>Коли</dt><dd>{{ hr.needed_date|date:"d.m, H:i" }} · {{ hr.get_duration_display }}</dd>
     <dt>Формат</dt><dd>{{ hr.get_help_format_display }}{% if hr.help_format == 'home_visit' %} <span class="text-muted">(лише перевірені)</span>{% endif %}</dd>
-    <dt>Де</dt><dd>{% if hr.is_remote %}Онлайн / телефоном{% elif user.is_authenticated and hr.recipient_id == user.pk %}{{ hr.address|truncatechars:40 }}{% else %}Точна адреса — після прийняття{% endif %}</dd>
+    <dt>Де</dt><dd>{% if hr.is_remote %}Онлайн / телефоном{% elif user.is_authenticated and hr.recipient_id == user.pk %}{{ hr.address|truncatechars:40 }}{% else %}{% if hr.city %}{{ hr.city }} · {% endif %}точна адреса — після прийняття{% endif %}</dd>
     {% if hr.category %}<dt>Категорія</dt><dd>{{ hr.category.name }}</dd>{% endif %}
   </dl>
   {% if card_note %}<p class="request-callout">{{ card_note }}{{ card_note_value|default_if_none:"" }}</p>{% endif %}

@@ -119,6 +119,8 @@ def revoke_verification(user, moderator, reason):
     """
     if not user.is_verified:
         raise ModerationError("Користувач не має статусу «Перевірений».")
+    if user.is_demo:
+        raise ModerationError("Демо-акаунти змінювати не можна.")
     if not reason.strip():
         raise ModerationError("Вкажіть причину відкликання.")
     with transaction.atomic():
@@ -210,9 +212,35 @@ REPORTABLE = {
 }
 
 
+REPORT_LABELS = {
+    "request": "Запит",
+    "user": "Користувач",
+    "review": "Оцінка",
+    "message": "Повідомлення в розмові",
+}
+
+
 def register_reportable(key, model):
     """Other apps (e.g. conversations) add their models here."""
     REPORTABLE[key] = model
+
+
+def can_report(user, kind, target):
+    """
+    People may only report what they can already see — otherwise the report
+    page would become a way to probe private objects by id.
+    """
+    from apps.accounts.permissions import can_view_profile
+
+    if kind == "request":
+        return HelpRequest.objects.visible_to(user).filter(pk=target.pk).exists()
+    if kind == "user":
+        return target.pk != user.pk and can_view_profile(user, target)
+    if kind == "review":
+        return target.is_published and target.author_id != user.pk
+    if kind == "message":
+        return target.conversation.is_participant(user) and target.sender_id not in (None, user.pk)
+    return False
 
 
 def file_report(reporter, target, reason, comment=""):
@@ -275,6 +303,8 @@ def act_on_report(report, moderator, note=""):
         with suppress(request_services.TransitionError):
             request_services.cancel_by_moderator(target, reason)
     elif isinstance(target, User):
+        if target.is_demo or target.is_staff or target.is_superuser:
+            raise ModerationError("Цей акаунт не можна заблокувати зі сторінки модерації.")
         if target.is_verified:
             revoke_verification(target, moderator, reason)
         target.is_active = False

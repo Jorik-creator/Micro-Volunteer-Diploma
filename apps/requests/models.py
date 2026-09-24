@@ -127,6 +127,8 @@ class HelpRequest(models.Model):
         default=1,
         validators=[MinValueValidator(1), MaxValueValidator(10)],
     )
+    # Public: shown on cards and used by the list filter. The exact address stays private.
+    city = models.CharField("Місто або село", max_length=100, blank=True)
     address = models.CharField("Адреса", max_length=255, blank=True)
     # Filed by a relative or social worker for someone without an account (ROADMAP, Q22)
     on_behalf = models.BooleanField("Подаю від імені іншої людини", default=False)

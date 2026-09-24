@@ -16,6 +16,9 @@ Volunteer:
   MyResponsesView, respond_to_request, withdraw_response, complete_request
 """
 
+import hmac
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -114,7 +117,8 @@ class HelpRequestListView(ListView):
             if data.get("date_to"):
                 qs = qs.filter(needed_date__date__lte=data["date_to"])
             if data.get("city"):
-                qs = qs.filter(address__icontains=data["city"])
+                # Only the public city field — never the private address (it could be probed)
+                qs = qs.filter(city__icontains=data["city"])
         return qs
 
     def get_context_data(self, **kwargs):
@@ -133,6 +137,14 @@ class MapView(TemplateView):
     template_name = "requests/map.html"
 
 
+def _private_seed(pk):
+    """
+    Stable per request (averaging repeated polls gains nothing) but not
+    derivable from the public id — seeding with pk alone let anyone undo it.
+    """
+    return hmac.new(settings.SECRET_KEY.encode(), f"map:{pk}".encode(), "sha256").hexdigest()
+
+
 def map_data(request):
     """Return active requests as JSON for Leaflet map markers."""
     active = HelpRequest.objects.filter(
@@ -146,7 +158,9 @@ def map_data(request):
         # Offset coordinates for privacy. Seed with the request pk so the
         # offset is stable across repeated calls (prevents averaging out
         # the true location by polling the endpoint multiple times).
-        lat, lon = offset_coordinates(hr.latitude, hr.longitude, offset_meters=150, seed=hr.pk)
+        lat, lon = offset_coordinates(
+            hr.latitude, hr.longitude, offset_meters=150, seed=_private_seed(hr.pk)
+        )
         data.append(
             {
                 "id": hr.pk,
@@ -222,13 +236,7 @@ class HelpRequestDetailView(DetailView):
                     user.is_authenticated
                     and user.is_volunteer
                     and hr.status == HelpRequest.Status.ACTIVE
-                    and (
-                        user_response is None
-                        or (
-                            user_response.status == Response.Status.WITHDRAWN
-                            and not user_response.done_at
-                        )
-                    )
+                    and user_response is None
                 ),
             }
         )
@@ -392,8 +400,12 @@ class HelpRequestUpdateView(LoginRequiredMixin, UpdateView):
             form.add_error(None, error)
             return self.form_invalid(form)
         response = super().form_valid(form)
-        services.after_edit(self.object)
-        messages.success(self.request, "Запит оновлено.")
+        services.after_edit(self.object, form.changed_data)
+        self.object.refresh_from_db()
+        if self.object.status == HelpRequest.Status.PENDING_MODERATION:
+            messages.info(self.request, "Запит оновлено й надіслано на повторну перевірку.")
+        else:
+            messages.success(self.request, "Запит оновлено.")
         return response
 
     def get_success_url(self):

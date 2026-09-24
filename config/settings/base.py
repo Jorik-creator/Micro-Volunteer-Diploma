@@ -218,6 +218,10 @@ AXES_FAILURE_LIMIT = 5
 
 AXES_COOLOFF_TIME = 1  # hours
 
+# Lock the username+IP pair, so one person cannot lock out everyone behind
+# the same proxy address.
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+
 AXES_LOCKOUT_TEMPLATE = None  # use default
 
 AUTHENTICATION_BACKENDS = [

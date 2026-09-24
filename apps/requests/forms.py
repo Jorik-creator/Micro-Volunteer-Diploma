@@ -41,6 +41,7 @@ class HelpRequestForm(forms.ModelForm):
             "on_behalf",
             "beneficiary_name",
             "beneficiary_phone",
+            "city",
             "address",
             "latitude",
             "longitude",
@@ -81,11 +82,15 @@ class HelpRequestForm(forms.ModelForm):
         remote = cleaned.get("help_format") == HelpRequest.HelpFormat.REMOTE
         if remote:
             # Online help needs no address and must not appear on the map
+            cleaned["city"] = ""
             cleaned["address"] = ""
             cleaned["latitude"] = None
             cleaned["longitude"] = None
-        elif not cleaned.get("address"):
-            self.add_error("address", "Вкажіть адресу — її побачить лише прийнятий волонтер.")
+        else:
+            if not cleaned.get("address"):
+                self.add_error("address", "Вкажіть адресу — її побачить лише прийнятий волонтер.")
+            if not cleaned.get("city"):
+                self.add_error("city", "Вкажіть місто — його бачитимуть волонтери у списку.")
         if cleaned.get("on_behalf"):
             if not cleaned.get("beneficiary_name"):
                 self.add_error("beneficiary_name", "Вкажіть, кому потрібна допомога.")

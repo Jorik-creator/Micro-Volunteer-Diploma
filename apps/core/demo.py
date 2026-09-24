@@ -77,6 +77,7 @@ def _request(
         title=title,
         description=description,
         needed_date=timezone.now() + when,
+        city="" if extra.get("help_format") == H.REMOTE else ("Львів" if city == LVIV else "Київ"),
         address=address if extra.get("help_format") != H.REMOTE else "",
         latitude=None if extra.get("help_format") == H.REMOTE else lat,
         longitude=None if extra.get("help_format") == H.REMOTE else lon,

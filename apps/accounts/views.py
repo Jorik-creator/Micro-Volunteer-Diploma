@@ -74,6 +74,11 @@ class RegisterView(CreateView):
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             return redirect("home")
+        if settings.DEMO_MODE:
+            # The public demo is reset daily and its moderator is open to everyone,
+            # so real people must not register there.
+            messages.info(request, "Це демонстраційна версія — скористайтеся кнопками демо-входу.")
+            return redirect("accounts:login")
         return super().dispatch(request, *args, **kwargs)
 
     def get_initial(self):

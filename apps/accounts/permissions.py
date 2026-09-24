@@ -25,4 +25,7 @@ def can_view_profile(viewer, user):
         return True
     if user.is_volunteer:
         return Response.objects.filter(volunteer=user, help_request__recipient=viewer).exists()
-    return Response.objects.filter(volunteer=viewer, help_request__recipient=user).exists()
+    # The request page hides the recipient until acceptance; the profile must too
+    return Response.objects.filter(
+        volunteer=viewer, help_request__recipient=user, status=Response.Status.ACCEPTED
+    ).exists()

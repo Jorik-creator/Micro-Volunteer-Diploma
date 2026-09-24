@@ -188,6 +188,8 @@ class TestViews:
 
 class TestProfiles:
     def test_recipient_sees_profile_of_responding_volunteer(self, client, recipient, volunteer):
+        volunteer.last_name = "Унікальнопрізвищенко"
+        volunteer.save()
         ResponseFactory(help_request=HelpRequestFactory(recipient=recipient), volunteer=volunteer)
         client.force_login(recipient)
 

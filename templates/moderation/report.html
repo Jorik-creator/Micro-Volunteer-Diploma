@@ -14,7 +14,7 @@
   <form method="post" class="card-panel">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ next }}">
-    <p class="mb-3"><strong>Про що скарга:</strong> {{ target }}</p>
+    <p class="mb-3"><strong>Про що скарга:</strong> {{ target_label }}</p>
     {{ form|crispy }}
     <div class="info-banner"><i class="bi bi-exclamation-octagon-fill"></i><span>Якщо комусь загрожує небезпека — телефонуйте <strong>102</strong> або <strong>112</strong>.</span></div>
     <div class="form-actions">

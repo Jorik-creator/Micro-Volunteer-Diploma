@@ -109,6 +109,11 @@ def needs_premoderation(recipient):
     return published.count() < PREMODERATED_REQUESTS
 
 
+def needs_premoderation_on_edit(recipient):
+    published = HelpRequest.objects.filter(recipient=recipient, published_at__isnull=False)
+    return published.count() <= PREMODERATED_REQUESTS
+
+
 def _go_live(help_request):
     help_request.published_at = timezone.now()
     help_request.save(update_fields=["published_at"])
@@ -186,7 +191,7 @@ def reject_request(help_request, moderator, reason):
     )
 
 
-LOCKED_WHEN_RESPONDED = ("needed_date", "address", "latitude", "longitude")
+LOCKED_WHEN_RESPONDED = ("needed_date", "address", "latitude", "longitude", "help_format")
 
 
 def editable_fields_error(help_request, changed_fields, new_volunteers_needed):
@@ -202,7 +207,7 @@ def editable_fields_error(help_request, changed_fields, new_volunteers_needed):
     ).exists()
     if has_responses and set(changed_fields) & set(LOCKED_WHEN_RESPONDED):
         return (
-            "На запит уже відгукнулися волонтери, тому дату й адресу змінити не можна. "
+            "На запит уже відгукнулися волонтери, тому дату, адресу й формат змінити не можна. "
             "Скасуйте запит і створіть новий, якщо вони змінилися."
         )
     accepted = help_request.accepted_responses().count()
@@ -211,10 +216,25 @@ def editable_fields_error(help_request, changed_fields, new_volunteers_needed):
     return None
 
 
+CONTENT_FIELDS = ("title", "description", "help_format", "photo", "category")
+
+
 @transaction.atomic
-def after_edit(help_request):
-    """If the edit lowered volunteers_needed to the accepted count, start the work."""
+def after_edit(help_request, changed_fields=()):
+    """
+    Re-review content changes of recipients who are still premoderated
+    (otherwise an approved request could be edited into a scam), and start
+    the work if volunteers_needed was lowered to the accepted count.
+    """
     help_request = _lock(help_request)
+    if (
+        help_request.status == Status.ACTIVE
+        and set(changed_fields) & set(CONTENT_FIELDS)
+        and not help_request.recipient.is_verified
+        and needs_premoderation_on_edit(help_request.recipient)
+    ):
+        _set_status(help_request, Status.PENDING_MODERATION)
+        return
     if (
         help_request.status == Status.ACTIVE
         and help_request.accepted_responses().count() >= help_request.volunteers_needed
@@ -252,19 +272,13 @@ def respond(help_request, volunteer, message=""):
     if help_request.status != Status.ACTIVE:
         raise TransitionError("Набір волонтерів на цей запит уже закрито.")
 
-    response = Response.objects.filter(help_request=help_request, volunteer=volunteer).first()
-    if response is not None:
-        if response.status != RStatus.WITHDRAWN or response.done_at:
-            raise TransitionError("Ви вже відгукнулися на цей запит.")
-        # A volunteer who withdrew may change their mind while the request is still open.
-        response.status = RStatus.PENDING
-        response.status_reason = ""
-        response.message = message
-        response.save(update_fields=["status", "status_reason", "message"])
-    else:
-        response = Response.objects.create(
-            help_request=help_request, volunteer=volunteer, message=message
-        )
+    # One response per request: withdrawing is final, which also stops
+    # respond/withdraw loops from spamming the recipient with notifications.
+    if Response.objects.filter(help_request=help_request, volunteer=volunteer).exists():
+        raise TransitionError("Ви вже відгукувалися на цей запит.")
+    response = Response.objects.create(
+        help_request=help_request, volunteer=volunteer, message=message
+    )
 
     notify(
         help_request.recipient,
@@ -299,6 +313,9 @@ def accept(response, recipient):
         raise TransitionError("Набір волонтерів на цей запит уже закрито.")
     if response.status != RStatus.PENDING:
         raise TransitionError("Цей відгук уже розглянуто.")
+    trust_error = respond_trust_error(response.volunteer, help_request)
+    if trust_error:
+        raise TransitionError("Цей волонтер не може взяти запит такого формату.")
 
     _set_response_status(response, RStatus.ACCEPTED)
     conversation_services.open_for(response)
@@ -335,13 +352,23 @@ def reject(response, recipient):
 
 
 def _reopen_if_short(help_request):
-    """Back to recruiting when fewer volunteers remain than needed."""
-    if (
-        help_request.status in (Status.IN_PROGRESS, Status.AWAITING_CONFIRMATION)
-        and help_request.accepted_responses().count() < help_request.volunteers_needed
-    ):
+    """
+    Back to recruiting when fewer volunteers remain than needed — but only
+    while the date is still ahead. After it, the remaining team carries on
+    (and may already be done), so the help can still be confirmed.
+    """
+    if help_request.status not in (Status.IN_PROGRESS, Status.AWAITING_CONFIRMATION):
+        return False
+    remaining = help_request.accepted_responses()
+    if remaining.count() >= help_request.volunteers_needed:
+        return False
+    if help_request.needed_date > timezone.now() or not remaining.exists():
         _set_status(help_request, Status.ACTIVE)
         return True
+    all_done = not remaining.filter(done_at__isnull=True).exists()
+    target = Status.AWAITING_CONFIRMATION if all_done else Status.IN_PROGRESS
+    if help_request.status != target:
+        _set_status(help_request, target)
     return False
 
 
@@ -597,9 +624,14 @@ def expire_overdue(now=None):
                 help_request.status == Status.IN_PROGRESS
                 and help_request.ends_at + EXPIRE_IN_PROGRESS_AFTER_END < now
             )
-            if is_stale:
-                _expire(help_request, now)
-                expired += 1
+            if not is_stale:
+                continue
+            if help_request.status == Status.ACTIVE and help_request.accepted_responses().exists():
+                # Part of the team was found: let them do the work instead of expiring it
+                _start_work(help_request)
+                continue
+            _expire(help_request, now)
+            expired += 1
     return expired
 
 

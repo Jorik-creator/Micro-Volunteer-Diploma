@@ -197,6 +197,7 @@ class TestHelpRequestForm:
             "help_format": "doorstep",
             "volunteers_needed": 1,
             "address": "вул. Хрещатик, 1, Київ",
+            "city": "Київ",
         }
         form = HelpRequestForm(data=data)
         assert form.is_valid(), form.errors
@@ -215,6 +216,7 @@ class TestHelpRequestForm:
             "help_format": "doorstep",
             "volunteers_needed": 1,
             "address": "вул. Хрещатик, 1",
+            "city": "Київ",
         }
         form = HelpRequestForm(data=data)
         assert not form.is_valid()
@@ -273,7 +275,7 @@ class TestHelpRequestListView:
 
         assert response.status_code == 200
         assert "вул. Приватна".encode() not in response.content
-        assert "Точна адреса — після прийняття".encode() in response.content
+        assert "точна адреса — після прийняття".encode() in response.content
 
     def test_list_shows_active_requests(self, client_logged_in_volunteer, help_request):
         """Logged-in user sees active requests."""
@@ -292,7 +294,7 @@ class TestHelpRequestListView:
 
         assert response.status_code == 200
         assert "вул. Прихована".encode() not in response.content
-        assert "Точна адреса — після прийняття".encode() in response.content
+        assert "точна адреса — після прийняття".encode() in response.content
 
     def test_list_shows_exact_address_to_owner(self, client_logged_in_recipient, help_request):
         """The owner (recipient) still sees the exact address in their own card."""
@@ -447,6 +449,7 @@ class TestHelpRequestCreateView:
             "help_format": "doorstep",
             "volunteers_needed": 1,
             "address": "вул. Тестова, 1",
+            "city": "Київ",
         }
         response = client_logged_in_recipient.post("/requests/create/", data)
         assert response.status_code == 302
@@ -468,6 +471,7 @@ class TestHelpRequestCreateView:
             "help_format": "doorstep",
             "volunteers_needed": 1,
             "address": "Адреса",
+            "city": "Київ",
         }
         client_logged_in_recipient.post("/requests/create/", data)
         # Should redirect (blocked), not create
@@ -490,6 +494,7 @@ class TestHelpRequestUpdateView:
             "help_format": "doorstep",
             "volunteers_needed": 1,
             "address": "Нова адреса",
+            "city": "Київ",
         }
         response = client_logged_in_recipient.post(f"/requests/{help_request.pk}/edit/", data)
         assert response.status_code == 302

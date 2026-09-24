@@ -14,6 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from apps.accounts.models import User
@@ -89,6 +90,13 @@ def report(request, kind, pk):
     if model is None:
         raise Http404
     target = get_object_or_404(model, pk=pk)
+    if not services.can_report(request.user, kind, target):
+        raise Http404
+    next_url = request.POST.get("next") or request.GET.get("next", "")
+    if not url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        next_url = ""
     form = ReportForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         try:
@@ -99,11 +107,11 @@ def report(request, kind, pk):
             messages.error(request, str(exc))
         else:
             messages.success(request, "Дякуємо! Модератор розгляне скаргу.")
-        return redirect(request.POST.get("next") or "home")
+        return redirect(next_url or "home")
     return render(
         request,
         "moderation/report.html",
-        {"form": form, "target": target, "next": request.GET.get("next", "")},
+        {"form": form, "target_label": services.REPORT_LABELS[kind], "next": next_url},
     )
 
 

@@ -81,14 +81,13 @@ class TestRespond:
         with pytest.raises(TransitionError):
             services.respond(help_request, volunteer)
 
-    def test_withdrawn_volunteer_may_respond_again(self, help_request, volunteer):
+    def test_withdrawing_is_final(self, help_request, volunteer):
+        """Regression: respond/withdraw loops spammed the recipient with notifications."""
         response = services.respond(help_request, volunteer)
         services.withdraw(response, volunteer)
 
-        again = services.respond(help_request, volunteer, "Все ж можу")
-
-        assert again.pk == response.pk
-        assert again.status == RStatus.PENDING
+        with pytest.raises(TransitionError):
+            services.respond(help_request, volunteer, "Все ж можу")
 
 
 # ---------------------------------------------------------------------------
@@ -385,11 +384,12 @@ class TestEditing:
                 "help_format": "doorstep",
                 "volunteers_needed": 1,
                 "address": help_request.address,
+                "city": "Київ",
             },
         )
 
         assert page.status_code == 200  # form re-rendered with the error
-        assert "дату й адресу змінити не можна" in page.content.decode()
+        assert "дату, адресу й формат змінити не можна" in page.content.decode()
 
 
 # ---------------------------------------------------------------------------

@@ -9,14 +9,16 @@ answers and notifications. Reviews they wrote remain, signed as
 """
 
 from django.db import transaction
+from django.db.models import Q
 
 from apps.conversations.models import Message
-from apps.moderation.models import VerificationRequest
+from apps.moderation.models import Report, VerificationRequest
 from apps.notifications.models import Notification
 from apps.requests import services as request_services
 from apps.requests.models import HelpRequest, Response
 
 REMOVED_TEXT = "Видалено на прохання користувача."
+ANONYMOUS = "Видалений користувач"
 
 
 class DeletionError(Exception):
@@ -51,17 +53,28 @@ def delete_account(user):
     if user.is_superuser:
         raise DeletionError("Акаунт адміністратора видаляється вручну.")
 
-    _close_open_work(user)
-
     with transaction.atomic():
+        full_name = user.get_full_name()
+        _close_open_work(user)
+        if full_name.strip():
+            # Other people's notifications mention the user by name
+            for notification in Notification.objects.filter(
+                Q(title__contains=full_name) | Q(message__contains=full_name)
+            ):
+                notification.title = notification.title.replace(full_name, ANONYMOUS)
+                notification.message = notification.message.replace(full_name, ANONYMOUS)
+                notification.save(update_fields=["title", "message"])
+        Report.objects.filter(reporter=user).update(comment="")
         for help_request in HelpRequest.objects.filter(recipient=user):
             _delete_file(help_request.photo)
             help_request.address = ""
             help_request.latitude = help_request.longitude = None
             help_request.beneficiary_name = help_request.beneficiary_phone = ""
             help_request.description = REMOVED_TEXT
+            help_request.title = "Запит видаленого користувача"
             help_request.save(
                 update_fields=[
+                    "title",
                     "photo",
                     "address",
                     "latitude",

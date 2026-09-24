@@ -89,6 +89,8 @@
         </div>
       </fieldset>
 
+      <div id="city-wrapper">{{ form.city|as_crispy_field }}</div>
+
       <!-- Address with Nominatim autocomplete -->
       <div class="mb-3 position-relative" id="address-wrapper">
         {{ form.address|as_crispy_field }}
@@ -287,7 +289,7 @@
 (function () {
   // Online help needs no address: hide the address block and the mini-map
   const radios = document.querySelectorAll('input[name="help_format"]');
-  const blocks = [document.getElementById('address-wrapper'), document.getElementById('address-hint')];
+  const blocks = [document.getElementById('city-wrapper'), document.getElementById('address-wrapper'), document.getElementById('address-hint')];
   function sync() {
     const chosen = document.querySelector('input[name="help_format"]:checked');
     const remote = chosen && chosen.value === 'remote';
@@ -320,7 +322,7 @@
   function buildSummary() {
     const summary = document.getElementById('wizard-summary');
     summary.innerHTML = '';
-    const names = ['title', 'help_format', 'category', 'urgency', 'needed_date', 'duration', 'volunteers_needed', 'address'];
+    const names = ['title', 'help_format', 'category', 'urgency', 'needed_date', 'duration', 'volunteers_needed', 'city', 'address'];
     names.forEach(function (name) {
       let value = '';
       const radio = form.querySelector('input[name="' + name + '"]:checked');

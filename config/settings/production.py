@@ -20,6 +20,10 @@ DATABASES["default"]["CONN_HEALTH_CHECKS"] = True  # noqa: F405
 # The host terminates TLS and forwards the original scheme in this header
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# Behind exactly one proxy: take the client IP from X-Forwarded-For
+AXES_IPWARE_PROXY_COUNT = 1
+AXES_IPWARE_META_PRECEDENCE_ORDER = ["HTTP_X_FORWARDED_FOR", "REMOTE_ADDR"]
+
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
 
 SECURE_CONTENT_TYPE_NOSNIFF = True
