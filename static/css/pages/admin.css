@@ -19,11 +19,18 @@
 .mv-mod-item__title a:hover { text-decoration: underline; }
 .mv-mod-item__head .mv-meta--inline li { align-items: center; }
 .mv-mod-item__head .mv-meta--inline li > i { margin-top: 0; }
-/* Queue tabs: on phones they wrap into rows instead of hiding behind a scroll */
+/* Queue tabs on phones: one horizontally scrolling strip (never wraps), bleeding to the screen
+   edges, with edge fades that hint at more tabs */
 @media (max-width: 575.98px) {
-  .mv-mod-tabs { flex-wrap: wrap; overflow: visible; border-bottom: 0; gap: 0; }
-  .mv-mod-tabs .mv-tab { flex: 1 1 auto; justify-content: center; padding: 0 12px; margin-bottom: 0; border-bottom: 1px solid var(--mv-line); }
-  .mv-mod-tabs .mv-tab.is-active { border-bottom: 3px solid var(--mv-blue-600); }
+  .mv-mod-tabs {
+    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 0;
+    margin-inline: calc(var(--bs-gutter-x, 1.5rem) * -.5); padding-inline: calc(var(--bs-gutter-x, 1.5rem) * .5) 40px;
+    scroll-padding-inline: 24px 48px;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 40px), transparent);
+            mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 40px), transparent);
+  }
+  .mv-mod-tabs::-webkit-scrollbar { display: none; }
+  .mv-mod-tabs .mv-tab { flex: none; padding: 0 14px; }
 }
 /* Category icon may be the paw SVG */
 .mv-summary > dt svg { width: 18px; height: 18px; flex: none; fill: currentColor; color: var(--mv-blue-600); }
@@ -101,6 +108,8 @@
 .mv-bar__label i { font-size: 1.05em; color: var(--mv-bar, var(--mv-blue-600)); }
 .mv-bar__num { font-weight: 700; color: var(--mv-navy-900); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mv-bar__num span { font-weight: 500; color: var(--mv-muted); margin-left: 6px; }
+.mv-bar__num .mv-bar__pct { margin-left: 0; } /* "2 · 18%": the number, a separator and the muted share */
+.mv-page .mv-card__lead { color: var(--mv-muted); margin-top: -8px; }
 .mv-bar progress {
   -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 10px; border: 0;
   border-radius: var(--mv-r-pill); background: var(--mv-canvas); color: var(--mv-bar, var(--mv-blue-600)); overflow: hidden;

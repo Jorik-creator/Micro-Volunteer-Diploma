@@ -167,28 +167,28 @@
       <section class="mv-card" aria-labelledby="responses-title" id="responses">
         <div class="mv-rq-card-head">
           <h2 class="mv-card__title" id="responses-title"><i class="bi bi-people" aria-hidden="true"></i>Відгуки волонтерів</h2>
-          {% if responses %}<span class="mv-count mv-count--blue" aria-label="{{ responses|length }} {{ responses|length|uk_plural:'відгук,відгуки,відгуків' }}">{{ responses|length }}</span>{% endif %}
+          {% if pending_responses_count %}<span class="mv-rq-card-head__new">({{ pending_responses_count }} {{ pending_responses_count|uk_plural:'новий,нові,нових' }})</span>{% endif %}
         </div>
         {% if responses %}
         <ul class="mv-rows">
           {% for resp in responses %}
           <li class="mv-row mv-rq-response" id="response-{{ resp.pk }}">
             <div class="mv-rq-response__head">
-              {% avatar resp.volunteer 56 %}
+              {% avatar resp.volunteer 56 False %}
               <div class="mv-rq-response__who">
-                <h3 class="mv-row__title"><a href="{% url 'accounts:public-profile' resp.volunteer.pk %}">{{ resp.volunteer.get_full_name|default:resp.volunteer.username }}</a></h3>
+                <h3 class="mv-row__title"><a href="{% url 'accounts:public-profile' resp.volunteer.pk %}">{{ resp.volunteer|short_name }}</a></h3>
                 <p class="mv-rq-response__rating">
                   {% if resp.volunteer_rating %}{% with rating=resp.volunteer_rating %}
                   {% if rating.count %}<span class="mv-rating"><i class="bi bi-star-fill" aria-hidden="true"></i>{{ rating.average|floatformat:1 }}</span><span class="mv-muted"> · {{ rating.count }} {{ rating.count|uk_plural:"оцінка,оцінки,оцінок" }}</span>
                   {% else %}<span class="mv-muted">Оцінок поки немає</span>{% endif %}
                   <span class="mv-muted" aria-hidden="true"> · </span>{% endwith %}{% endif %}
-                  <a href="{% url 'accounts:public-profile' resp.volunteer.pk %}">Профіль<span class="visually-hidden"> волонтера {{ resp.volunteer.get_full_name|default:resp.volunteer.username }}</span></a>
+                  <a href="{% url 'accounts:public-profile' resp.volunteer.pk %}">Профіль<span class="visually-hidden"> волонтера {{ resp.volunteer|short_name }}</span></a>
                 </p>
               </div>
               <div class="mv-rq-response__status">{% response_status resp %}</div>
             </div>
             <div class="mv-rq-response__body">
-              <p class="mv-rq-response__meta">Відгук: {{ resp.created_at|when }}{% if resp.volunteer.is_verified %} · <i class="bi bi-patch-check-fill mv-rq-verified" aria-hidden="true"></i>Перевірений волонтер{% endif %}</p>
+              <p class="mv-rq-response__meta">Відгук: {{ resp.created_at|when }}{% if resp.volunteer.is_verified %} · <span class="text-nowrap"><i class="bi bi-patch-check-fill mv-rq-verified" aria-hidden="true"></i>Перевірений волонтер</span>{% endif %}</p>
               {% if resp.message %}<p class="mv-row__text mv-rq-quote">{{ resp.message }}</p>{% endif %}
               {% if resp.status_reason %}<p class="mv-row__text mv-muted"><i class="bi bi-chat-left-text me-1" aria-hidden="true"></i>{{ resp.status_reason }}</p>{% endif %}
               {% if resp.done_at %}<p class="mv-row__text"><span class="mv-status mv-status--success"><i class="bi bi-check2-all" aria-hidden="true"></i>Позначено виконаним: {{ resp.done_at|when }}</span></p>{% endif %}
@@ -197,10 +197,10 @@
               <div class="mv-row__actions mv-rq-response__actions">
                 {% if resp.status == 'pending' and help_request.status == 'active' %}
                 <form method="post" action="{% url 'requests:accept' resp.pk %}">{% csrf_token %}
-                  <button type="submit" class="mv-btn mv-btn--primary mv-btn--sm" aria-label="Прийняти волонтера {{ resp.volunteer.get_full_name|default:resp.volunteer.username }}"><i class="bi bi-check-lg" aria-hidden="true"></i>Прийняти</button>
+                  <button type="submit" class="mv-btn mv-btn--primary mv-btn--sm" aria-label="Прийняти волонтера {{ resp.volunteer|short_name }}"><i class="bi bi-check-lg" aria-hidden="true"></i>Прийняти</button>
                 </form>
                 <form method="post" action="{% url 'requests:reject' resp.pk %}">{% csrf_token %}
-                  <button type="submit" class="mv-btn mv-btn--danger mv-btn--sm" aria-label="Відхилити волонтера {{ resp.volunteer.get_full_name|default:resp.volunteer.username }}"><i class="bi bi-x-lg" aria-hidden="true"></i>Відхилити</button>
+                  <button type="submit" class="mv-btn mv-btn--danger mv-btn--sm" aria-label="Відхилити волонтера {{ resp.volunteer|short_name }}"><i class="bi bi-x-lg" aria-hidden="true"></i>Відхилити</button>
                 </form>
                 {% endif %}
                 {% if resp.status == 'accepted' and resp.conversation_id %}
@@ -289,10 +289,14 @@
           {% elif help_request.status == 'in_progress' %}
           <h2 class="mv-card__title" id="action-title">Керування запитом</h2>
           <p class="mv-muted">Коли допомогу буде надано, волонтер позначить її виконаною, а ви підтвердите.</p>
-          <form method="post" action="{% url 'requests:confirm' help_request.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="mv-btn mv-btn--secondary mv-btn--block" data-confirm-submit="Позначити запит завершеним?"><i class="bi bi-check2-circle" aria-hidden="true"></i>Завершити запит</button>
-          </form>
+          <details class="mv-disclosure mv-rq-disclosure mv-rq-finish">
+            <summary><i class="bi bi-check2-circle" aria-hidden="true"></i>Допомогу вже отримано?</summary>
+            <form method="post" action="{% url 'requests:confirm' help_request.pk %}" class="mv-disclosure__body">
+              {% csrf_token %}
+              <p class="mv-micro">Якщо волонтер уже допоміг, але не позначив виконання, — завершіть запит самі. Після цього можна буде оцінити волонтера.</p>
+              <button type="submit" class="mv-btn mv-btn--secondary mv-btn--sm" data-confirm-submit="Позначити запит завершеним?"><i class="bi bi-check2-circle" aria-hidden="true"></i>Завершити запит</button>
+            </form>
+          </details>
           {% else %}
           <h2 class="mv-card__title" id="action-title">Керування запитом</h2>
           {% endif %}
@@ -455,7 +459,7 @@
         <div class="mv-rq-person__row">
           {% avatar help_request.recipient 56 %}
           <div>
-            <a class="mv-rq-person__name" href="{% url 'accounts:public-profile' help_request.recipient.pk %}">{{ help_request.recipient.get_full_name|default:help_request.recipient.username }}</a>
+            <a class="mv-rq-person__name" href="{% url 'accounts:public-profile' help_request.recipient.pk %}">{{ help_request.recipient|short_name }}</a>
             {% if help_request.city %}<span class="mv-micro d-block">{{ help_request.city }}</span>{% endif %}
           </div>
         </div>

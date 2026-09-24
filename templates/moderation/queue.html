@@ -174,8 +174,8 @@
         <p class="form-text" id="note-c-{{ item.pk }}-hint">Необов'язково. Зберігається в історії модерації.</p>
         <textarea name="note" id="note-c-{{ item.pk }}" rows="2" maxlength="500" class="form-control" aria-describedby="note-c-{{ item.pk }}-hint"></textarea>
         <div class="mv-form-actions mv-mt-0">
-          {% if item.measure %}<button type="submit" name="decision" value="act" class="mv-btn mv-btn--danger" data-confirm-submit="{{ item.measure }}?"><i class="bi bi-slash-circle" aria-hidden="true"></i>{{ item.measure }}</button>{% endif %}
           <button type="submit" name="decision" value="dismiss" class="mv-btn mv-btn--secondary"><i class="bi bi-check2" aria-hidden="true"></i>Порушень немає</button>
+          {% if item.measure %}<button type="submit" name="decision" value="act" class="mv-btn mv-btn--danger" data-confirm-submit="{{ item.measure }}?"><i class="bi bi-slash-circle" aria-hidden="true"></i>{{ item.measure }}</button>{% endif %}
         </div>
       </form>
     </article>
@@ -216,7 +216,11 @@
   // On narrow screens keep the active queue tab in view
   (function () {
     var active = document.querySelector('.mv-tabs .mv-tab.is-active');
-    if (active) active.parentNode.scrollLeft = active.offsetLeft - active.parentNode.offsetLeft - 16;
+    if (active) {
+      var strip = active.parentNode, left = active.offsetLeft - strip.offsetLeft;
+      // Scroll just enough to show the whole active tab clear of the edge fades
+      if (left + active.offsetWidth > strip.clientWidth - 48) strip.scrollLeft = left + active.offsetWidth - strip.clientWidth + 48;
+    }
   })();
 </script>
 {% endblock %}

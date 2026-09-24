@@ -362,7 +362,7 @@ class TestHelpRequestDetailView:
         """Owner sees responses list on detail page."""
         response = client_logged_in_recipient.get(f"/requests/{help_request.pk}/")
         assert response.status_code == 200
-        assert volunteer_response.volunteer.get_full_name().encode() in response.content
+        assert volunteer_response.volunteer.short_name.encode() in response.content
 
     def test_detail_anonymous_404_for_non_active(self, client, db):
         """Anonymous users get 404 for non-active requests (no pk enumeration)."""

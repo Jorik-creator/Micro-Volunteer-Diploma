@@ -101,16 +101,26 @@
 @media (max-width: 767.98px) {
   .mv-profile-card__actions { min-width: 0; display: flex; flex-wrap: wrap; gap: 8px 12px; }
 }
+/* Phones: one column of full-width actions, all centred on the same axis */
+@media (max-width: 575.98px) {
+  .mv-profile-card__actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .mv-profile-card__actions > .mv-btn, .mv-profile-card__actions > .mv-link-btn { width: 100%; justify-content: center; }
+}
 @media (max-width: 575.98px) { .mv-profile-card .mv-avatar--128 { width: 96px; height: 96px; font-size: 32px; } }
 
 .mv-profile-stats { margin-top: 24px; padding: 20px 8px; }
 .mv-profile-grid { margin-top: 24px; }
 .mv-profile-grid > * { min-width: 0; }
 .mv-step__cta .mv-btn { white-space: normal; text-align: left; }
-/* Phones: mv.css turns compact stats into 2×2; an odd last number takes the whole row */
+/* Phones: mv.css turns compact stats into 2×2, which orphans a third number.
+   Here every number gets an equal column with a full-height divider (2 or 3 columns). */
 @media (max-width: 575.98px) {
-  .mv-profile-stats { padding: 8px 4px; }
-  .mv-profile-stats .mv-stat:last-child:nth-child(odd) { grid-column: 1 / -1; border-left: 0 !important; }
+  .mv-profile-stats { padding: 12px 4px; }
+  .mv-profile-stats .mv-stats { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); align-items: stretch; }
+  .mv-profile-stats .mv-stat { padding: 4px 12px; border-top: 0 !important; border-left: 0 !important; }
+  .mv-profile-stats .mv-stat + .mv-stat { border-left: 1px solid var(--mv-line) !important; }
+  .mv-profile-stats .mv-stat__num { font-size: 24px; }
+  .mv-profile-stats .mv-stat__label { font-size: 14px; line-height: 1.35; }
 }
 .mv-profile-grid--single > div { max-width: 760px; }
 .mv-profile-grid .mv-card__title { font-size: 21px; }
@@ -178,3 +188,11 @@
 .mv-card--danger .mv-meta li > i { color: var(--mv-danger); }
 .mv-card--danger .mv-card__title .mv-tile i { color: inherit; }
 .mv-card--danger .mv-meta { gap: 12px; margin-bottom: 28px; }
+
+/* ---------- Emails: wrap after "@" (<wbr> from accounts/_email.html); overflow-wrap:anywhere only as a last resort ---------- */
+.mv-readonly {
+  display: flex; gap: 10px; align-items: flex-start; margin: 0; padding: 12px 14px; min-height: 52px;
+  background: var(--mv-canvas); border: 1px solid var(--mv-line); border-radius: var(--mv-r-sm, 10px); color: var(--mv-ink);
+}
+.mv-readonly > i { color: var(--mv-muted); margin-top: 2px; flex: none; }
+.mv-readonly > span { min-width: 0; overflow-wrap: anywhere; }

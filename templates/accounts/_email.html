@@ -1,0 +1,1 @@
+{# Email with a soft break point after "@", so a long address wraps between the name and the domain rather than mid-word (mid-word breaks stay a CSS last resort). Usage: include with email=... #}{% for c in email %}{{ c }}{% if c == "@" %}<wbr>{% endif %}{% endfor %}

@@ -9,7 +9,8 @@
     <div class="mv-form-col">
     <a class="mv-back" href="{% url 'notifications:notification-list' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад до сповіщень</a>
     <h1>Листи на пошту</h1>
-    <p class="mv-lead">Усі сповіщення завжди видно на сайті. Оберіть, які з них також надсилати на <span class="mv-break">{{ user.email }}</span>.</p>
+    <p class="mv-lead">Усі сповіщення завжди видно на сайті. Оберіть, які з них також надсилати на&nbsp;пошту:</p>
+    <p class="mv-email-line"><i class="bi bi-envelope" aria-hidden="true"></i><span class="mv-email">{% include "accounts/_email.html" with email=user.email %}</span></p>
     </div>
   </div>
 </section>

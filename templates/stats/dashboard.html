@@ -16,14 +16,14 @@
     <section class="mv-card mv-stats-card" aria-labelledby="key-title">
       <h2 class="visually-hidden" id="key-title">Ключові показники</h2>
       <div class="mv-stats">
-        <div class="mv-stat"><span class="mv-stat__num">{{ total_requests }}</span><span class="mv-stat__label">{{ total_requests|uk_plural:"запит,запити,запитів" }} усього</span></div>
+        <div class="mv-stat"><span class="mv-stat__num">{{ total_requests }}</span><span class="mv-stat__label">{{ total_requests|uk_plural:"запит,запити,запитів"|capfirst }} усього</span></div>
         {% for value, label, count, color in status_summary %}{% if value == 'completed' %}
-        <div class="mv-stat"><span class="mv-stat__num">{{ count }}</span><span class="mv-stat__label">виконано</span></div>
+        <div class="mv-stat"><span class="mv-stat__num">{{ count }}</span><span class="mv-stat__label">Виконано</span></div>
         {% endif %}{% endfor %}
-        <div class="mv-stat"><span class="mv-stat__num">{{ total_reviews }}</span><span class="mv-stat__label">{{ total_reviews|uk_plural:"оцінка,оцінки,оцінок" }} опубліковано</span></div>
+        <div class="mv-stat"><span class="mv-stat__num">{{ total_reviews }}</span><span class="mv-stat__label">{{ total_reviews|uk_plural:"оцінка,оцінки,оцінок"|capfirst }} опубліковано</span></div>
         <div class="mv-stat">
           <span class="mv-stat__num">{% if total_reviews %}{{ avg_rating|floatformat:1 }}<i class="bi bi-star-fill" aria-hidden="true"></i>{% else %}—{% endif %}</span>
-          <span class="mv-stat__label">середня оцінка{% if total_reviews %} з 5{% endif %}</span>
+          <span class="mv-stat__label">Середня оцінка{% if total_reviews %} з 5{% endif %}</span>
         </div>
       </div>
     </section>
@@ -36,7 +36,7 @@
           <li class="mv-bar mv-bar--{{ color }}{% if not count %} is-zero{% endif %}">
             <div class="mv-bar__head">
               <span class="mv-bar__label"><i class="bi {% if value == 'draft' %}bi-pencil{% elif value == 'pending_moderation' %}bi-hourglass-split{% elif value == 'rejected' %}bi-x-octagon{% elif value == 'active' %}bi-circle{% elif value == 'in_progress' %}bi-circle-half{% elif value == 'awaiting_confirmation' %}bi-clock-history{% elif value == 'completed' %}bi-check-circle-fill{% elif value == 'cancelled' %}bi-x-circle{% else %}bi-calendar-x{% endif %}" aria-hidden="true"></i>{{ label }}</span>
-              <span class="mv-bar__num">{{ count }}<span>{% widthratio count total_requests 100 %}%</span></span>
+              <span class="mv-bar__num">{{ count }}<span class="mv-bar__pct"> · {% widthratio count total_requests 100 %}%</span></span>
             </div>
             <progress max="{{ total_requests|default:1 }}" value="{{ count }}" aria-hidden="true"></progress>
           </li>
@@ -52,7 +52,7 @@
           <li class="mv-bar">
             <div class="mv-bar__head">
               <span class="mv-bar__label">{{ name }}</span>
-              <span class="mv-bar__num">{{ count }}<span>{% widthratio count total_requests 100 %}%</span></span>
+              <span class="mv-bar__num">{{ count }}<span class="mv-bar__pct"> · {% widthratio count total_requests 100 %}%</span></span>
             </div>
             <progress max="{{ total_requests|default:1 }}" value="{{ count }}" aria-hidden="true"></progress>
           </li>
@@ -64,9 +64,9 @@
       </section>
     </div>
 
-    <section aria-labelledby="top-title">
-      <h2 class="mv-h3" id="top-title">Найактивніші волонтери</h2>
-      <p class="mv-muted">За кількістю опублікованих оцінок від отримувачів.</p>
+    <section class="mv-card" aria-labelledby="top-title">
+      <h2 class="mv-card__title" id="top-title"><i class="bi bi-trophy" aria-hidden="true"></i>Найактивніші волонтери</h2>
+      <p class="mv-card__lead">За кількістю опублікованих оцінок від отримувачів.</p>
       {% if top_volunteers %}
       <ol class="mv-rows mv-rows--joined">
         {% for vol in top_volunteers %}
@@ -87,9 +87,7 @@
         {% endfor %}
       </ol>
       {% else %}
-      <div class="mv-card mv-card--flat">
-        {% include "partials/_empty.html" with icon="bi-trophy" title="Оцінок поки немає" text="Волонтери з'являться тут, щойно отримають перші оцінки." %}
-      </div>
+      {% include "partials/_empty.html" with icon="bi-trophy" title="Оцінок поки немає" text="Волонтери з'являться тут, щойно отримають перші оцінки." %}
       {% endif %}
     </section>
   </div>

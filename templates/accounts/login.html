@@ -29,11 +29,12 @@
       <section aria-labelledby="demo-login-title">
         <h2 class="mv-auth__sub" id="demo-login-title">Подивитися демо без реєстрації</h2>
         <div class="mv-option-list">
-          {% for role, label, icon in demo_roles %}
+          {# Same order as the home page: recipient, volunteer, moderator (matched by the role's first letter) #}
+          {% for wanted in "rvm" %}{% for role, label, icon in demo_roles %}{% if role.0 == wanted %}
           <form method="post" action="{% url 'accounts:demo-login' role %}">
             {% csrf_token %}
             <button type="submit" class="mv-option-btn">
-              <span class="mv-tile{% if role == 'moderator' %} mv-tile--navy{% endif %}" aria-hidden="true"><i class="bi {{ icon }}"></i></span>
+              <span class="mv-tile" aria-hidden="true"><i class="bi {{ icon }}"></i></span>
               <span class="mv-option-btn__text">
                 <span class="mv-option-btn__title">{{ label }}</span>
                 <span class="mv-option-btn__hint">{% if role == 'volunteer' %}Відгукуйтеся на запити поруч{% elif role == 'recipient' %}Створіть запит і оберіть волонтера{% else %}Перевіряйте запити, заявки й скарги{% endif %}</span>
@@ -41,7 +42,7 @@
               <i class="bi bi-chevron-right" aria-hidden="true"></i>
             </button>
           </form>
-          {% endfor %}
+          {% endif %}{% endfor %}{% endfor %}
         </div>
       </section>
       {% else %}

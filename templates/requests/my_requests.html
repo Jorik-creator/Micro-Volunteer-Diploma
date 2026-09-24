@@ -30,9 +30,11 @@
   {# Groups are built from the current page; section_counts (view) uses the same rules. Empty groups are also hidden by personal.css #}
   <nav class="mv-jump" aria-label="Розділи сторінки">
     <span class="mv-jump__label">Перейти до:</span>
-    {% if section_counts.needs or not section_counts %}<a href="#needs">Потребують дії{% if section_counts %} <span class="mv-jump__num">{{ section_counts.needs }}</span>{% endif %}</a>{% endif %}
-    {% if section_counts.current or not section_counts %}<a href="#current">Активні{% if section_counts %} <span class="mv-jump__num">{{ section_counts.current }}</span>{% endif %}</a>{% endif %}
-    {% if section_counts.past or not section_counts %}<a href="#past">Завершені{% if section_counts %} <span class="mv-jump__num">{{ section_counts.past }}</span>{% endif %}</a>{% endif %}
+    <ul class="mv-jump__list">
+    {% if section_counts.needs or not section_counts %}<li><a href="#needs"><span class="mv-jump__text">Потребують дії</span>{% if section_counts %} <span class="mv-jump__num">{{ section_counts.needs }}</span>{% endif %}</a></li>{% endif %}
+    {% if section_counts.current or not section_counts %}<li><a href="#current"><span class="mv-jump__text">Активні</span>{% if section_counts %} <span class="mv-jump__num">{{ section_counts.current }}</span>{% endif %}</a></li>{% endif %}
+    {% if section_counts.past or not section_counts %}<li><a href="#past"><span class="mv-jump__text">Завершені</span>{% if section_counts %} <span class="mv-jump__num">{{ section_counts.past }}</span>{% endif %}</a></li>{% endif %}
+    </ul>
   </nav>
 
   <section class="mv-psec mv-psec--action" id="needs" aria-labelledby="needs-title">

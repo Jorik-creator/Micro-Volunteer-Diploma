@@ -131,18 +131,21 @@ a.bw-float:hover strong { text-decoration: underline; text-underline-offset: 3px
 
 .bw-map-rows { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 12px; }
 .bw-map-row[hidden], .bw-map-card[hidden], .bw-map-fallback[hidden] { display: none; }
-/* Map list item = a compact request card */
-.bw-map-card { padding: 16px 18px; display: grid; gap: 10px; box-shadow: var(--mv-sh-1); }
-.bw-map-card__head { display: flex; gap: 12px; align-items: flex-start; }
-.bw-map-card__headtext { min-width: 0; }
-.bw-map-card__cat { margin: 0; font-size: 15px; color: var(--mv-muted); }
-.bw-map-card__title { font-size: 17px; font-weight: 700; line-height: 1.35; margin: 0; overflow-wrap: anywhere; }
-.bw-map-card__title a { color: var(--mv-navy-900); text-decoration: none; }
-.bw-map-card:hover .bw-map-card__title a { text-decoration: underline; text-underline-offset: 3px; }
+/* Map list item = a compact request card (same parts as partials/_request_card.html) */
+.bw-map-card.mv-req { padding: 16px 18px; gap: 10px; height: auto; }
+.bw-map-card .mv-req__head { gap: 12px; align-items: center; }
+.bw-map-card .mv-req__title { font-size: 17px; margin: 0; overflow-wrap: anywhere; }
+.bw-map-card:hover .mv-req__title a { text-decoration: underline; text-underline-offset: 3px; }
 .bw-map-card .mv-meta { gap: 6px; }
 .bw-map-card .mv-meta li { font-size: 15px; }
 .bw-map-card .mv-meta li > i { font-size: 16px; }
-.bw-map-card__show { position: relative; z-index: 1; justify-self: start; margin: -6px 0 -10px; }
+.bw-map-card .mv-req__foot { padding-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.bw-map-card__show { position: relative; z-index: 1; min-height: 36px; white-space: nowrap; flex: none; }
+.bw-map-card .mv-req__foot .mv-micro { min-width: 0; }
+
+/* Phones: the filters fold behind a toggle so the map sits right under the title */
+.bw-map-page__toggle { margin: 12px 0 0; }
+.bw-map-page__toggle[aria-expanded="true"] { margin-bottom: 4px; }
 
 .bw-map-fallback {
   position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px;
@@ -175,7 +178,18 @@ a.bw-float:hover strong { text-decoration: underline; text-underline-offset: 3px
 .bw-marker--medium   { --bw-marker: var(--mv-blue-600); }
 .bw-marker--high     { --bw-marker: var(--mv-warning); }
 .bw-marker--critical { --bw-marker: var(--mv-danger); }
-.leaflet-marker-icon:focus-visible .bw-marker { box-shadow: 0 0 0 3px var(--mv-navy-900), 0 0 0 7px var(--mv-flag); }
+/* Count bubble for pins that would overlap; colour = the most urgent inside */
+.bw-cluster {
+  position: absolute; inset: 0; display: grid; place-items: center; border-radius: 50%;
+  background: var(--bw-marker, var(--mv-blue-600)); color: #fff; font-weight: 700; font-size: 17px;
+  border: 3px solid #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--bw-marker, var(--mv-blue-600)) 25%, transparent), 0 4px 12px rgba(15, 35, 73, .3);
+}
+.bw-cluster--low      { --bw-marker: var(--mv-muted); }
+.bw-cluster--medium   { --bw-marker: var(--mv-blue-600); }
+.bw-cluster--high     { --bw-marker: var(--mv-warning); }
+.bw-cluster--critical { --bw-marker: var(--mv-danger); }
+.leaflet-marker-icon:focus-visible .bw-cluster { box-shadow: 0 0 0 3px var(--mv-navy-900), 0 0 0 7px var(--mv-flag); }
+.leaflet-marker-icon:focus-visible .bw-marker {box-shadow: 0 0 0 3px var(--mv-navy-900), 0 0 0 7px var(--mv-flag); }
 
 /* Leaflet chrome: our font, readable sizes, 44px zoom buttons */
 .bw-map-page .leaflet-container { font-family: var(--mv-font); font-size: 15px; }
@@ -211,27 +225,27 @@ a.bw-float:hover strong { text-decoration: underline; text-underline-offset: 3px
 .bw-hero--compact .mv-hero__trust { margin-top: 24px; }
 
 .bw-todo { margin-top: 32px; }
-.bw-todo__title { display: flex; align-items: center; gap: 10px; font-size: 21px; margin-bottom: 14px; }
-.bw-todo__title .mv-count { font-size: 14px; height: 24px; min-width: 24px; }
-.bw-todo__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
-.bw-todo__list > li { display: flex; }
-.bw-todo__item { flex: 1; display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px;
-  color: inherit; text-decoration: none; }
-.bw-todo__item:hover { color: inherit; }
-.bw-todo__item:hover .bw-todo__name { text-decoration: underline; text-underline-offset: 3px; }
-.bw-todo__item--warning { border-left: 4px solid var(--mv-warning); }
-.bw-todo__item--success { border-left: 4px solid var(--mv-success); }
-.bw-todo__body { flex: 1; min-width: 0; display: grid; gap: 2px; }
-.bw-todo__name { color: var(--mv-navy-900); font-size: 17px; line-height: 1.35; }
-.bw-todo__text { color: var(--mv-muted); font-size: 16px; }
-.bw-todo__go { color: var(--mv-blue-600); font-size: 18px; align-self: center; }
+.bw-todo__title { display: flex; align-items: baseline; gap: 8px; font-size: 21px; margin-bottom: 14px; }
+.bw-todo__num { color: var(--mv-muted); font-weight: 600; }
+/* Action rows: one accent for all, the tile colour carries the tone */
+.bw-todo__row { align-items: center; transition: border-color .15s, box-shadow .15s; }
+.bw-todo__row:hover { border-color: var(--mv-blue-100); box-shadow: 0 6px 18px rgba(15, 35, 73, .08); }
+.bw-todo__row .mv-row__title { margin: 0; }
+.bw-todo__row .mv-row__text { margin-top: 2px; font-size: 16px; }
+.bw-todo__go { color: var(--mv-blue-600); font-size: 18px; flex: none; }
 .bw-todo-clear { display: flex; gap: 12px; align-items: center; margin: 28px 0 0; font-weight: 600; color: var(--mv-navy-900); }
+
+/* Personal section under the compact hero */
+.bw-personal { padding-top: 56px; }
+.bw-personal__head { margin-bottom: 24px; gap: 12px; flex-wrap: wrap; }
+.bw-personal__head h2 { font-size: 26px; }
 @media (max-width: 575.98px) {
   .bw-hero--compact { padding: 28px 0 32px; }
   .bw-welcome__text { flex-basis: 100%; }
   .bw-welcome__actions { width: 100%; }
-  .bw-todo__item { padding: 14px 16px; }
+  .bw-todo__row { flex-wrap: nowrap; padding: 14px 16px; gap: 12px; }
+  .bw-personal { padding-top: 36px; }
+  .bw-personal__head h2 { font-size: 22px; }
 }
 
 /* ---------- List: results bar ---------- */

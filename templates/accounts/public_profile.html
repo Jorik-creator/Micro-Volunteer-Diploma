@@ -40,11 +40,11 @@
   <section class="mv-card mv-profile-stats" aria-label="Активність">
     <div class="mv-stats mv-stats--compact">
       {% if profile_user.is_volunteer %}
-      <div class="mv-stat"><span class="mv-stat__num">{{ helped_count }}</span><span class="mv-stat__label">{{ helped_count|uk_plural:"виконаний запит,виконані запити,виконаних запитів" }}</span></div>
-      <div class="mv-stat"><span class="mv-stat__num">{{ responses_count }}</span><span class="mv-stat__label">{{ responses_count|uk_plural:"відгук на запит,відгуки на запити,відгуків на запити" }}</span></div>
+      <div class="mv-stat"><span class="mv-stat__num">{{ helped_count }}</span><span class="mv-stat__label">{{ helped_count|uk_plural:"виконаний запит,виконані запити,виконаних запитів"|capfirst }}</span></div>
+      <div class="mv-stat"><span class="mv-stat__num">{{ responses_count }}</span><span class="mv-stat__label">{{ responses_count|uk_plural:"відгук на запит,відгуки на запити,відгуків на запити"|capfirst }}</span></div>
       {% else %}
-      <div class="mv-stat"><span class="mv-stat__num">{{ completed_count }}</span><span class="mv-stat__label">{{ completed_count|uk_plural:"виконаний запит,виконані запити,виконаних запитів" }}</span></div>
-      <div class="mv-stat"><span class="mv-stat__num">{{ requests_count }}</span><span class="mv-stat__label">{{ requests_count|uk_plural:"запит,запити,запитів" }} усього</span></div>
+      <div class="mv-stat"><span class="mv-stat__num">{{ completed_count }}</span><span class="mv-stat__label">{{ completed_count|uk_plural:"виконаний запит,виконані запити,виконаних запитів"|capfirst }}</span></div>
+      <div class="mv-stat"><span class="mv-stat__num">{{ requests_count }}</span><span class="mv-stat__label">{{ requests_count|uk_plural:"запит,запити,запитів"|capfirst }} усього</span></div>
       {% endif %}
     </div>
   </section>
@@ -74,7 +74,7 @@
       {% if rating.count %}
       {# The average and the count live in the header; here — what people noted and the reviews #}
       <section class="mv-card" aria-labelledby="rating-title">
-        <h2 class="mv-card__title" id="rating-title"><i class="bi bi-star-half" aria-hidden="true"></i>{% if profile_user.is_volunteer %}Що кажуть отримувачі{% else %}Що кажуть волонтери{% endif %}</h2>
+        <h2 class="mv-card__title" id="rating-title"><i class="bi bi-star-half" aria-hidden="true"></i>{% if profile_user.is_volunteer %}Оцінки від отримувачів{% else %}Оцінки від волонтерів{% endif %}</h2>
         {% if rating.top_tags %}
         <ul class="mv-meta mv-meta--inline">
           {% for tag in rating.top_tags %}

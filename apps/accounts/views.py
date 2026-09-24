@@ -60,6 +60,28 @@ class HomeView(TemplateView):
         user = self.request.user
         if user.is_authenticated and user.is_recipient:
             recent = recent.exclude(recipient=user)
+            S = HelpRequest.Status
+            # Personal section: the recipient's requests that are still in play
+            context["my_open_requests"] = (
+                HelpRequest.objects.filter(
+                    recipient=user,
+                    status__in=[
+                        S.AWAITING_CONFIRMATION,
+                        S.IN_PROGRESS,
+                        S.ACTIVE,
+                        S.PENDING_MODERATION,
+                        S.REJECTED,
+                        S.DRAFT,
+                    ],
+                )
+                .select_related("category")
+                .order_by("-status_changed_at")[:3]
+            )
+        elif user.is_authenticated and user.is_volunteer:
+            # Only what this volunteer can actually respond to
+            recent = recent.exclude(recipient=user).exclude(responses__volunteer=user)
+            if not user.is_verified:
+                recent = recent.exclude(help_format=HelpRequest.HelpFormat.HOME_VISIT)
         context["recent_requests"] = recent[:6]
         context["action_items"] = action_items(user) if user.is_authenticated else []
         return context

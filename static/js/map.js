@@ -172,29 +172,31 @@
   }
 
   // ---- list --------------------------------------------------------------
-  // A compact request card: category tile + title, then the meta rows
+  // A compact version of partials/_request_card.html: tile + title, meta rows,
+  // footer with the category and "show on map"
   function listRow(entry) {
     const item = entry.item;
-    const li = el('li', 'mv-card mv-card--link bw-map-card');
-    const head = el('div', 'bw-map-card__head');
+    const li = el('li', 'mv-card mv-card--link mv-req bw-map-card');
+    const head = el('div', 'mv-req__head');
     head.appendChild(categoryTile(item));
-    const headText = el('div', 'bw-map-card__headtext');
-    if (item.category) headText.appendChild(el('p', 'bw-map-card__cat', item.category));
-    const title = el('h3', 'bw-map-card__title');
+    const title = el('h3', 'mv-req__title');
     const link = el('a', 'mv-stretched', item.title || 'Запит допомоги');
     link.href = safeUrl(item.url);
     title.appendChild(link);
-    headText.appendChild(title);
-    head.appendChild(headText);
+    head.appendChild(title);
     li.appendChild(head);
     li.appendChild(metaList(item));
+    const foot = el('div', 'mv-req__foot');
+    foot.appendChild(el('span', 'mv-micro', item.category || 'Інше'));
     if (entry.marker) {
       const show = el('button', 'mv-link-btn mv-link-btn--sm bw-map-card__show');
       show.type = 'button';
       show.appendChild(icon('bi-geo'));
       show.appendChild(document.createTextNode('Показати на карті'));
       show.addEventListener('click', function () {
-        map.setView(entry.base, Math.max(map.getZoom(), 14));
+        // Close enough that the marker leaves its count bubble, then open it
+        map.setView(entry.base, Math.max(map.getZoom(), SPREAD_ZOOM + 1), { animate: false });
+        recluster();
         entry.marker.openPopup();
         // On phones the map sits above the list: bring it into view
         if (window.matchMedia('(max-width: 991.98px)').matches) {
@@ -202,48 +204,109 @@
           if (rect.top < 0 || rect.bottom > window.innerHeight) mapEl.scrollIntoView({ block: 'center' });
         }
       });
-      li.appendChild(show);
+      foot.appendChild(show);
+    } else {
+      const more = el('span', 'mv-req__more', 'Детальніше');
+      more.appendChild(icon('bi-arrow-right'));
+      foot.appendChild(more);
     }
+    li.appendChild(foot);
     return li;
   }
 
-  // ---- markers on the same spot are fanned out around it ----------------
-  // Deterministic (ordered by id) and recomputed on every zoom in screen
-  // pixels, so pins that would overlap stay visible and clickable.
-  const SPREAD_NEAR = 28; // px: closer than this counts as the same spot
-  function spreadMarkers() {
+  // ---- clustering ----------------------------------------------------------
+  // Greedy clustering in screen pixels, recomputed on every zoom: pins closer
+  // than NEAR px become one count bubble (click = zoom in). From SPREAD_ZOOM on,
+  // pins on the same spot fan out into a small ring instead, so each stays
+  // clickable. Deterministic (ordered by id): the layout is stable on redraws.
+  const NEAR = 44;
+  const SPREAD_ZOOM = 15;
+  const URGENCY_RANK = { low: 0, medium: 1, high: 2, critical: 3 };
+  const clusterIcons = {};
+  function clusterIcon(count, urgency) {
+    const key = count + ':' + urgency;
+    if (!clusterIcons[key]) {
+      const size = count < 10 ? 44 : 52;
+      // Static markup: only a number and a fixed class name go into this HTML
+      clusterIcons[key] = L.divIcon({
+        className: 'bw-marker-wrap',
+        html: '<span class="bw-cluster bw-cluster--' + urgency + '">' + Number(count) + '</span>',
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2],
+      });
+    }
+    return clusterIcons[key];
+  }
+  function recluster() {
     if (!map) return;
+    layer.clearLayers();
     const zoom = map.getZoom();
-    const visible = entries.filter(function (e) { return e.marker && layer.hasLayer(e.marker); })
+    const visible = entries.filter(function (e) { return e.marker && e.visible; })
       .sort(function (a, b) { return (a.item.id || 0) - (b.item.id || 0); });
     const groups = [];
     visible.forEach(function (e) {
       const point = map.project(e.base, zoom);
-      const group = groups.find(function (g) { return g.center.distanceTo(point) < SPREAD_NEAR; });
+      const group = groups.find(function (g) { return g.center.distanceTo(point) < NEAR; });
       if (group) group.members.push(e); else groups.push({ center: point, members: [e] });
     });
     groups.forEach(function (g) {
       const n = g.members.length;
-      if (n === 1) { g.members[0].marker.setLatLng(g.members[0].base); return; }
-      const radius = Math.max(24, (n * 36) / (2 * Math.PI));
-      g.members.forEach(function (e, i) {
-        const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
-        const p = L.point(g.center.x + radius * Math.cos(angle), g.center.y + radius * Math.sin(angle));
-        e.marker.setLatLng(map.unproject(p, zoom));
-      });
+      if (n === 1) {
+        g.members[0].marker.setLatLng(g.members[0].base);
+        layer.addLayer(g.members[0].marker);
+      } else if (zoom < SPREAD_ZOOM) {
+        let top = 'low';
+        g.members.forEach(function (e) {
+          const u = URGENCY_RANK[e.item.urgency] !== undefined ? e.item.urgency : 'medium';
+          if (URGENCY_RANK[u] > URGENCY_RANK[top]) top = u;
+        });
+        const label = n + ' ' + plural(n, 'запит', 'запити', 'запитів');
+        const bounds = L.latLngBounds(g.members.map(function (e) { return e.base; }));
+        const bubble = L.marker(map.unproject(g.center, zoom), {
+          icon: clusterIcon(n, top),
+          title: label + ' поруч — наблизити',
+          alt: label,
+          riseOnHover: true,
+          zIndexOffset: 500,
+        });
+        bubble.on('click', function () {
+          map.fitBounds(bounds, { padding: [64, 64], maxZoom: Math.max(zoom + 2, SPREAD_ZOOM) });
+        });
+        layer.addLayer(bubble);
+      } else {
+        const radius = Math.max(26, (n * 40) / (2 * Math.PI));
+        g.members.forEach(function (e, i) {
+          const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
+          const p = L.point(g.center.x + radius * Math.cos(angle), g.center.y + radius * Math.sin(angle));
+          e.marker.setLatLng(map.unproject(p, zoom));
+          layer.addLayer(e.marker);
+        });
+      }
     });
   }
-  if (map) map.on('zoomend', spreadMarkers);
+  if (map) map.on('zoomend', recluster);
 
-  // Zoom to the requests (with padding); the whole of Ukraine when there are none
-  function fitToData() {
+  // Zoom to the requests (with padding); the whole of Ukraine when there are none.
+  // On first load never further out than the country level.
+  const MIN_FIRST_ZOOM = 6;
+  function fitToData(firstLoad) {
     if (!map) return;
     map.invalidateSize();
-    const points = entries.filter(function (e) { return e.marker && layer.hasLayer(e.marker); })
+    const points = entries.filter(function (e) { return e.marker && e.visible; })
       .map(function (e) { return e.base; });
-    if (points.length) map.fitBounds(L.latLngBounds(points), { padding: [56, 56], maxZoom: 13 });
-    else map.fitBounds(UKRAINE_BOUNDS);
-    spreadMarkers();
+    if (points.length) {
+      const bounds = L.latLngBounds(points);
+      map.fitBounds(bounds, { padding: [56, 56], maxZoom: 13, animate: !firstLoad });
+      if (firstLoad && map.getZoom() < MIN_FIRST_ZOOM) {
+        // Too spread out for one screen: centre on where most requests are
+        const lat = points.reduce(function (sum, p) { return sum + p.lat; }, 0) / points.length;
+        const lng = points.reduce(function (sum, p) { return sum + p.lng; }, 0) / points.length;
+        map.setView([lat, lng], MIN_FIRST_ZOOM, { animate: false });
+      }
+    } else {
+      map.fitBounds(UKRAINE_BOUNDS);
+    }
+    recluster();
   }
 
   // ---- filters -----------------------------------------------------------
@@ -266,7 +329,8 @@
       .sort(function (a, b) { return a[1].localeCompare(b[1], 'uk'); });
   }
 
-  function applyFilters(fit) {
+  const filterCount = document.getElementById('map-filter-count');
+  function applyFilters(fit, firstLoad) {
     const category = categorySelect ? categorySelect.value : '';
     const urgency = urgencySelect ? urgencySelect.value : '';
     const format = formatSelect ? formatSelect.value : '';
@@ -276,17 +340,16 @@
         (!urgency || e.item.urgency === urgency) &&
         (!format || e.item.help_format === format);
       e.row.hidden = !visible;
-      if (e.marker) {
-        if (visible) layer.addLayer(e.marker); else layer.removeLayer(e.marker);
-      }
+      e.visible = visible;
       if (visible) shown += 1;
     });
     const total = entries.length;
     if (!total) setStatus('Зараз активних запитів на карті немає.');
     else if (shown === total) setStatus(total + ' ' + plural(total, 'запит', 'запити', 'запитів'));
     else setStatus('Показано ' + shown + ' з ' + total);
-    if (fit) fitToData();
-    else spreadMarkers();
+    if (filterCount) filterCount.textContent = category || urgency || format ? ' · застосовано' : '';
+    if (fit) fitToData(firstLoad);
+    else recluster();
   }
 
   [categorySelect, urgencySelect, formatSelect].forEach(function (select) {
@@ -301,7 +364,7 @@
     })
     .then(function (data) {
       entries = (Array.isArray(data) ? data : []).map(function (item) {
-        const entry = { item: item, marker: null, row: null, base: null };
+        const entry = { item: item, marker: null, row: null, base: null, visible: true };
         if (map && item.lat !== null && item.lon !== null && isFinite(item.lat) && isFinite(item.lon)) {
           entry.base = L.latLng(Number(item.lat), Number(item.lon));
           entry.marker = L.marker(entry.base, {
@@ -324,7 +387,7 @@
           formatWrap.hidden = false;
         }
       }
-      applyFilters(true);
+      applyFilters(true, true);
     })
     .catch(function () {
       setStatus('Не вдалося завантажити запити. Оновіть сторінку або відкрийте список.');

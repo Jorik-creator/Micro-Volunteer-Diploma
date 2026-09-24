@@ -41,12 +41,12 @@
   <section class="mv-card mv-profile-stats" aria-label="Ваша активність">
     <div class="mv-stats mv-stats--compact">
       {% if profile_user.is_volunteer %}
-      <div class="mv-stat"><span class="mv-stat__num">{{ responses_count }}</span><span class="mv-stat__label">{{ responses_count|uk_plural:"відгук на запит,відгуки на запити,відгуків на запити" }}</span></div>
-      <div class="mv-stat"><span class="mv-stat__num">{{ accepted_count }}</span><span class="mv-stat__label">прийнято отримувачами</span></div>
-      <div class="mv-stat"><span class="mv-stat__num">{{ helped_count }}</span><span class="mv-stat__label">{{ helped_count|uk_plural:"виконаний запит,виконані запити,виконаних запитів" }}</span></div>
+      <div class="mv-stat"><span class="mv-stat__num">{{ responses_count }}</span><span class="mv-stat__label">{{ responses_count|uk_plural:"відгук на запит,відгуки на запити,відгуків на запити"|capfirst }}</span></div>
+      <div class="mv-stat"><span class="mv-stat__num">{{ accepted_count }}</span><span class="mv-stat__label">Прийнято отримувачами</span></div>
+      <div class="mv-stat"><span class="mv-stat__num">{{ helped_count }}</span><span class="mv-stat__label">{{ helped_count|uk_plural:"виконаний запит,виконані запити,виконаних запитів"|capfirst }}</span></div>
       {% elif profile_user.is_recipient %}
-      <div class="mv-stat"><span class="mv-stat__num">{{ requests_count }}</span><span class="mv-stat__label">{{ requests_count|uk_plural:"запит створено,запити створено,запитів створено" }}</span></div>
-      <div class="mv-stat"><span class="mv-stat__num">{{ completed_count }}</span><span class="mv-stat__label">виконано</span></div>
+      <div class="mv-stat"><span class="mv-stat__num">{{ requests_count }}</span><span class="mv-stat__label">{{ requests_count|uk_plural:"запит створено,запити створено,запитів створено"|capfirst }}</span></div>
+      <div class="mv-stat"><span class="mv-stat__num">{{ completed_count }}</span><span class="mv-stat__label">Виконано</span></div>
       {% endif %}
     </div>
   </section>
@@ -153,7 +153,7 @@
       {% if rating.count %}
       {# The average and the count live in the header; here — what people noted and the latest reviews #}
       <section class="mv-card" aria-labelledby="rating-title">
-        <h2 class="mv-card__title" id="rating-title"><i class="bi bi-star-half" aria-hidden="true"></i>Відгуки про вас</h2>
+        <h2 class="mv-card__title" id="rating-title"><i class="bi bi-star-half" aria-hidden="true"></i>Оцінки про вас</h2>
         {% if rating.top_tags %}
         <ul class="mv-meta mv-meta--inline">
           {% for tag in rating.top_tags %}
@@ -178,7 +178,7 @@
           <dt><i class="bi bi-person" aria-hidden="true"></i>Ім'я користувача</dt>
           <dd>{{ profile_user.get_username }}</dd>
           <dt><i class="bi bi-envelope" aria-hidden="true"></i>Email</dt>
-          <dd>{{ profile_user.email }}</dd>
+          <dd class="mv-email">{% include "accounts/_email.html" with email=profile_user.email %}</dd>
           <dt><i class="bi bi-telephone" aria-hidden="true"></i>Телефон</dt>
           <dd>{% if profile_user.phone %}{{ profile_user.phone }}{% else %}<span class="is-empty">Не вказано</span>{% endif %}</dd>
           <dt><i class="bi bi-geo-alt" aria-hidden="true"></i>Адреса</dt>

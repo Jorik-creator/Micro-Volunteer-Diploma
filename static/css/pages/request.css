@@ -31,6 +31,10 @@
 /* ---------- Detail: owner's responses & reviews ---------- */
 .mv-rq-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .mv-rq-card-head .mv-card__title { margin-bottom: 0; }
+.mv-rq-card-head__new { font-size: 17px; font-weight: 600; color: var(--mv-muted); }
+/* "Help already received?" — a quiet fallback, the main flow is volunteer marks done → owner confirms */
+.mv-rq-finish > summary { font-size: 16px; color: var(--mv-muted); }
+.mv-rq-finish .mv-disclosure__body .mv-micro { margin: 0 0 12px; }
 /* Response row: [avatar | name, rating | status] then the body under the name */
 .mv-rq-response { display: block; }
 .mv-rq-response__head { display: flex; align-items: center; gap: 16px; }

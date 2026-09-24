@@ -10,13 +10,13 @@
 {% with newest=recent_requests.0 %}
 
 {% if user.is_authenticated %}
-{# Logged-in users: a compact personal hero and what needs their attention, no marketing #}
+{# Signed-in users: a compact personal hero, what needs their attention and their own section — no marketing #}
 <section class="mv-hero bw-hero--compact" aria-labelledby="home-title">
   <div class="container">
     <div class="bw-welcome">
       <div class="bw-welcome__text">
         <p class="mv-eyebrow"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>{% if user.is_volunteer %}Ви — волонтер{% elif user.is_recipient %}Ви — отримувач допомоги{% else %}MicroVolunteer{% endif %}</p>
-        <h1 id="home-title">Вітаємо, {{ user.first_name|default:user.username }}!</h1>
+        <h1 id="home-title">Вітаємо в MicroVolunteer</h1>
         <p class="mv-lead">{% if user.is_volunteer %}Запити поруч чекають на вашу допомогу. Відгукніться — і отримувач сам вирішить, кого прийняти.{% elif user.is_recipient %}Опишіть, з чим потрібна допомога, — волонтери поруч отримають сповіщення.{% else %}Усі запити платформи — у списку та на карті.{% endif %}</p>
       </div>
       <div class="mv-cluster bw-welcome__actions">
@@ -35,35 +35,57 @@
 
     {% if action_items %}
     <div class="bw-todo">
-      <h2 class="bw-todo__title" id="todo-title">Потребує вашої дії <span class="mv-count" aria-hidden="true">{{ action_items|length }}</span></h2>
-      <ul class="bw-todo__list" aria-labelledby="todo-title">
+      <h2 class="bw-todo__title" id="todo-title">Потребує вашої дії <span class="bw-todo__num">· {{ action_items|length }}</span></h2>
+      <ul class="mv-rows" aria-labelledby="todo-title">
         {% for item in action_items %}
-        <li>
-          <a class="mv-card mv-card--link bw-todo__item{% if item.tone %} bw-todo__item--{{ item.tone }}{% endif %}" href="{{ item.url }}">
-            <span class="mv-tile{% if item.tone %} mv-tile--{{ item.tone }}{% endif %}" aria-hidden="true"><i class="bi {% if item.icon|slice:':3' == 'bi-' %}{{ item.icon }}{% else %}bi-{{ item.icon|default:'arrow-right-circle' }}{% endif %}"></i></span>
-            <span class="bw-todo__body">
-              <strong class="bw-todo__name">{{ item.title }}</strong>
-              {% if item.text %}<span class="bw-todo__text">{{ item.text }}</span>{% endif %}
-            </span>
-            <i class="bi bi-arrow-right bw-todo__go" aria-hidden="true"></i>
-          </a>
+        <li class="mv-row bw-todo__row">
+          <span class="mv-tile{% if item.tone %} mv-tile--{{ item.tone }}{% endif %}" aria-hidden="true"><i class="bi {% if item.icon|slice:':3' == 'bi-' %}{{ item.icon }}{% else %}bi-{{ item.icon|default:'arrow-right-circle' }}{% endif %}"></i></span>
+          <div class="mv-row__body">
+            <h3 class="mv-row__title"><a class="mv-stretched" href="{{ item.url }}">{{ item.title }}</a></h3>
+            {% if item.text %}<p class="mv-row__text mv-muted">{{ item.text }}</p>{% endif %}
+          </div>
+          <i class="bi bi-arrow-right bw-todo__go" aria-hidden="true"></i>
         </li>
         {% endfor %}
       </ul>
     </div>
-    {% elif action_items is not None %}
+    {% else %}
     <p class="bw-todo-clear"><span class="mv-tile mv-tile--sm mv-tile--success" aria-hidden="true"><i class="bi bi-check2"></i></span>Нових справ немає — ми повідомимо, коли знадобиться ваша дія.</p>
     {% endif %}
-
-    <div class="mv-hero__trust bw-hero__trust--compact">
-      <span class="mv-tile mv-tile--sm" aria-hidden="true"><i class="bi bi-shield-lock"></i></span>
-      <p class="mv-mb-0">
-        {% if user.is_volunteer %}Точну адресу ви побачите, щойно отримувач прийме ваш відгук. Візити додому — лише для перевірених волонтерів.
-        {% else %}Точну адресу бачить лише волонтер, якого ви оберете.{% endif %}
-      </p>
-    </div>
   </div>
 </section>
+
+<section class="mv-section bw-personal" aria-labelledby="personal-title">
+  <div class="container">
+    {% if user.is_recipient %}
+    <div class="mv-spread bw-head-row bw-personal__head">
+      <h2 id="personal-title" class="mv-mb-0">Мої активні запити</h2>
+      <a class="mv-link-btn" href="{% url 'requests:my-requests' %}">Усі мої запити<i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+    </div>
+    {% if my_open_requests %}
+    <div class="mv-grid mv-grid--cards">
+      {% for hr in my_open_requests %}{% include "partials/_request_card.html" with show_status=True %}{% endfor %}
+    </div>
+    {% else %}
+    {% url 'requests:create' as create_url %}
+    {% include "partials/_empty.html" with icon="bi-inbox" title="Активних запитів немає" text="Коли знадобиться допомога — створіть запит, і волонтери поруч отримають сповіщення." action_url=create_url action_label="Створити запит" %}
+    {% endif %}
+    {% else %}
+    <div class="mv-spread bw-head-row bw-personal__head">
+      <h2 id="personal-title" class="mv-mb-0">{% if user.is_volunteer %}Запити поруч з вами{% else %}Нові запити{% endif %}</h2>
+      <a class="mv-link-btn" href="{% url 'requests:list' %}">Усі запити<i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+    </div>
+    {% if recent_requests %}
+    <div class="mv-grid mv-grid--cards">
+      {% for hr in recent_requests|slice:":3" %}{% include "partials/_request_card.html" %}{% endfor %}
+    </div>
+    {% else %}
+    {% include "partials/_empty.html" with icon="bi-inbox" title="Зараз нових запитів немає" text="Ми повідомимо, щойно поруч хтось попросить про допомогу." %}
+    {% endif %}
+    {% endif %}
+  </div>
+</section>
+
 {% else %}
 <section class="mv-hero" aria-labelledby="home-title">
   <div class="container mv-hero__grid">
@@ -133,8 +155,6 @@
   </div>
 </section>
 
-{% endif %}
-
 <section class="bw-stats-band" aria-labelledby="stats-title">
   <div class="container">
     <h2 class="visually-hidden" id="stats-title">Платформа в цифрах</h2>
@@ -174,7 +194,6 @@
 </section>
 {% endif %}
 
-{% if not user.is_authenticated %}
 <section class="mv-section mv-section--canvas" aria-labelledby="how-title" id="how-it-works">
   <div class="container">
     <div class="mv-section-head mv-section-head--center">
@@ -214,7 +233,6 @@
     </div>
   </div>
 </section>
-{% endif %}
 
 <section class="mv-section" aria-labelledby="recent-title">
   <div class="container">
@@ -259,7 +277,6 @@
   </div>
 </section>
 
-{% if not user.is_authenticated %}
 <section class="mv-section" aria-labelledby="cta-title">
   <div class="container">
     <div class="mv-cta bw-cta">

@@ -295,6 +295,9 @@ class HelpRequestDetailView(DetailView):
                 responses,
                 key=lambda r: (r.status != Response.Status.ACCEPTED, r.status != "pending"),
             )
+            context["pending_responses_count"] = sum(
+                r.status == Response.Status.PENDING for r in responses
+            )
         return context
 
 

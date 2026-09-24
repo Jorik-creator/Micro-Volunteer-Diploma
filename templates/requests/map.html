@@ -18,41 +18,47 @@
         <a class="bw-switch__item" href="{% url 'requests:map' %}" aria-current="page"><i class="bi bi-map" aria-hidden="true"></i>Карта</a>
       </nav>
     </div>
-    <p class="mv-muted bw-map-page__lead">На карті — приблизне місце (у межах ~150 м). Точну адресу бачить лише прийнятий волонтер.</p>
+    <button class="mv-btn mv-btn--secondary mv-btn--block d-lg-none bw-filter-toggle bw-map-page__toggle" type="button"
+            data-bs-toggle="collapse" data-bs-target="#map-panel" aria-expanded="false" aria-controls="map-panel">
+      <i class="bi bi-sliders" aria-hidden="true"></i>Фільтри<span class="bw-map-page__active" id="map-filter-count"></span>
+    </button>
+    <div class="collapse d-lg-block" id="map-panel">
+      <p class="mv-muted bw-map-page__lead">На карті — приблизне місце (у межах ~150 м). Точну адресу бачить лише прийнятий волонтер.</p>
 
-    <form class="bw-map-filters" id="map-filters" aria-label="Фільтри карти">
-      <div>
-        <label class="form-label" for="map-filter-category">Категорія</label>
-        <select class="form-select" id="map-filter-category" disabled>
-          <option value="">Усі категорії</option>
-        </select>
-      </div>
-      <div>
-        <label class="form-label" for="map-filter-urgency">Терміновість</label>
-        <select class="form-select" id="map-filter-urgency" disabled>
-          <option value="">Будь-яка</option>
-          <option value="critical">Критична</option>
-          <option value="high">Висока</option>
-          <option value="medium">Середня</option>
-          <option value="low">Низька</option>
-        </select>
-      </div>
-      <div class="bw-map-filters__wide" id="map-filter-format-wrap" hidden>
-        <label class="form-label" for="map-filter-format">Формат допомоги</label>
-        <select class="form-select" id="map-filter-format" disabled>
-          <option value="">Будь-який</option>
-        </select>
-      </div>
-    </form>
+      <form class="bw-map-filters" id="map-filters" aria-label="Фільтри карти">
+        <div>
+          <label class="form-label" for="map-filter-category">Категорія</label>
+          <select class="form-select" id="map-filter-category" disabled>
+            <option value="">Усі категорії</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="map-filter-urgency">Терміновість</label>
+          <select class="form-select" id="map-filter-urgency" disabled>
+            <option value="">Будь-яка</option>
+            <option value="critical">Критична</option>
+            <option value="high">Висока</option>
+            <option value="medium">Середня</option>
+            <option value="low">Низька</option>
+          </select>
+        </div>
+        <div class="bw-map-filters__wide" id="map-filter-format-wrap" hidden>
+          <label class="form-label" for="map-filter-format">Формат допомоги</label>
+          <select class="form-select" id="map-filter-format" disabled>
+            <option value="">Будь-який</option>
+          </select>
+        </div>
+      </form>
 
-    <div class="bw-legend">
-      <h2 class="bw-legend__title" id="map-legend-title">Мітки: терміновість</h2>
-      <ul class="mv-meta bw-legend__list" aria-labelledby="map-legend-title">
-        <li><span class="mv-urg mv-urg--critical"><i class="bi bi-reception-4" aria-hidden="true"></i>Критична</span></li>
-        <li><span class="mv-urg mv-urg--high"><i class="bi bi-reception-3" aria-hidden="true"></i>Висока</span></li>
-        <li><span class="mv-urg mv-urg--medium"><i class="bi bi-reception-2" aria-hidden="true"></i>Середня</span></li>
-        <li><span class="mv-urg mv-urg--low"><i class="bi bi-reception-1" aria-hidden="true"></i>Низька</span></li>
-      </ul>
+      <div class="bw-legend">
+        <h2 class="bw-legend__title" id="map-legend-title">Мітки: терміновість</h2>
+        <ul class="mv-meta bw-legend__list" aria-labelledby="map-legend-title">
+          <li><span class="mv-urg mv-urg--critical"><i class="bi bi-reception-4" aria-hidden="true"></i>Критична</span></li>
+          <li><span class="mv-urg mv-urg--high"><i class="bi bi-reception-3" aria-hidden="true"></i>Висока</span></li>
+          <li><span class="mv-urg mv-urg--medium"><i class="bi bi-reception-2" aria-hidden="true"></i>Середня</span></li>
+          <li><span class="mv-urg mv-urg--low"><i class="bi bi-reception-1" aria-hidden="true"></i>Низька</span></li>
+        </ul>
+      </div>
     </div>
   </div>
 
