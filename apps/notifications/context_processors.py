@@ -12,6 +12,13 @@ from .models import Notification
 # ---------------------------------------------------------------------------
 
 
+def navigation(request):
+    """Flags the navigation needs on every page."""
+    from apps.accounts.permissions import is_moderator
+
+    return {"is_moderator": is_moderator(request.user)}
+
+
 def unread_notifications(request):
     """
     Повертає кількість непрочитаних сповіщень для авторизованого користувача.

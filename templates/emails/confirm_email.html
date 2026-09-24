@@ -1,0 +1,7 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<p>Вітаємо, {{ user.first_name|default:user.username }}!</p>
+<p>Підтвердіть, будь ласка, адресу електронної пошти для MicroVolunteer. Після цього ви зможете відгукуватися на запити або публікувати власні.</p>
+<p style="margin:28px 0;"><a href="{{ link }}" style="background:#2563EB;color:#ffffff;padding:14px 24px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">Підтвердити email</a></p>
+<p style="color:#6B7280;font-size:14px;">Посилання дійсне {{ days }} дні. Якщо ви не реєструвалися — просто проігноруйте цей лист.</p>
+{% endblock %}

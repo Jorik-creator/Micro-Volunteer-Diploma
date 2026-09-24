@@ -19,6 +19,7 @@ urlpatterns = [
     path("reviews/", include("apps.reviews.urls")),
     path("notifications/", include("apps.notifications.urls")),
     path("stats/", include("apps.stats.urls")),
+    path("moderation/", include("apps.moderation.urls")),
     path("tasks/", include("apps.core.urls")),
 ]
 

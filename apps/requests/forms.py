@@ -30,6 +30,7 @@ class HelpRequestForm(forms.ModelForm):
             "title",
             "description",
             "category",
+            "help_format",
             "urgency",
             "needed_date",
             "duration",
@@ -40,6 +41,7 @@ class HelpRequestForm(forms.ModelForm):
             "photo",
         ]
         widgets = {
+            "help_format": forms.RadioSelect,
             "description": forms.Textarea(attrs={"rows": 4}),
             "latitude": forms.HiddenInput(),
             "longitude": forms.HiddenInput(),
@@ -67,6 +69,18 @@ class HelpRequestForm(forms.ModelForm):
         if needed_date and needed_date < timezone.now():
             raise forms.ValidationError("Дата допомоги не може бути в минулому.")
         return needed_date
+
+    def clean(self):
+        cleaned = super().clean()
+        remote = cleaned.get("help_format") == HelpRequest.HelpFormat.REMOTE
+        if remote:
+            # Online help needs no address and must not appear on the map
+            cleaned["address"] = ""
+            cleaned["latitude"] = None
+            cleaned["longitude"] = None
+        elif not cleaned.get("address"):
+            self.add_error("address", "Вкажіть адресу — її побачить лише прийнятий волонтер.")
+        return cleaned
 
     def clean_photo(self):
         photo = self.cleaned_data.get("photo")

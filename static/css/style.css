@@ -2380,3 +2380,33 @@ html.a11y-calm-mode .filters-bar { box-shadow: none; }
 .demo-login { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--mv-gray-200); }
 .demo-login-title { font-size: 15px; font-weight: 600; color: var(--mv-gray-700); margin-bottom: 12px; text-align: center; }
 .demo-login-buttons { display: grid; gap: 8px; }
+
+/* Help format picker */
+.help-format-picker { border: 0; padding: 0; }
+.help-format-picker { display: grid; gap: 8px; }
+.help-format-option { display: flex; gap: 12px; align-items: flex-start; cursor: pointer;
+  padding: 12px 14px; border: 1.5px solid var(--mv-gray-300); border-radius: var(--mv-radius-sm); }
+.help-format-option input { margin-top: 5px; width: 18px; height: 18px; flex-shrink: 0; }
+.help-format-option span { display: grid; gap: 2px; }
+.help-format-option small { color: var(--mv-gray-700); }
+.help-format-option:has(input:checked) { border-color: var(--mv-blue-600); background: var(--mv-blue-50); }
+.help-format-option:has(input:focus-visible) { outline: 3px solid var(--mv-blue-600); outline-offset: 2px; }
+
+.sidebar-report { margin-top: 12px; text-align: center; }
+
+/* Moderation */
+.moderation-list { display: grid; gap: 16px; }
+.moderation-card-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.moderation-facts { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin-bottom: 12px; font-size: 15px; }
+.moderation-facts dt { color: var(--mv-gray-700); font-weight: 500; }
+.moderation-facts dd { margin: 0; }
+.moderation-text { background: var(--mv-gray-50); border-radius: var(--mv-radius-sm); padding: 12px; }
+.moderation-actions { display: grid; gap: 8px; }
+
+/* Trust card on the profile */
+.trust-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.trust-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.trust-steps .dot { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center;
+  background: var(--mv-gray-100); color: var(--mv-gray-700); font-weight: 700; }
+.trust-steps .done .dot { background: var(--mv-success-bg); color: #15803D; }
+.trust-steps .current .dot { background: var(--mv-blue-600); color: #fff; }

@@ -13,9 +13,11 @@ from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, TemplateView, UpdateView
 
+from apps.moderation.services import latest_verification, verified_organization
 from apps.reviews.models import Review
 from apps.reviews.services import pending_reviews, rating_summary
 
+from . import emails
 from .forms import (
     CustomPasswordChangeForm,
     LoginForm,
@@ -99,14 +101,45 @@ class RegisterView(CreateView):
             return redirect("home")
         return super().dispatch(request, *args, **kwargs)
 
+    def get_initial(self):
+        # "Я хочу допомагати" / "Мені потрібна допомога" buttons preselect the role
+        role = self.request.GET.get("role")
+        return {"user_type": role} if role in User.UserType.values else {}
+
     def form_valid(self, form):
         response = super().form_valid(form)
         login(self.request, self.object, backend="django.contrib.auth.backends.ModelBackend")
+        emails.send_confirmation(self.request, self.object)
         messages.success(
             self.request,
-            f"Вітаємо, {self.object.first_name}! Ваш акаунт створено.",
+            f"Вітаємо, {self.object.first_name}! Ми надіслали лист на {self.object.email} — "
+            "підтвердіть адресу, щоб почати допомагати або просити про допомогу.",
         )
         return response
+
+
+def confirm_email(request, token):
+    user = emails.confirm(token)
+    if user is None:
+        messages.error(
+            request, "Посилання недійсне або застаріло. Надішліть лист повторно з профілю."
+        )
+    else:
+        messages.success(request, "Email підтверджено. Дякуємо!")
+    return redirect("accounts:profile" if request.user.is_authenticated else "accounts:login")
+
+
+@require_POST
+def resend_confirmation(request):
+    if not request.user.is_authenticated:
+        return redirect("accounts:login")
+    if request.user.email_verified_at:
+        messages.info(request, "Ваш email уже підтверджено.")
+    elif emails.send_confirmation(request, request.user):
+        messages.success(request, f"Лист надіслано на {request.user.email}.")
+    else:
+        messages.warning(request, "Лист уже надіслано — зачекайте пару хвилин і перевірте пошту.")
+    return redirect("accounts:profile")
 
 
 # ---------------------------------------------------------------------------
@@ -166,6 +199,8 @@ class ProfileView(LoginRequiredMixin, DetailView):
         user = self.object
         context.update(_profile_stats(user))
         context["pending_reviews"] = pending_reviews(user)
+        context["latest_verification"] = latest_verification(user)
+        context["verified_organization"] = verified_organization(user)
         return context
 
 
@@ -226,6 +261,7 @@ class PublicProfileView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(_profile_stats(self.object))
+        context["verified_organization"] = verified_organization(self.object)
         return context
 
 

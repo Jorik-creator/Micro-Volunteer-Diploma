@@ -22,10 +22,10 @@
         або знайти запит поруч. Швидко, локально, безпечно.
       </p>
       <div class="hero-actions">
-        <a href="{% if user.is_authenticated and user.is_recipient %}{% url 'requests:create' %}{% elif user.is_authenticated %}{% url 'requests:list' %}{% else %}{% url 'accounts:register' %}{% endif %}" class="btn btn-solid btn-lg">
+        <a href="{% if user.is_authenticated and user.is_recipient %}{% url 'requests:create' %}{% elif user.is_authenticated %}{% url 'requests:list' %}{% else %}{% url 'accounts:register' %}?role=recipient{% endif %}" class="btn btn-solid btn-lg">
           <i class="bi bi-heart-pulse"></i> {% if user.is_authenticated and not user.is_recipient %}Переглянути запити{% else %}Мені потрібна допомога{% endif %}
         </a>
-        <a href="{% if user.is_authenticated %}{% url 'requests:map' %}{% else %}{% url 'accounts:register' %}{% endif %}" class="btn btn-ghost btn-lg">
+        <a href="{% if user.is_authenticated %}{% url 'requests:map' %}{% else %}{% url 'accounts:register' %}?role=volunteer{% endif %}" class="btn btn-ghost btn-lg">
           <i class="bi bi-hand-thumbs-up"></i> Я хочу допомагати
         </a>
       </div>

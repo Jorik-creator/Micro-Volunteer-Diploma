@@ -11,6 +11,7 @@
     </div>
     {% endif %}
     {% if review.comment %}<div class="s">{{ review.comment }}</div>{% endif %}
+    {% if user.is_authenticated and user != review.author %}<a href="{% url 'moderation:report' 'review' review.pk %}?next={{ request.path|urlencode }}" class="text-muted small"><i class="bi bi-flag"></i> Поскаржитися</a>{% endif %}
   </div>
   <div class="when">{{ review.published_at|date:"d.m.Y" }}</div>
 </article>

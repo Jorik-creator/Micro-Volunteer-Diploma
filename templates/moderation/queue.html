@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Модерація — MicroVolunteer{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container">
+    <div class="inner">
+      <div>
+        <h1 class="page-title">Модерація</h1>
+        <p class="page-sub">Заявки на перевірку, нові запити та скарги</p>
+      </div>
+      <a href="{% url 'moderation:codes' %}" class="btn btn-ghost"><i class="bi bi-key"></i> Коди організацій</a>
+    </div>
+  </div>
+</section>
+
+<div class="container page-shell">
+  <nav class="tabs mb-3" aria-label="Черги модерації">
+    <a class="tab {% if tab == 'verification' %}active{% endif %}" href="?tab=verification" {% if tab == 'verification' %}aria-current="page"{% endif %}>Перевірка <span class="badge text-bg-light">{{ counts.verification }}</span></a>
+    <a class="tab {% if tab == 'requests' %}active{% endif %}" href="?tab=requests" {% if tab == 'requests' %}aria-current="page"{% endif %}>Нові запити <span class="badge text-bg-light">{{ counts.requests }}</span></a>
+    <a class="tab {% if tab == 'reports' %}active{% endif %}" href="?tab=reports" {% if tab == 'reports' %}aria-current="page"{% endif %}>Скарги <span class="badge text-bg-light">{{ counts.reports }}</span></a>
+  </nav>
+
+  {% if not items %}
+  <div class="empty-state"><i class="bi bi-check2-all empty-icon"></i><p>Черга порожня. Дякуємо!</p></div>
+  {% endif %}
+
+  <div class="moderation-list">
+  {% if tab == 'verification' %}
+    {% for item in items %}
+    <article class="card-panel moderation-card" aria-labelledby="v-{{ item.pk }}">
+      <header class="moderation-card-head">
+        <h2 class="h5 mb-0" id="v-{{ item.pk }}">{{ item.user.get_full_name }} <span class="text-muted small">@{{ item.user.username }}</span></h2>
+        <span class="chip chip-blue">{{ item.user.get_user_type_display }}</span>
+      </header>
+      <dl class="moderation-facts">
+        <dt>Місто</dt><dd>{{ item.city }}</dd>
+        {% if item.organization %}<dt>Організація</dt><dd>{{ item.organization }}</dd>{% endif %}
+        {% if item.contact_link %}<dt>Посилання</dt><dd><a href="{{ item.contact_link }}" target="_blank" rel="noopener noreferrer nofollow">{{ item.contact_link|truncatechars:60 }}</a></dd>{% endif %}
+        <dt>Відеодзвінок</dt><dd>{{ item.video_call_ok|yesno:"Так,Ні" }}</dd>
+        <dt>Подано</dt><dd>{{ item.created_at|date:"d.m.Y H:i" }}</dd>
+      </dl>
+      <p class="moderation-text">{{ item.about|linebreaksbr }}</p>
+      <form method="post" action="{% url 'moderation:decide-verification' item.pk %}" class="moderation-actions">
+        {% csrf_token %}
+        <label class="visually-hidden" for="note-v-{{ item.pk }}">Коментар</label>
+        <textarea name="note" id="note-v-{{ item.pk }}" rows="2" class="form-control" placeholder="Коментар (обов'язковий при відмові)"></textarea>
+        <div class="d-flex gap-2 flex-wrap">
+          <button name="decision" value="approve" class="btn btn-solid btn-sm"><i class="bi bi-patch-check"></i> Схвалити</button>
+          <button name="decision" value="reject" class="btn btn-danger-ghost btn-sm">Відхилити</button>
+        </div>
+      </form>
+    </article>
+    {% endfor %}
+  {% elif tab == 'requests' %}
+    {% for item in items %}
+    <article class="card-panel moderation-card" aria-labelledby="r-{{ item.pk }}">
+      <header class="moderation-card-head">
+        <h2 class="h5 mb-0" id="r-{{ item.pk }}"><a href="{% url 'requests:detail' item.pk %}">{{ item.title }}</a></h2>
+        <span class="chip chip-gray">{{ item.get_help_format_display }}</span>
+      </header>
+      <dl class="moderation-facts">
+        <dt>Отримувач</dt><dd>{{ item.recipient.get_full_name }} (з {{ item.recipient.created_at|date:"d.m.Y" }})</dd>
+        <dt>Коли</dt><dd>{{ item.needed_date|date:"d.m.Y H:i" }}</dd>
+        <dt>Адреса</dt><dd>{{ item.address|default:"онлайн" }}</dd>
+      </dl>
+      <p class="moderation-text">{{ item.description|linebreaksbr }}</p>
+      <form method="post" action="{% url 'moderation:decide-request' item.pk %}" class="moderation-actions">
+        {% csrf_token %}
+        <label class="visually-hidden" for="note-r-{{ item.pk }}">Причина відмови</label>
+        <textarea name="note" id="note-r-{{ item.pk }}" rows="2" class="form-control" placeholder="Причина (обов'язкова при відмові)"></textarea>
+        <div class="d-flex gap-2 flex-wrap">
+          <button name="decision" value="approve" class="btn btn-solid btn-sm"><i class="bi bi-check2"></i> Опублікувати</button>
+          <button name="decision" value="reject" class="btn btn-danger-ghost btn-sm">Відхилити</button>
+        </div>
+      </form>
+    </article>
+    {% endfor %}
+  {% else %}
+    {% for item in items %}
+    <article class="card-panel moderation-card" aria-labelledby="c-{{ item.pk }}">
+      <header class="moderation-card-head">
+        <h2 class="h5 mb-0" id="c-{{ item.pk }}">{{ item.get_reason_display }}</h2>
+        {% if item.similar > 1 %}<span class="chip chip-red">скарг: {{ item.similar }}</span>{% endif %}
+      </header>
+      <dl class="moderation-facts">
+        <dt>Об'єкт</dt><dd>{{ item.content_type.name }} — {{ item.target|default:"видалено" }}</dd>
+        <dt>Від</dt><dd>{{ item.reporter.get_full_name }}</dd>
+        <dt>Подано</dt><dd>{{ item.created_at|date:"d.m.Y H:i" }}</dd>
+      </dl>
+      {% if item.comment %}<p class="moderation-text">{{ item.comment|linebreaksbr }}</p>{% endif %}
+      <form method="post" action="{% url 'moderation:decide-report' item.pk %}" class="moderation-actions">
+        {% csrf_token %}
+        <label class="visually-hidden" for="note-c-{{ item.pk }}">Коментар</label>
+        <textarea name="note" id="note-c-{{ item.pk }}" rows="2" class="form-control" placeholder="Коментар до рішення"></textarea>
+        <div class="d-flex gap-2 flex-wrap">
+          {% if item.measure %}<button name="decision" value="act" class="btn btn-danger-ghost btn-sm" data-confirm-submit="{{ item.measure }}?"><i class="bi bi-slash-circle"></i> {{ item.measure }}</button>{% endif %}
+          <button name="decision" value="dismiss" class="btn btn-muted btn-sm">Порушень немає</button>
+        </div>
+      </form>
+    </article>
+    {% endfor %}
+  {% endif %}
+  </div>
+</div>
+{% endblock %}

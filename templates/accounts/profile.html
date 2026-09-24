@@ -63,6 +63,40 @@
     {% endif %}
   </div>
 
+  <section class="card-panel mb-3" aria-labelledby="trust-title">
+    <div class="section-hd" id="trust-title">Рівень довіри: {{ profile_user.get_trust_level_display }}</div>
+    <ol class="trust-steps">
+      <li class="{% if profile_user.email_verified_at %}done{% else %}current{% endif %}">
+        <span class="dot">{% if profile_user.email_verified_at %}<i class="bi bi-check-lg"></i>{% else %}1{% endif %}</span>
+        <div>
+          <strong>Підтвердити email</strong>
+          <div class="text-muted small">{% if profile_user.is_volunteer %}Можна відгукуватися на запити без візиту додому.{% else %}Можна публікувати запити (перші — після перевірки модератором).{% endif %}</div>
+          {% if not profile_user.email_verified_at %}
+          <form method="post" action="{% url 'accounts:resend-confirmation' %}" class="mt-2">
+            {% csrf_token %}
+            <button class="btn btn-solid btn-sm"><i class="bi bi-envelope"></i> Надіслати лист ще раз</button>
+          </form>
+          {% endif %}
+        </div>
+      </li>
+      <li class="{% if profile_user.is_verified %}done{% elif profile_user.email_verified_at %}current{% endif %}">
+        <span class="dot">{% if profile_user.is_verified %}<i class="bi bi-check-lg"></i>{% else %}2{% endif %}</span>
+        <div>
+          <strong>Стати перевіреним</strong>
+          <div class="text-muted small">{% if profile_user.is_volunteer %}Відкриває запити з візитом додому.{% else %}Запити публікуються одразу, без премодерації.{% endif %}{% if verified_organization %} Перевірено від імені «{{ verified_organization }}».{% endif %}</div>
+          {% if not profile_user.is_verified and profile_user.email_verified_at %}
+            {% if latest_verification.status == 'pending' %}
+              <div class="mt-2 chip chip-yellow">Заявка на розгляді</div>
+            {% else %}
+              {% if latest_verification.status == 'rejected' %}<div class="small mt-1">Попередню заявку відхилено: {{ latest_verification.decision_reason }}</div>{% endif %}
+              <a href="{% url 'moderation:apply' %}" class="btn btn-ghost btn-sm mt-2"><i class="bi bi-patch-check"></i> Подати заявку або ввести код</a>
+            {% endif %}
+          {% endif %}
+        </div>
+      </li>
+    </ol>
+  </section>
+
   {% if pending_reviews %}
   <section class="card-panel mb-3" aria-labelledby="pending-reviews-title">
     <div class="section-hd" id="pending-reviews-title">Залиште оцінку</div>

@@ -27,7 +27,9 @@ class User(AbstractUser):
         blank=True,
         validators=[FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "webp"])],
     )
-    is_verified = models.BooleanField("Верифікований", default=False)
+    email_verified_at = models.DateTimeField("Email підтверджено", null=True, blank=True)
+    # Level L2 "Перевірений" — granted by a moderator or an invite code (see ADR 0002)
+    is_verified = models.BooleanField("Перевірений", default=False)
     is_demo = models.BooleanField(
         "Демо-акаунт",
         default=False,
@@ -42,6 +44,22 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.get_full_name()} ({self.get_user_type_display()})"
+
+    class TrustLevel(models.IntegerChoices):
+        REGISTERED = 0, "Зареєстрований"
+        EMAIL_CONFIRMED = 1, "Email підтверджено"
+        VERIFIED = 2, "Перевірений"
+
+    @property
+    def trust_level(self):
+        if self.is_verified:
+            return self.TrustLevel.VERIFIED
+        if self.email_verified_at:
+            return self.TrustLevel.EMAIL_CONFIRMED
+        return self.TrustLevel.REGISTERED
+
+    def get_trust_level_display(self):
+        return self.TrustLevel(self.trust_level).label
 
     @property
     def is_volunteer(self):

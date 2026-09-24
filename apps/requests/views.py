@@ -28,6 +28,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
 from apps.accounts.decorators import recipient_required, volunteer_required
+from apps.accounts.permissions import is_moderator
 from apps.reviews import services as review_services
 from apps.reviews.models import Review
 
@@ -53,6 +54,15 @@ def _perform(request, action, *args, success=None, **kwargs):
 def _reason(request):
     form = ReasonForm(request.POST)
     return form.cleaned_data["reason"] if form.is_valid() else ""
+
+
+PUBLISH_MESSAGES = {
+    HelpRequest.Status.DRAFT: "Чернетку збережено. Підтвердіть email, щоб опублікувати запит.",
+    HelpRequest.Status.PENDING_MODERATION: (
+        "Запит надіслано на перевірку модератору. Зазвичай це займає кілька годин."
+    ),
+    HelpRequest.Status.ACTIVE: "Запит опубліковано! Волонтери поблизу вже отримали сповіщення.",
+}
 
 
 class RecipientOnlyMixin(LoginRequiredMixin):
@@ -169,6 +179,8 @@ class HelpRequestDetailView(DetailView):
     context_object_name = "help_request"
 
     def get_queryset(self):
+        if is_moderator(self.request.user):
+            return HelpRequest.objects.select_related("recipient", "category")
         return HelpRequest.objects.visible_to(self.request.user).select_related(
             "recipient", "category"
         )
@@ -186,8 +198,15 @@ class HelpRequestDetailView(DetailView):
         )
         is_accepted = bool(user_response and user_response.status == Response.Status.ACCEPTED)
 
+        trust_error = (
+            services.respond_trust_error(user, hr)
+            if user.is_authenticated and user.is_volunteer
+            else None
+        )
         context.update(
             {
+                "respond_blocked_reason": trust_error,
+                "is_moderator": is_moderator(user),
                 "response_form": ResponseForm(),
                 "reason_form": ReasonForm(),
                 "accepted_count": len(accepted),
@@ -272,7 +291,7 @@ class HelpRequestCreateView(RecipientOnlyMixin, CreateView):
 
     def form_valid(self, form):
         self.object = services.create_request(form.save(commit=False), self.request.user)
-        messages.success(self.request, "Запит успішно створено!")
+        messages.success(self.request, PUBLISH_MESSAGES[self.object.status])
         return redirect(self.get_success_url())
 
     def get_success_url(self):
@@ -283,6 +302,7 @@ class HelpRequestCreateView(RecipientOnlyMixin, CreateView):
         context["form_title"] = "Створити запит допомоги"
         context["submit_label"] = "Створити запит"
         context["cancel_url"] = reverse("requests:my-requests")
+        context["help_format_hints"] = HelpRequest.HELP_FORMAT_HINTS
         return context
 
 
@@ -302,7 +322,7 @@ class HelpRequestUpdateView(LoginRequiredMixin, UpdateView):
             if obj.recipient_id != request.user.pk:
                 messages.error(request, "У вас немає доступу до цього запиту.")
                 return redirect("home")
-            if obj.status != HelpRequest.Status.ACTIVE:
+            if not obj.is_editable:
                 messages.error(request, "Редагування недоступне для цього статусу запиту.")
                 return redirect("requests:detail", pk=obj.pk)
         return super().dispatch(request, *args, **kwargs)
@@ -327,6 +347,7 @@ class HelpRequestUpdateView(LoginRequiredMixin, UpdateView):
         context["form_title"] = "Редагувати запит"
         context["submit_label"] = "Зберегти зміни"
         context["cancel_url"] = reverse("requests:detail", kwargs={"pk": self.object.pk})
+        context["help_format_hints"] = HelpRequest.HELP_FORMAT_HINTS
         return context
 
 
@@ -531,6 +552,19 @@ def dispute_completion(request, pk):
         _reason(request),
         success="Волонтерам повідомлено, що допомогу ще не завершено.",
     )
+    return redirect("requests:detail", pk=pk)
+
+
+@recipient_required
+@require_POST
+def publish_request(request, pk):
+    help_request = get_object_or_404(HelpRequest, pk=pk, recipient=request.user)
+    try:
+        status = services.publish(help_request, request.user)
+    except TransitionError as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(request, PUBLISH_MESSAGES[status])
     return redirect("requests:detail", pk=pk)
 
 

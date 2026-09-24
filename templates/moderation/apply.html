@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Перевірка профілю — MicroVolunteer{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container">
+    <a href="{% url 'accounts:profile' %}" class="btn btn-muted btn-sm toolbar-row"><i class="bi bi-arrow-left"></i> Профіль</a>
+    <h1 class="page-title">Стати перевіреним</h1>
+    <p class="page-sub">Бейдж «Перевірений» відкриває візити додому для волонтерів і публікацію запитів без премодерації для отримувачів.</p>
+  </div>
+</section>
+
+<div class="container page-shell form-shell-sm">
+  <div class="card-panel mb-3">
+    <div class="section-hd">Є код від організації?</div>
+    <p class="text-muted small">Волонтерські центри та соцслужби видають коди своїм людям — перевірка миттєва.</p>
+    <form method="post" action="{% url 'moderation:redeem-code' %}" class="d-flex gap-2 flex-wrap align-items-end">
+      {% csrf_token %}
+      <div class="flex-grow-1">{{ code_form.code|as_crispy_field }}</div>
+      <button type="submit" class="btn btn-solid mb-3">Активувати</button>
+    </form>
+  </div>
+
+  <form method="post" class="card-panel">
+    {% csrf_token %}
+    <div class="section-hd">Або заповніть коротку анкету</div>
+    <div class="info-banner">
+      <i class="bi bi-shield-lock-fill"></i>
+      <span>Ми <strong>не просимо</strong> паспорт чи інші документи і не зберігаємо їх. Модератор може запропонувати короткий відеодзвінок.</span>
+    </div>
+    {{ form|crispy }}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-solid"><i class="bi bi-send"></i> Надіслати заявку</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

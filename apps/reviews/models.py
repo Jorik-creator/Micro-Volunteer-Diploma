@@ -4,7 +4,8 @@ from django.db import models
 
 class ReviewQuerySet(models.QuerySet):
     def published(self):
-        return self.filter(published_at__isnull=False)
+        """Visible reviews: exchange finished and not hidden by a moderator."""
+        return self.filter(published_at__isnull=False, hidden_at__isnull=True)
 
 
 class Review(models.Model):
@@ -66,6 +67,7 @@ class Review(models.Model):
     comment = models.TextField("Коментар", blank=True, max_length=1000)
     created_at = models.DateTimeField("Дата створення", auto_now_add=True)
     published_at = models.DateTimeField("Опубліковано", null=True, blank=True)
+    hidden_at = models.DateTimeField("Приховано модератором", null=True, blank=True)
 
     objects = ReviewQuerySet.as_manager()
 

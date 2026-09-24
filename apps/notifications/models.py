@@ -9,6 +9,8 @@ class Notification(models.Model):
         NEW_RESPONSE = "new_response", "Новий відгук волонтера"
         VOLUNTEER_WITHDREW = "volunteer_withdrew", "Волонтер вийшов"
         MARKED_DONE = "marked_done", "Волонтер позначив виконаним"
+        REQUEST_APPROVED = "request_approved", "Запит опубліковано"
+        REQUEST_REJECTED_BY_MODERATOR = "request_moderated", "Запит не пройшов модерацію"
         # To the volunteer
         REQUEST_ACCEPTED = "request_accepted", "Вас прийнято"
         REQUEST_REJECTED = "request_rejected", "Відгук відхилено"
@@ -22,6 +24,8 @@ class Notification(models.Model):
         REQUEST_EXPIRED = "request_expired", "Запит прострочено"
         REMINDER = "reminder", "Нагадування"
         NEW_REVIEW = "new_review", "Нова оцінка"
+        VERIFICATION_DECISION = "verification", "Рішення щодо перевірки"
+        REPORT_RESOLVED = "report_resolved", "Скаргу розглянуто"
         REVIEW_REMINDER = "review_reminder", "Нагадування про оцінку"
 
     user = models.ForeignKey(

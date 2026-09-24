@@ -21,6 +21,7 @@ urlpatterns = [
     path("<int:pk>/status/", views.request_status, name="status"),
     # Actions
     path("<int:pk>/cancel/", views.cancel_request, name="cancel"),
+    path("<int:pk>/publish/", views.publish_request, name="publish"),
     path("<int:pk>/complete/", views.complete_request, name="complete"),
     path("<int:pk>/confirm/", views.confirm_completion, name="confirm"),
     path("<int:pk>/dispute/", views.dispute_completion, name="dispute"),

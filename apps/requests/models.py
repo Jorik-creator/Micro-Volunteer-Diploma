@@ -52,6 +52,9 @@ class HelpRequest(models.Model):
         CRITICAL = "critical", "Критична"
 
     class Status(models.TextChoices):
+        DRAFT = "draft", "Чернетка"
+        PENDING_MODERATION = "pending_moderation", "На модерації"
+        REJECTED = "rejected", "Відхилено модератором"
         ACTIVE = "active", "Активний"
         IN_PROGRESS = "in_progress", "В процесі"
         AWAITING_CONFIRMATION = "awaiting_confirmation", "Очікує підтвердження"
@@ -64,6 +67,19 @@ class HelpRequest(models.Model):
         THIRTY_MIN = "30min", "30 хвилин"
         ONE_HOUR = "1h", "1 година"
         TWO_HOURS_PLUS = "2h+", "2 години+"
+
+    class HelpFormat(models.TextChoices):
+        HOME_VISIT = "home_visit", "Візит додому"
+        DOORSTEP = "doorstep", "Під двері"
+        PUBLIC_PLACE = "public_place", "Зустріч у публічному місці"
+        REMOTE = "remote", "Онлайн або телефоном"
+
+    HELP_FORMAT_HINTS = {
+        HelpFormat.HOME_VISIT: "Волонтер заходить до оселі: прибирання, дрібний ремонт, допомога по дому.",
+        HelpFormat.DOORSTEP: "Доставка продуктів чи ліків до дверей, без входу в оселю.",
+        HelpFormat.PUBLIC_PLACE: "Супровід до лікаря, у ЦНАП, на пошту.",
+        HelpFormat.REMOTE: "Консультація, допомога з Дією чи формами — без зустрічі.",
+    }
 
     DURATION_DELTAS = {
         Duration.FIFTEEN_MIN: timedelta(minutes=15),
@@ -99,12 +115,19 @@ class HelpRequest(models.Model):
     duration = models.CharField(
         "Тривалість", max_length=10, choices=Duration.choices, default=Duration.ONE_HOUR
     )
+    # Existing requests default to the strictest format (home visit needs L2)
+    help_format = models.CharField(
+        "Формат допомоги",
+        max_length=15,
+        choices=HelpFormat.choices,
+        default=HelpFormat.HOME_VISIT,
+    )
     volunteers_needed = models.IntegerField(
         "Кількість волонтерів",
         default=1,
         validators=[MinValueValidator(1), MaxValueValidator(10)],
     )
-    address = models.CharField("Адреса", max_length=255)
+    address = models.CharField("Адреса", max_length=255, blank=True)
     latitude = models.FloatField(
         "Широта", null=True, blank=True, validators=[MinValueValidator(-90), MaxValueValidator(90)]
     )
@@ -124,6 +147,8 @@ class HelpRequest(models.Model):
     updated_at = models.DateTimeField("Дата оновлення", auto_now=True)
     status_changed_at = models.DateTimeField("Статус змінено", default=timezone.now)
     completed_at = models.DateTimeField("Дата завершення", null=True, blank=True)
+    published_at = models.DateTimeField("Опубліковано", null=True, blank=True)
+    moderation_note = models.CharField("Коментар модератора", max_length=300, blank=True)
     reminder_sent_at = models.DateTimeField("Нагадування надіслано", null=True, blank=True)
 
     objects = HelpRequestQuerySet.as_manager()
@@ -131,7 +156,7 @@ class HelpRequest(models.Model):
     class Meta:
         verbose_name = "Запит допомоги"
         verbose_name_plural = "Запити допомоги"
-        ordering = ["-created_at"]
+        ordering = ["-created_at", "-id"]
         indexes = [models.Index(fields=["status", "needed_date"])]
 
     def __str__(self):
@@ -145,6 +170,22 @@ class HelpRequest(models.Model):
     @property
     def is_open(self):
         return self.status in self.OPEN_STATUSES
+
+    @property
+    def needs_verified_volunteer(self):
+        return self.help_format == self.HelpFormat.HOME_VISIT
+
+    @property
+    def is_remote(self):
+        return self.help_format == self.HelpFormat.REMOTE
+
+    @property
+    def is_editable(self):
+        return self.status in (
+            self.Status.DRAFT,
+            self.Status.PENDING_MODERATION,
+            self.Status.ACTIVE,
+        )
 
     def accepted_responses(self):
         return self.responses.filter(status=Response.Status.ACCEPTED)

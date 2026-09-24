@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Коди організацій — MicroVolunteer{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container">
+    <a href="{% url 'moderation:queue' %}" class="btn btn-muted btn-sm toolbar-row"><i class="bi bi-arrow-left"></i> Модерація</a>
+    <h1 class="page-title">Коди організацій</h1>
+    <p class="page-sub">Код одразу надає статус «Перевірений». Видавайте його лише перевіреним партнерам.</p>
+  </div>
+</section>
+
+<div class="container page-shell">
+  <form method="post" class="card-panel mb-4">
+    {% csrf_token %}
+    <div class="section-hd">Новий код</div>
+    <div class="row">
+      <div class="col-md-6">{{ form.organization|as_crispy_field }}</div>
+      <div class="col-md-3">{{ form.max_uses|as_crispy_field }}</div>
+      <div class="col-md-3">{{ form.expires_at|as_crispy_field }}</div>
+    </div>
+    <button type="submit" class="btn btn-solid"><i class="bi bi-plus-lg"></i> Створити</button>
+  </form>
+
+  <div class="card-panel">
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead><tr><th scope="col">Код</th><th scope="col">Організація</th><th scope="col">Використано</th><th scope="col">Діє до</th><th scope="col">Стан</th><th scope="col"><span class="visually-hidden">Дії</span></th></tr></thead>
+        <tbody>
+        {% for code in codes %}
+          <tr>
+            <td><code>{{ code.code }}</code></td>
+            <td>{{ code.organization }}</td>
+            <td>{{ code.uses_count }} / {{ code.max_uses }}</td>
+            <td>{{ code.expires_at|date:"d.m.Y"|default:"—" }}</td>
+            <td>{% if code.is_usable %}<span class="chip chip-green">Діє</span>{% else %}<span class="chip chip-gray">Неактивний</span>{% endif %}</td>
+            <td>{% if code.is_active %}<form method="post" action="{% url 'moderation:deactivate-code' code.pk %}">{% csrf_token %}<button class="btn btn-muted btn-sm">Вимкнути</button></form>{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-muted">Кодів ще немає.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

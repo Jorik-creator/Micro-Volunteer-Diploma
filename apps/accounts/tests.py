@@ -447,7 +447,7 @@ class TestDemoLogin:
 
         settings.DEMO_MODE = True
         moderator = VolunteerFactory(is_demo=True)
-        moderator.groups.add(Group.objects.create(name=MODERATORS_GROUP))
+        moderator.groups.add(Group.objects.get_or_create(name=MODERATORS_GROUP)[0])
         VolunteerFactory(is_demo=True)
 
         client.post("/accounts/demo/moderator/")

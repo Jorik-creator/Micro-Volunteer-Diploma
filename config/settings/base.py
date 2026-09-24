@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "apps.reviews",
     "apps.notifications",
     "apps.stats",
+    "apps.moderation",
 ]
 
 MIDDLEWARE = [
@@ -88,6 +89,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.notifications.context_processors.unread_notifications",
+                "apps.notifications.context_processors.navigation",
             ],
         },
     },

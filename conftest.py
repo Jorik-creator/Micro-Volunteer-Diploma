@@ -33,6 +33,8 @@ class UserFactory(factory.django.DjangoModelFactory):
     last_name = factory.Faker("last_name")
     password = factory.PostGenerationMethodCall("set_password", "TestPass123!")
     user_type = User.UserType.VOLUNTEER
+    # Most tests act as an ordinary active user (trust level L1)
+    email_verified_at = factory.LazyFunction(timezone.now)
 
     @factory.post_generation
     def save_after_password(self, create, extracted, **kwargs):
@@ -78,6 +80,8 @@ class HelpRequestFactory(factory.django.DjangoModelFactory):
     status = HelpRequest.Status.ACTIVE
     needed_date = factory.LazyFunction(lambda: timezone.now() + timedelta(days=2))
     duration = HelpRequest.Duration.ONE_HOUR
+    help_format = HelpRequest.HelpFormat.DOORSTEP
+    published_at = factory.LazyFunction(timezone.now)
     volunteers_needed = 1
     address = factory.Faker("address")
     latitude = 50.4501
@@ -126,6 +130,16 @@ class NotificationFactory(factory.django.DjangoModelFactory):
 # ---------------------------------------------------------------------------
 # Pytest Fixtures
 # ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def _clear_cache():
+    """Throttling keys live in the cache; primary keys repeat between tests."""
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+    cache.clear()
 
 
 @pytest.fixture

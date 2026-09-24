@@ -194,6 +194,7 @@ class TestHelpRequestForm:
             "urgency": "medium",
             "needed_date": (timezone.now() + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M"),
             "duration": "1h",
+            "help_format": "doorstep",
             "volunteers_needed": 1,
             "address": "вул. Хрещатик, 1, Київ",
         }
@@ -211,6 +212,7 @@ class TestHelpRequestForm:
             "urgency": "medium",
             "needed_date": (timezone.now() - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M"),
             "duration": "1h",
+            "help_format": "doorstep",
             "volunteers_needed": 1,
             "address": "вул. Хрещатик, 1",
         }
@@ -442,6 +444,7 @@ class TestHelpRequestCreateView:
             "urgency": "medium",
             "needed_date": (timezone.now() + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M"),
             "duration": "1h",
+            "help_format": "doorstep",
             "volunteers_needed": 1,
             "address": "вул. Тестова, 1",
         }
@@ -462,6 +465,7 @@ class TestHelpRequestCreateView:
             "urgency": "low",
             "needed_date": (timezone.now() + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M"),
             "duration": "30min",
+            "help_format": "doorstep",
             "volunteers_needed": 1,
             "address": "Адреса",
         }
@@ -483,6 +487,7 @@ class TestHelpRequestUpdateView:
             "urgency": "high",
             "needed_date": (timezone.now() + timedelta(days=3)).strftime("%Y-%m-%dT%H:%M"),
             "duration": "30min",
+            "help_format": "doorstep",
             "volunteers_needed": 1,
             "address": "Нова адреса",
         }

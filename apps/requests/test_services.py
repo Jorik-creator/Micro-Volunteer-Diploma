@@ -382,6 +382,7 @@ class TestEditing:
                 "urgency": help_request.urgency,
                 "needed_date": new_date,
                 "duration": help_request.duration,
+                "help_format": "doorstep",
                 "volunteers_needed": 1,
                 "address": help_request.address,
             },

@@ -26,7 +26,7 @@
       <div class="profile-handle">{{ profile_user.get_user_type_display }} · на платформі з {{ profile_user.created_at|date:"F Y" }}</div>
       <div class="profile-chips">
         {% if profile_user.is_verified %}
-          <span class="chip chip-green"><i class="bi bi-patch-check-fill"></i> Перевірений</span>
+          <span class="chip chip-green"><i class="bi bi-patch-check-fill"></i> Перевірений{% if verified_organization %} · {{ verified_organization }}{% endif %}</span>
         {% else %}
           <span class="chip chip-gray"><i class="bi bi-patch-question"></i> Не перевірений</span>
         {% endif %}
@@ -73,5 +73,17 @@
   </section>
   {% endif %}
   {% endif %}
+
+  <div class="tab-panel-spaced d-flex gap-3 flex-wrap align-items-start">
+    <a href="{% url 'moderation:report' 'user' profile_user.pk %}?next={{ request.path|urlencode }}" class="text-muted small"><i class="bi bi-flag"></i> Поскаржитися на користувача</a>
+    {% if is_moderator and profile_user.is_verified %}
+    <form method="post" action="{% url 'moderation:revoke' profile_user.pk %}" class="d-flex gap-2 flex-wrap">
+      {% csrf_token %}
+      <label class="visually-hidden" for="revoke-note">Причина відкликання</label>
+      <input name="note" id="revoke-note" class="form-control form-control-sm" placeholder="Причина відкликання" required>
+      <button class="btn btn-danger-ghost btn-sm" data-confirm-submit="Відкликати статус «Перевірений»?">Відкликати перевірку</button>
+    </form>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}

@@ -87,14 +87,6 @@ function fallbackCopy(text) {
   const copyButton = document.getElementById('copy-address-btn');
   if (copyButton) copyButton.addEventListener('click', copyAddress);
 
-  document.querySelectorAll('[data-confirm-submit]').forEach(function (button) {
-    button.addEventListener('click', function (event) {
-      const message = button.getAttribute('data-confirm-submit');
-      if (message && !confirm(message)) {
-        event.preventDefault();
-      }
-    });
-  });
 })();
 </script>
 {% endblock %}
@@ -124,6 +116,7 @@ function fallbackCopy(text) {
           <span class="urgency-dot {{ help_request.urgency }}"></span>
           {{ help_request.get_urgency_display }}
         </span>
+        <span class="chip chip-gray"><i class="bi {% if help_request.help_format == 'home_visit' %}bi-house-door{% elif help_request.help_format == 'doorstep' %}bi-box-seam{% elif help_request.help_format == 'public_place' %}bi-geo{% else %}bi-telephone{% endif %}"></i> {{ help_request.get_help_format_display }}</span>
         <span class="status-badge status-{{ help_request.status }}">
           {{ help_request.get_status_display }}
         </span>
@@ -148,7 +141,9 @@ function fallbackCopy(text) {
           <div class="m-label">Адреса</div>
             <div class="m-value address-copy-row">
             <i class="bi bi-geo-alt"></i>
-            {% if is_accepted or is_owner %}
+            {% if help_request.is_remote %}
+              <span>Онлайн / телефоном</span>
+            {% elif is_accepted or is_owner %}
               <span id="address-text">{{ help_request.address }}</span>
               <button type="button" id="copy-address-btn" class="btn btn-muted btn-sm copy-btn" title="Скопіювати адресу" aria-label="Скопіювати адресу">
                 <i class="bi bi-clipboard" id="copy-icon"></i>
@@ -166,6 +161,30 @@ function fallbackCopy(text) {
 
       <div class="section-hd">Опис запиту</div>
       <div class="detail-desc">{{ help_request.description }}</div>
+
+      {% if is_owner and help_request.status == 'draft' %}
+      <div class="alert alert-info detail-section" role="status">
+        <i class="bi bi-pencil-square me-2"></i>Це чернетка — волонтери її ще не бачать.
+        {% if user.email_verified_at %}
+        <form method="post" action="{% url 'requests:publish' help_request.pk %}" class="mt-2">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-solid btn-sm"><i class="bi bi-send"></i> Опублікувати</button>
+        </form>
+        {% else %}
+        <div class="mt-2">Щоб опублікувати, <a href="{% url 'accounts:profile' %}">підтвердіть email</a>.</div>
+        {% endif %}
+      </div>
+      {% elif is_owner and help_request.status == 'pending_moderation' %}
+      <div class="alert alert-info detail-section" role="status">
+        <i class="bi bi-hourglass-split me-2"></i>Запит перевіряє модератор. Перші запити нових користувачів проходять перевірку — так ми захищаємо волонтерів і отримувачів від шахраїв.
+      </div>
+      {% elif is_owner and help_request.status == 'rejected' %}
+      <div class="alert alert-warning detail-section" role="status">
+        <i class="bi bi-exclamation-triangle me-2"></i>Запит не пройшов модерацію.
+        {% if help_request.moderation_note %}<div class="mt-1"><strong>Причина:</strong> {{ help_request.moderation_note }}</div>{% endif %}
+        <div class="mt-1">Створіть новий запит з урахуванням зауважень.</div>
+      </div>
+      {% endif %}
 
       <!-- Reviews after completion -->
       {% if review_items %}
@@ -268,7 +287,12 @@ function fallbackCopy(text) {
         {% elif user_response and not can_respond %}
           <div class="alert alert-secondary"><i class="bi bi-info-circle me-2"></i>{{ user_response.get_status_display }}{% if user_response.status_reason %}: {{ user_response.status_reason }}{% endif %}</div>
         {% endif %}
-        {% if can_respond %}
+        {% if can_respond and respond_blocked_reason %}
+          <div class="alert alert-warning" role="status">
+            <i class="bi bi-shield-lock me-2"></i>{{ respond_blocked_reason }}
+            <div class="mt-2"><a href="{% url 'accounts:profile' %}" class="btn btn-ghost btn-sm">Перейти до профілю</a></div>
+          </div>
+        {% elif can_respond %}
           <form method="post" action="{% url 'requests:respond' help_request.pk %}" aria-label="Форма відгуку на запит">
             {% csrf_token %}
             {{ response_form|crispy }}
@@ -364,6 +388,7 @@ function fallbackCopy(text) {
         <div class="sidebar-meta">
           <div><i class="bi bi-hash"></i> ID: {{ help_request.pk }}</div>
           <div><i class="bi bi-calendar-plus"></i> Створено: {{ help_request.created_at|date:"d.m.Y" }}</div>
+          <div><i class="bi bi-people"></i> Формат: {{ help_request.get_help_format_display }}</div>
           <div><i class="bi bi-calendar-check"></i> Оновлено: {{ help_request.updated_at|date:"d.m.Y H:i" }}</div>
           {% if can_view_recipient %}
           <div><i class="bi bi-person"></i> Отримувач: {% if is_owner %}{{ help_request.recipient.get_full_name }}{% else %}<a href="{% url 'accounts:public-profile' help_request.recipient.pk %}">{{ help_request.recipient.get_full_name }}</a>{% endif %}</div>
@@ -372,6 +397,11 @@ function fallbackCopy(text) {
           {% endif %}
         </div>
       </div>
+      {% if user.is_authenticated and not is_owner %}
+      <div class="sidebar-report">
+        <a href="{% url 'moderation:report' 'request' help_request.pk %}?next={{ request.path|urlencode }}" class="text-muted small"><i class="bi bi-flag"></i> Поскаржитися на запит</a>
+      </div>
+      {% endif %}
     </aside>
   </div>
 </div>

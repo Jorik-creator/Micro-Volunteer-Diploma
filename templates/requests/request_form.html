@@ -41,6 +41,22 @@
       {{ form.title|as_crispy_field }}
       {{ form.description|as_crispy_field }}
 
+      <fieldset class="help-format-picker mb-3">
+        <legend class="form-label">Формат допомоги <span class="asteriskField">*</span></legend>
+        {% for choice in form.help_format %}
+        <label class="help-format-option">
+          <input type="radio" name="{{ form.help_format.html_name }}" value="{{ choice.data.value }}"
+                 {% if choice.data.selected %}checked{% endif %} required>
+          <span>
+            <strong>{{ choice.choice_label }}</strong>
+            <small>{% for key, hint in help_format_hints.items %}{% if key == choice.data.value %}{{ hint }}{% endif %}{% endfor %}</small>
+          </span>
+        </label>
+        {% endfor %}
+        {% for error in form.help_format.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        <p class="text-muted small mt-2 mb-0"><i class="bi bi-shield-check"></i> На візит додому можуть відгукнутися лише перевірені волонтери.</p>
+      </fieldset>
+
       <div class="row">
         <div class="col-md-6">{{ form.category|as_crispy_field }}</div>
         <div class="col-md-6">{{ form.urgency|as_crispy_field }}</div>
@@ -60,7 +76,7 @@
       </div>
       {{ form.latitude }}
       {{ form.longitude }}
-      <div class="mb-3 text-muted small">
+      <div class="mb-3 text-muted small" id="address-hint">
         <i class="bi bi-info-circle me-1"></i>
         Почніть вводити адресу — з'являться підказки для вибору точного місця
       </div>
@@ -236,6 +252,20 @@
       addressInput.setAttribute('aria-expanded', 'false');
     }
   });
+})();
+</script>
+<script>
+(function () {
+  // Online help needs no address: hide the address block and the mini-map
+  const radios = document.querySelectorAll('input[name="help_format"]');
+  const blocks = [document.getElementById('address-wrapper'), document.getElementById('address-hint')];
+  function sync() {
+    const chosen = document.querySelector('input[name="help_format"]:checked');
+    const remote = chosen && chosen.value === 'remote';
+    blocks.forEach(function (el) { if (el) el.hidden = remote; });
+  }
+  radios.forEach(function (r) { r.addEventListener('change', sync); });
+  sync();
 })();
 </script>
 {% endblock %}

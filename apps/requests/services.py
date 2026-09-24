@@ -25,6 +25,8 @@ Status = HelpRequest.Status
 RStatus = Response.Status
 
 MAX_ACTIVE_REQUESTS = 10
+PREMODERATED_REQUESTS = 3  # first requests of a not-yet-verified recipient (ADR 0002)
+CANCELLABLE = (Status.DRAFT, Status.PENDING_MODERATION, *HelpRequest.OPEN_STATUSES)
 AUTO_CONFIRM_AFTER = timedelta(hours=72)
 REMIND_AFTER_END = timedelta(hours=24)
 EXPIRE_IN_PROGRESS_AFTER_END = timedelta(days=7)
@@ -90,7 +92,7 @@ def _accepted_volunteers(help_request):
 
 def can_create_request(user):
     """Return an error message when the recipient may not create one more request."""
-    open_count = HelpRequest.objects.filter(recipient=user, status__in=HelpRequest.OPEN_STATUSES)
+    open_count = HelpRequest.objects.filter(recipient=user, status__in=CANCELLABLE)
     if open_count.count() >= MAX_ACTIVE_REQUESTS:
         return (
             f"Досягнуто максимум відкритих запитів ({MAX_ACTIVE_REQUESTS}). "
@@ -99,13 +101,88 @@ def can_create_request(user):
     return None
 
 
-def create_request(help_request, recipient):
-    """Save a new request built from a form and announce it to nearby volunteers."""
-    help_request.recipient = recipient
-    help_request.status = Status.ACTIVE
-    help_request.save()
+def needs_premoderation(recipient):
+    if recipient.is_verified:
+        return False
+    published = HelpRequest.objects.filter(recipient=recipient, published_at__isnull=False)
+    return published.count() < PREMODERATED_REQUESTS
+
+
+def _go_live(help_request):
+    help_request.published_at = timezone.now()
+    help_request.save(update_fields=["published_at"])
+    _set_status(help_request, Status.ACTIVE)
     transaction.on_commit(lambda: notify_nearby_volunteers(help_request))
+
+
+def create_request(help_request, recipient):
+    """
+    Save a new request built from a form. Depending on the recipient's trust
+    level it stays a draft (email not confirmed), goes to premoderation or is
+    published right away (ADR 0002).
+    """
+    help_request.recipient = recipient
+    help_request.status = Status.DRAFT
+    help_request.save()
+    if recipient.trust_level >= recipient.TrustLevel.EMAIL_CONFIRMED:
+        publish(help_request, recipient)
+        help_request.refresh_from_db()
     return help_request
+
+
+@transaction.atomic
+def publish(help_request, recipient):
+    help_request = _lock(help_request)
+    if help_request.recipient_id != recipient.pk:
+        raise TransitionError("Це не ваш запит.")
+    if help_request.status != Status.DRAFT:
+        raise TransitionError("Опублікувати можна лише чернетку.")
+    if recipient.trust_level < recipient.TrustLevel.EMAIL_CONFIRMED:
+        raise TransitionError("Підтвердіть email, щоб опублікувати запит.")
+    if help_request.needed_date < timezone.now():
+        raise TransitionError("Дата допомоги вже минула — змініть її перед публікацією.")
+
+    if needs_premoderation(recipient):
+        _set_status(help_request, Status.PENDING_MODERATION)
+    else:
+        _go_live(help_request)
+    return help_request.status
+
+
+@transaction.atomic
+def approve(help_request, moderator):
+    help_request = _lock(help_request)
+    if help_request.status != Status.PENDING_MODERATION:
+        raise TransitionError("Запит не очікує модерації.")
+    help_request.moderation_note = ""
+    help_request.save(update_fields=["moderation_note"])
+    _go_live(help_request)
+    notify(
+        help_request.recipient,
+        Notification.Type.REQUEST_APPROVED,
+        "Запит опубліковано",
+        f"Модератор перевірив запит «{help_request.title}». Волонтери поблизу вже його бачать.",
+        help_request,
+    )
+
+
+@transaction.atomic
+def reject_request(help_request, moderator, reason):
+    help_request = _lock(help_request)
+    if help_request.status != Status.PENDING_MODERATION:
+        raise TransitionError("Запит не очікує модерації.")
+    if not reason.strip():
+        raise TransitionError("Вкажіть причину, щоб отримувач міг виправити запит.")
+    help_request.moderation_note = reason[:300]
+    help_request.save(update_fields=["moderation_note"])
+    _set_status(help_request, Status.REJECTED)
+    notify(
+        help_request.recipient,
+        Notification.Type.REQUEST_REJECTED_BY_MODERATOR,
+        "Запит не пройшов модерацію",
+        f"Запит «{help_request.title}» не опубліковано. Причина: {reason}",
+        help_request,
+    )
 
 
 LOCKED_WHEN_RESPONDED = ("needed_date", "address", "latitude", "longitude")
@@ -117,8 +194,8 @@ def editable_fields_error(help_request, changed_fields, new_volunteers_needed):
     Volunteers agreed to a specific time and place, so those are frozen;
     the number of volunteers cannot drop below the already accepted ones.
     """
-    if help_request.status != Status.ACTIVE:
-        return "Редагувати можна лише активний запит."
+    if not help_request.is_editable:
+        return "Редагувати цей запит уже не можна."
     has_responses = help_request.responses.filter(
         status__in=[RStatus.PENDING, RStatus.ACCEPTED]
     ).exists()
@@ -149,11 +226,26 @@ def after_edit(help_request):
 # ---------------------------------------------------------------------------
 
 
+def respond_trust_error(volunteer, help_request):
+    """Trust-level gate for responding (ADR 0002), or None when allowed."""
+    if volunteer.trust_level < volunteer.TrustLevel.EMAIL_CONFIRMED:
+        return "Підтвердіть email у профілі, щоб відгукуватися на запити."
+    if help_request.needs_verified_volunteer and not volunteer.is_verified:
+        return (
+            "Візит додому доступний лише перевіреним волонтерам. "
+            "Подайте заявку на перевірку в профілі."
+        )
+    return None
+
+
 @transaction.atomic
 def respond(help_request, volunteer, message=""):
     help_request = _lock(help_request)
     if not volunteer.is_volunteer:
         raise TransitionError("Відгукнутися можуть лише волонтери.")
+    trust_error = respond_trust_error(volunteer, help_request)
+    if trust_error:
+        raise TransitionError(trust_error)
     if help_request.recipient_id == volunteer.pk:
         raise TransitionError("Ви не можете відгукнутися на власний запит.")
     if help_request.status != Status.ACTIVE:
@@ -312,6 +404,28 @@ def remove(response, recipient, reason=""):
     return reopened
 
 
+@transaction.atomic
+def remove_by_moderator(response, reason):
+    """Take a volunteer off an open request, e.g. after their verification was revoked."""
+    help_request, response = _lock_response(response)
+    if response.status not in (RStatus.ACCEPTED, RStatus.PENDING) or not help_request.is_open:
+        return False
+    was_accepted = response.status == RStatus.ACCEPTED
+    _set_response_status(response, RStatus.REMOVED, reason)
+    if not was_accepted:
+        return True
+    reopened = _reopen_if_short(help_request)
+    notify(
+        help_request.recipient,
+        Notification.Type.VOLUNTEER_WITHDREW,
+        "Волонтера знято модератором",
+        f"Модератор зняв волонтера із запиту «{help_request.title}»."
+        + (" Запит знову відкрито для волонтерів." if reopened else ""),
+        help_request,
+    )
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Finishing
 # ---------------------------------------------------------------------------
@@ -398,7 +512,7 @@ def cancel(help_request, recipient):
     help_request = _lock(help_request)
     if help_request.recipient_id != recipient.pk:
         raise TransitionError("Це не ваш запит.")
-    if not help_request.is_open:
+    if help_request.status not in CANCELLABLE:
         raise TransitionError("Цей запит не можна скасувати.")
 
     accepted = _accepted_volunteers(help_request)
@@ -417,7 +531,7 @@ def cancel(help_request, recipient):
 def cancel_by_moderator(help_request, reason):
     """Staff closes a request (fraud, unsafe, duplicate) and tells everyone why."""
     help_request = _lock(help_request)
-    if not help_request.is_open:
+    if help_request.status not in CANCELLABLE:
         raise TransitionError("Цей запит уже закрито.")
 
     accepted = _accepted_volunteers(help_request)
@@ -464,7 +578,9 @@ def expire_overdue(now=None):
     """
     now = now or timezone.now()
     expired = 0
-    stale_active = HelpRequest.objects.filter(status=Status.ACTIVE, needed_date__lt=now)
+    stale_active = HelpRequest.objects.filter(
+        status__in=[Status.ACTIVE, Status.PENDING_MODERATION], needed_date__lt=now
+    )
     stale_work = HelpRequest.objects.filter(
         status=Status.IN_PROGRESS,
         needed_date__lt=now - EXPIRE_IN_PROGRESS_AFTER_END,
@@ -473,7 +589,8 @@ def expire_overdue(now=None):
         with transaction.atomic():
             help_request = _lock(candidate)
             is_stale = (
-                help_request.status == Status.ACTIVE and help_request.needed_date < now
+                help_request.status in (Status.ACTIVE, Status.PENDING_MODERATION)
+                and help_request.needed_date < now
             ) or (
                 help_request.status == Status.IN_PROGRESS
                 and help_request.ends_at + EXPIRE_IN_PROGRESS_AFTER_END < now
