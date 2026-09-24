@@ -7,7 +7,10 @@ ResponseForm     — optional message when responding to a request
 """
 
 from django import forms
+from django.core.files.uploadedfile import UploadedFile
 from django.utils import timezone
+
+from apps.core.images import REQUEST_PHOTO_MAX, shrink
 
 from .models import Category, HelpRequest, Response
 
@@ -97,8 +100,10 @@ class HelpRequestForm(forms.ModelForm):
 
     def clean_photo(self):
         photo = self.cleaned_data.get("photo")
-        if photo and hasattr(photo, "size") and photo.size > 5 * 1024 * 1024:  # 5 MB
-            raise forms.ValidationError("Розмір фото не повинен перевищувати 5 МБ.")
+        if isinstance(photo, UploadedFile):
+            if photo.size > 5 * 1024 * 1024:  # 5 MB before compression
+                raise forms.ValidationError("Розмір фото не повинен перевищувати 5 МБ.")
+            photo = shrink(photo, REQUEST_PHOTO_MAX)
         return photo
 
 

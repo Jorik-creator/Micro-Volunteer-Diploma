@@ -38,3 +38,8 @@ PASSWORD_HASHERS = [
 AXES_ENABLED = False
 
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+# Never depend on a developer's local .env
+DEMO_MODE = False
+CRON_SECRET = ""
+SITE_URL = "http://testserver"

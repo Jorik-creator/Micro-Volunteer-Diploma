@@ -34,6 +34,7 @@ opencode.json
 docs/*
 !docs/adr/
 !docs/ROADMAP.md
+!docs/DEPLOY.md
 
 # Project tooling
 .tmp/

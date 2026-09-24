@@ -16,6 +16,7 @@ PERIODIC_TASKS = [
     "apps.requests.services.send_reminders",
     "apps.reviews.services.publish_due",
     "apps.reviews.services.send_review_reminders",
+    "apps.core.demo.reset_daily",
 ]
 
 

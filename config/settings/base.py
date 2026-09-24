@@ -26,6 +26,12 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
+# Render sets RENDER_EXTERNAL_HOSTNAME (e.g. microvolunteer.onrender.com)
+RENDER_EXTERNAL_HOSTNAME = env("RENDER_EXTERNAL_HOSTNAME", default="")
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
+
 # SQLite by default so the project runs without any setup; set DATABASE_URL
 # (postgres://user:pass@host:5432/db) for PostgreSQL.
 DATABASES = {
@@ -166,6 +172,27 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
+# The free host has no persistent disk: uploads go to an S3-compatible bucket
+# (Supabase Storage, ADR 0005) when a bucket is configured.
+AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="")
+if AWS_STORAGE_BUCKET_NAME:
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": AWS_STORAGE_BUCKET_NAME,
+            "endpoint_url": env("AWS_S3_ENDPOINT_URL"),
+            "region_name": env("AWS_S3_REGION_NAME", default="eu-central-1"),
+            "access_key": env("AWS_ACCESS_KEY_ID"),
+            "secret_key": env("AWS_SECRET_ACCESS_KEY"),
+            # Public bucket served from its public URL, e.g.
+            # <project>.supabase.co/storage/v1/object/public/<bucket>
+            "custom_domain": env("AWS_S3_CUSTOM_DOMAIN", default=None),
+            "querystring_auth": False,
+            "file_overwrite": False,
+            "default_acl": None,
+        },
+    }
+
 
 # ---------------------------------------------------------------------------
 # Default primary key field type
@@ -224,7 +251,10 @@ if BREVO_API_KEY:
     ANYMAIL = {"BREVO_API_KEY": BREVO_API_KEY}
 
 # Absolute links in emails
-SITE_URL = env("SITE_URL", default="http://localhost:8000")
+SITE_URL = env(
+    "SITE_URL",
+    default=f"https://{RENDER_EXTERNAL_HOSTNAME}" if RENDER_EXTERNAL_HOSTNAME else "http://localhost:8000",
+)
 
 DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL", default="MicroVolunteer <noreply@microvolunteer.local>"

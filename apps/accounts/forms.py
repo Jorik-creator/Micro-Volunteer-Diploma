@@ -11,7 +11,10 @@ from django.contrib.auth.forms import (
 from django.contrib.auth.forms import (
     PasswordResetForm as DjangoPasswordResetForm,
 )
+from django.core.files.uploadedfile import UploadedFile
 from django.utils.safestring import mark_safe
+
+from apps.core.images import AVATAR_MAX, shrink
 
 from .models import RecipientProfile, VolunteerProfile
 
@@ -156,10 +159,10 @@ class UserProfileForm(forms.ModelForm):
 
     def clean_avatar(self):
         avatar = self.cleaned_data.get("avatar")
-        if avatar and hasattr(avatar, "size"):
-            max_size = 2 * 1024 * 1024  # 2 MB
-            if avatar.size > max_size:
-                raise forms.ValidationError("Розмір зображення не повинен перевищувати 2 МБ.")
+        if isinstance(avatar, UploadedFile):
+            if avatar.size > 5 * 1024 * 1024:  # 5 MB before compression
+                raise forms.ValidationError("Розмір зображення не повинен перевищувати 5 МБ.")
+            avatar = shrink(avatar, AVATAR_MAX)
         return avatar
 
 
