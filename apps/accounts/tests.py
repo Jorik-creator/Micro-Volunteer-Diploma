@@ -208,9 +208,8 @@ class TestHomeView:
     def test_home_page_contains_stats(self, client, volunteer, recipient):
         """Home page context includes platform statistics."""
         response = client.get("/")
-        assert response.context["total_users"] >= 2
-        assert response.context["total_volunteers"] >= 1
-        assert response.context["total_recipients"] >= 1
+        assert response.context["active_requests_count"] == 0
+        assert response.context["verified_volunteers_count"] == 0
 
 
 class TestRegisterView:

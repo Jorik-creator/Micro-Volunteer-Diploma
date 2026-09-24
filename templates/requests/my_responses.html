@@ -38,24 +38,11 @@
   <div class="requests-grid">
     {% for resp in responses %}
     {% with hr=resp.help_request %}
-    <article class="request-card" aria-labelledby="my-response-title-{{ resp.pk }}">
-      <div class="top-row">
-        {% if hr.category %}<span class="chip chip-blue">{{ hr.category.name }}</span>{% endif %}
-        <span class="status-badge status-{{ hr.status }}">{{ hr.get_status_display }}</span>
-      </div>
-      <h2 class="request-title" id="my-response-title-{{ resp.pk }}">{{ hr.title }}</h2>
-      <p class="request-desc">Ваш відгук: <strong>{{ resp.get_status_display }}</strong></p>
       {% if resp.status == 'accepted' and hr.status == 'in_progress' and not resp.done_at %}
-      <p class="request-callout"><i class="bi bi-calendar-check"></i> Допомога {{ hr.needed_date|date:"d.m.Y H:i" }}. Після неї позначте виконання.</p>
+        {% include "partials/_request_card.html" with show_status=True card_note="Вас прийнято. Після допомоги позначте виконання." card_action="Відкрити запит" %}
+      {% else %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Ваш відгук: "|add:resp.get_status_display card_action="Відкрити запит" %}
       {% endif %}
-      <hr class="request-divider">
-      <div class="request-meta-row">
-        <span class="time"><i class="bi bi-calendar-event"></i> {{ hr.needed_date|date:"d.m.Y H:i" }}</span>
-      </div>
-      <a href="{% url 'requests:detail' hr.pk %}" class="btn btn-solid btn-block btn-help">
-        Відкрити запит <i class="bi bi-arrow-right"></i>
-      </a>
-    </article>
     {% endwith %}
     {% endfor %}
   </div>

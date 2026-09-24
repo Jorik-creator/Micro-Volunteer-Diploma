@@ -38,29 +38,13 @@
   {% if requests %}
   <div class="requests-grid">
     {% for hr in requests %}
-    <article class="request-card" aria-labelledby="my-request-title-{{ hr.pk }}">
-      <div class="top-row">
-        {% if hr.category %}<span class="chip chip-blue">{{ hr.category.name }}</span>{% endif %}
-        <span class="status-badge status-{{ hr.status }}">
-          {{ hr.get_status_display }}
-        </span>
-      </div>
-      <h2 class="request-title" id="my-request-title-{{ hr.pk }}">{{ hr.title }}</h2>
-      <p class="request-desc">{{ hr.description|truncatewords:15 }}</p>
-      {% if hr.status == 'awaiting_confirmation' %}
-      <p class="request-callout"><i class="bi bi-patch-question"></i> Волонтер позначив допомогу виконаною — підтвердьте завершення.</p>
-      {% elif hr.pending_count and hr.status == 'active' %}
-      <p class="request-callout"><i class="bi bi-people"></i> Нових відгуків волонтерів: {{ hr.pending_count }}</p>
-      {% endif %}
-      <hr class="request-divider">
-      <div class="request-meta-row">
-        <span class="geo"><i class="bi bi-geo-alt"></i> {{ hr.address|truncatechars:30 }}</span>
-        <span class="time">{{ hr.created_at|timesince }} тому</span>
-      </div>
-      <a href="{% url 'requests:detail' hr.pk %}" class="btn btn-solid btn-block btn-help">
-        Переглянути запит <i class="bi bi-arrow-right"></i>
-      </a>
-    </article>
+    {% if hr.status == 'awaiting_confirmation' %}
+      {% include "partials/_request_card.html" with show_status=True card_note="Волонтер позначив допомогу виконаною — підтвердьте завершення." card_action="Підтвердити" %}
+    {% elif hr.status == 'active' and hr.pending_count %}
+      {% include "partials/_request_card.html" with show_status=True card_note="Нових відгуків волонтерів: " card_note_value=hr.pending_count card_action="Переглянути відгуки" %}
+    {% else %}
+      {% include "partials/_request_card.html" with show_status=True %}
+    {% endif %}
     {% endfor %}
   </div>
 

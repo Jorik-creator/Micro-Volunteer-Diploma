@@ -17,7 +17,6 @@ urlpatterns = [
     path("users/<int:pk>/", views.PublicProfileView.as_view(), name="public-profile"),
     path("profile/edit/", views.ProfileEditView.as_view(), name="profile-edit"),
     path("password-change/", views.CustomPasswordChangeView.as_view(), name="password-change"),
-    path("stats/", views.live_stats, name="live-stats"),
     # Password reset (standard Django flow with our templates)
     path(
         "password-reset/",

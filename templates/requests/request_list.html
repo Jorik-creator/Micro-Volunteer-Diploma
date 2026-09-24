@@ -25,27 +25,21 @@
   <!-- Filters bar -->
   <form method="get" class="filters-bar" role="search" aria-label="Фільтри запитів допомоги">
     <div>
-      <span class="field-label">Категорія</span>
       {{ filter_form.category|as_crispy_field }}
     </div>
     <div>
-      <span class="field-label">Терміновість</span>
       {{ filter_form.urgency|as_crispy_field }}
     </div>
     <div>
-      <span class="field-label">Тривалість</span>
       {{ filter_form.duration|as_crispy_field }}
     </div>
     <div>
-      <span class="field-label">Місто</span>
       {{ filter_form.city|as_crispy_field }}
     </div>
     <div>
-      <span class="field-label">Від</span>
       {{ filter_form.date_from|as_crispy_field }}
     </div>
     <div>
-      <span class="field-label">До</span>
       {{ filter_form.date_to|as_crispy_field }}
     </div>
     <div class="filters-actions">
@@ -61,7 +55,7 @@
   <!-- Results bar -->
   <div class="results-bar">
     <div class="results-count">
-      Знайдено <strong>{{ requests|length }}</strong> запитів
+      Знайдено: <strong>{{ paginator.count|default:requests|length }}</strong>
     </div>
     <a href="{% url 'requests:map' %}" class="btn btn-ghost btn-sm">
       <i class="bi bi-map"></i> На карті
@@ -72,45 +66,17 @@
   {% if requests %}
   <div class="requests-grid">
     {% for hr in requests %}
-    <article class="request-card" aria-labelledby="request-title-{{ hr.pk }}">
-      <div class="top-row">
-        {% if hr.category %}
-        <span class="chip chip-blue">{{ hr.category.name }}</span>
-        {% else %}
-        <span class="chip chip-gray">Загальне</span>
-        {% endif %}
-        <span class="chip {% if hr.urgency == 'critical' %}chip-red{% elif hr.urgency == 'high' %}chip-yellow{% elif hr.urgency == 'medium' %}chip-blue{% else %}chip-green{% endif %}">
-          <span class="urgency-dot {{ hr.urgency }}"></span>
-          {{ hr.get_urgency_display }}
-        </span>
-      </div>
-      <h2 class="request-title" id="request-title-{{ hr.pk }}">{{ hr.title }}</h2>
-      <p class="request-desc">{{ hr.description|truncatewords:20 }}</p>
-      <hr class="request-divider">
-      <div class="request-meta-row">
-        <span class="geo"><i class="bi bi-geo-alt"></i>
-          {% if user.is_authenticated and hr.recipient_id == user.id %}
-            {{ hr.address|truncatechars:35 }}
-          {% else %}
-            Приблизна локація на карті
-          {% endif %}
-        </span>
-        <span class="time">{{ hr.created_at|timesince }} тому</span>
-      </div>
-      <a href="{% url 'requests:detail' hr.pk %}" class="btn btn-solid btn-block btn-help">
-        Детальніше про запит <i class="bi bi-arrow-right"></i>
-      </a>
-    </article>
+    {% include "partials/_request_card.html" with card_action="Детальніше і допомогти" %}
     {% endfor %}
   </div>
 
   <!-- Pagination -->
   {% if is_paginated %}
-  <nav class="pagination-wrap">
+  <nav class="pagination-wrap" aria-label="Сторінки результатів">
     <ul class="pagination justify-content-center">
       {% if page_obj.has_previous %}
       <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">&laquo;</a>
+        <a class="page-link" href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.previous_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">&laquo;</a>
       </li>
       {% endif %}
       <li class="page-item disabled">
@@ -118,7 +84,7 @@
       </li>
       {% if page_obj.has_next %}
       <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">&raquo;</a>
+        <a class="page-link" href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.next_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">&raquo;</a>
       </li>
       {% endif %}
     </ul>

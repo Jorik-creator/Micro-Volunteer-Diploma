@@ -7,7 +7,7 @@ from django.contrib.auth.views import (
     LogoutView,
     PasswordChangeView,
 )
-from django.http import Http404, JsonResponse
+from django.http import Http404
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
@@ -35,53 +35,25 @@ from .permissions import MODERATORS_GROUP, can_view_profile
 
 
 class HomeView(TemplateView):
-    """Landing page with platform statistics."""
+    """Landing page: role entry points, real platform numbers, newest requests."""
 
     template_name = "home.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["total_users"] = User.objects.count()
-        context["total_volunteers"] = User.objects.filter(
-            user_type=User.UserType.VOLUNTEER,
-        ).count()
-        context["total_recipients"] = User.objects.filter(
-            user_type=User.UserType.RECIPIENT,
-        ).count()
         # Local import avoids circular dependency between accounts and requests apps
         from apps.requests.models import HelpRequest
 
-        active_requests = HelpRequest.objects.filter(status=HelpRequest.Status.ACTIVE)
-        context["active_requests_count"] = active_requests.count()
-        context["recent_requests"] = active_requests.select_related("category").order_by(
-            "-created_at"
-        )[:3]
+        active = HelpRequest.objects.filter(status=HelpRequest.Status.ACTIVE)
+        context["active_requests_count"] = active.count()
+        context["completed_requests_count"] = HelpRequest.objects.filter(
+            status=HelpRequest.Status.COMPLETED
+        ).count()
+        context["verified_volunteers_count"] = User.objects.filter(
+            user_type=User.UserType.VOLUNTEER, is_verified=True, is_active=True
+        ).count()
+        context["recent_requests"] = active.select_related("category").order_by("-published_at")[:6]
         return context
-
-
-# ---------------------------------------------------------------------------
-# Live stats JSON endpoint (public — used by home page polling)
-# ---------------------------------------------------------------------------
-
-
-def live_stats(request):
-    """JSON endpoint: live platform statistics for home page polling."""
-    from apps.requests.models import HelpRequest  # local import to avoid circular
-
-    return JsonResponse(
-        {
-            "total_users": User.objects.count(),
-            "total_volunteers": User.objects.filter(
-                user_type=User.UserType.VOLUNTEER,
-            ).count(),
-            "total_recipients": User.objects.filter(
-                user_type=User.UserType.RECIPIENT,
-            ).count(),
-            "active_requests": HelpRequest.objects.filter(
-                status=HelpRequest.Status.ACTIVE,
-            ).count(),
-        }
-    )
 
 
 # ---------------------------------------------------------------------------

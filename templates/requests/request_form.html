@@ -38,6 +38,10 @@
         </div>
       </div>
 
+      <p class="wizard-progress" id="wizard-progress" aria-live="polite" hidden></p>
+
+      <section class="wizard-step" data-step="1" aria-labelledby="step1-title">
+      <h2 class="wizard-title" id="step1-title">Що потрібно зробити</h2>
       {{ form.title|as_crispy_field }}
       {{ form.description|as_crispy_field }}
 
@@ -62,6 +66,12 @@
         <div class="col-md-6">{{ form.urgency|as_crispy_field }}</div>
       </div>
 
+      {{ form.photo|as_crispy_field }}
+      <div class="wizard-nav"><button type="button" class="btn btn-solid btn-lg" data-next>Далі: коли й де <i class="bi bi-arrow-right" aria-hidden="true"></i></button></div>
+      </section>
+
+      <section class="wizard-step" data-step="2" aria-labelledby="step2-title">
+      <h2 class="wizard-title" id="step2-title">Коли й де</h2>
       <div class="row">
         <div class="col-md-6">{{ form.needed_date|as_crispy_field }}</div>
         <div class="col-md-6">{{ form.duration|as_crispy_field }}</div>
@@ -104,14 +114,23 @@
         Не вдалося завантажити мапу. Координати буде збережено за вибраною адресою без уточнення маркером.
       </div>
 
-      {{ form.photo|as_crispy_field }}
+      <div class="wizard-nav">
+        <button type="button" class="btn btn-muted btn-lg" data-back><i class="bi bi-arrow-left" aria-hidden="true"></i> Назад</button>
+        <button type="button" class="btn btn-solid btn-lg" data-next>Далі: перевірити <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+      </div>
+      </section>
 
+      <section class="wizard-step" data-step="3" aria-labelledby="step3-title">
+      <h2 class="wizard-title" id="step3-title">Перевірте запит</h2>
+      <dl class="wizard-summary" id="wizard-summary"></dl>
       <div class="form-actions">
+        <button type="button" class="btn btn-muted btn-lg" data-back><i class="bi bi-arrow-left" aria-hidden="true"></i> Назад</button>
         <button type="submit" class="btn btn-solid btn-lg">
           <i class="bi bi-send"></i> {{ submit_label }}
         </button>
-        <a href="{{ cancel_url }}" class="btn btn-muted btn-lg">Скасувати</a>
+        <a href="{{ cancel_url }}" class="btn btn-link">Скасувати</a>
       </div>
+      </section>
     </div>
   </form>
 </div>
@@ -282,6 +301,77 @@
   function syncBehalf() { if (onBehalf && beneficiary) beneficiary.hidden = !onBehalf.checked; }
   if (onBehalf) onBehalf.addEventListener('change', syncBehalf);
   syncBehalf();
+})();
+</script>
+<script>
+(function () {
+  const form = document.querySelector('form[enctype]');
+  const steps = Array.from(document.querySelectorAll('.wizard-step'));
+  const progress = document.getElementById('wizard-progress');
+  if (!form || steps.length < 2) return;
+  const titles = steps.map(function (s) { return s.querySelector('.wizard-title').textContent; });
+  let current = 0;
+
+  function fieldLabel(el) {
+    const label = form.querySelector('label[for="' + el.id + '"]');
+    return label ? label.textContent.replace('*', '').trim() : el.name;
+  }
+
+  function buildSummary() {
+    const summary = document.getElementById('wizard-summary');
+    summary.innerHTML = '';
+    const names = ['title', 'help_format', 'category', 'urgency', 'needed_date', 'duration', 'volunteers_needed', 'address'];
+    names.forEach(function (name) {
+      let value = '';
+      const radio = form.querySelector('input[name="' + name + '"]:checked');
+      const el = form.elements[name];
+      if (radio) value = radio.closest('label').querySelector('strong').textContent;
+      else if (el && el.tagName === 'SELECT') value = el.options[el.selectedIndex] ? el.options[el.selectedIndex].text : '';
+      else if (el && el.value !== undefined) value = el.value;
+      if (name === 'needed_date' && value) {
+        const m = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/);
+        if (m) value = m[3] + '.' + m[2] + '.' + m[1] + ', ' + m[4];
+      }
+      // Skip fields hidden inside their step (address for online help), not whole steps
+      if (!value || (el && el.closest && el.closest('[hidden]:not(.wizard-step)'))) return;
+      const dt = document.createElement('dt');
+      dt.textContent = name === 'help_format' ? 'Формат допомоги' : fieldLabel(el || radio);
+      const dd = document.createElement('dd');
+      dd.textContent = value;
+      summary.append(dt, dd);
+    });
+  }
+
+  function show(index, focus) {
+    current = index;
+    steps.forEach(function (step, i) { step.hidden = i !== index; });
+    progress.hidden = false;
+    progress.textContent = 'Крок ' + (index + 1) + ' з ' + steps.length + ': ' + titles[index];
+    if (index === steps.length - 1) buildSummary();
+    if (focus) { steps[index].querySelector('.wizard-title').setAttribute('tabindex', '-1'); steps[index].querySelector('.wizard-title').focus(); }
+  }
+
+  function stepIsValid(step) {
+    const fields = Array.from(step.querySelectorAll('input, select, textarea'))
+      .filter(function (el) { return !el.closest('[hidden]') && el.type !== 'hidden'; });
+    for (const el of fields) {
+      if (!el.checkValidity()) { el.reportValidity(); return false; }
+    }
+    return true;
+  }
+
+  form.addEventListener('click', function (event) {
+    if (event.target.closest('[data-next]')) {
+      if (stepIsValid(steps[current])) show(current + 1, true);
+    } else if (event.target.closest('[data-back]')) {
+      show(current - 1, true);
+    }
+  });
+
+  // After a failed submit, open the step with the first server-side error
+  const firstError = form.querySelector('.is-invalid, .invalid-feedback.d-block, .alert-danger');
+  const errorStep = firstError ? steps.findIndex(function (s) { return s.contains(firstError); }) : -1;
+  show(errorStep >= 0 ? errorStep : 0, false);
 })();
 </script>
 {% endblock %}

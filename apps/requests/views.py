@@ -206,6 +206,7 @@ class HelpRequestDetailView(DetailView):
         )
         context.update(
             {
+                "lifecycle": lifecycle_steps(hr, len(accepted)),
                 "respond_blocked_reason": trust_error,
                 "is_moderator": is_moderator(user),
                 "response_form": ResponseForm(),
@@ -249,6 +250,51 @@ class HelpRequestDetailView(DetailView):
                 key=lambda r: (r.status != Response.Status.ACCEPTED, r.status != "pending"),
             )
         return context
+
+
+def lifecycle_steps(help_request, accepted_count):
+    """
+    Steps for the progress bar on the request page. Returns None for closed
+    requests (cancelled / expired / rejected), which get a banner instead.
+    """
+    s = HelpRequest.Status
+    status = help_request.status
+    if status in (s.CANCELLED, s.EXPIRED, s.REJECTED):
+        return None
+    order = {
+        s.DRAFT: 0,
+        s.PENDING_MODERATION: 0,
+        s.ACTIVE: 1,
+        s.IN_PROGRESS: 2,
+        s.AWAITING_CONFIRMATION: 2,
+        s.COMPLETED: 3,
+    }[status]
+    first_note = {
+        s.DRAFT: "чернетка",
+        s.PENDING_MODERATION: "на перевірці",
+    }.get(
+        status,
+        help_request.published_at and f"{timezone.localtime(help_request.published_at):%d.%m}",
+    )
+    notes = [
+        first_note or "",
+        f"{accepted_count} з {help_request.volunteers_needed}",
+        "очікує підтвердження"
+        if status == s.AWAITING_CONFIRMATION
+        else f"{timezone.localtime(help_request.needed_date):%d.%m, %H:%M}",
+        "залиште оцінку" if status == s.COMPLETED else "",
+    ]
+    labels = ["Опубліковано", "Волонтерів набрано", "Допомога", "Завершено"]
+    steps = []
+    for index, (label, note) in enumerate(zip(labels, notes, strict=True)):
+        if index < order or (index == order == 3):
+            state = "done"
+        elif index == order:
+            state = "current"
+        else:
+            state = "todo"
+        steps.append({"number": index + 1, "label": label, "note": note, "state": state})
+    return steps
 
 
 def _review_context(help_request, user):

@@ -123,6 +123,20 @@ function fallbackCopy(text) {
       </div>
       <h1 class="detail-title">{{ help_request.title }}</h1>
 
+      {% if lifecycle %}
+      <ol class="lifecycle" aria-label="Етапи запиту">
+        {% for step in lifecycle %}
+        <li class="{{ step.state }}"{% if step.state == 'current' %} aria-current="step"{% endif %}>
+          <span class="dot" aria-hidden="true">{% if step.state == 'done' %}<i class="bi bi-check-lg"></i>{% else %}{{ step.number }}{% endif %}</span>
+          {{ step.label }}{% if step.state == 'done' %}<span class="visually-hidden"> — виконано</span>{% endif %}
+          {% if step.note %}<small>{{ step.note }}</small>{% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+      {% elif help_request.status == 'cancelled' or help_request.status == 'expired' %}
+      <div class="alert alert-secondary" role="status"><i class="bi bi-slash-circle me-2"></i>Запит {{ help_request.get_status_display|lower }}.</div>
+      {% endif %}
+
       <!-- Meta grid -->
       <div class="detail-meta-grid">
         <div>

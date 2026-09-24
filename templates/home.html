@@ -1,302 +1,113 @@
 {% extends "base.html" %}
 {% load humanize %}
-{% load static %}
 
-{% block title %}MicroVolunteer — Платформа мікро-волонтерства{% endblock %}
+{% block title %}MicroVolunteer — допомога з побутовими справами поруч{% endblock %}
 
 {% block content %}
 
-<!-- ===== HERO ===== -->
-<section class="hero-section">
-  <div class="container hero-grid">
-    <!-- Left: text -->
-    <div>
-      <div class="hero-eyebrow">
-        <i class="bi bi-geo-alt-fill"></i> Допомога поруч, за 15 хвилин
-      </div>
-      <h1 class="hero-title">
-        Маленька допомога <span class="accent">— великі зміни</span>
-      </h1>
-      <p class="hero-subtitle">
-        MicroVolunteer допомагає попросити про підтримку у повсякденних справах
-        або знайти запит поруч. Швидко, локально, безпечно.
-      </p>
-      <div class="hero-actions">
-        <a href="{% if user.is_authenticated and user.is_recipient %}{% url 'requests:create' %}{% elif user.is_authenticated %}{% url 'requests:list' %}{% else %}{% url 'accounts:register' %}?role=recipient{% endif %}" class="btn btn-solid btn-lg">
-          <i class="bi bi-heart-pulse"></i> {% if user.is_authenticated and not user.is_recipient %}Переглянути запити{% else %}Мені потрібна допомога{% endif %}
-        </a>
-        <a href="{% if user.is_authenticated %}{% url 'requests:map' %}{% else %}{% url 'accounts:register' %}?role=volunteer{% endif %}" class="btn btn-ghost btn-lg">
-          <i class="bi bi-hand-thumbs-up"></i> Я хочу допомагати
-        </a>
-      </div>
-      <div class="hero-trust">
-        <div class="avatar-stack">
-          <div class="avatar avatar-tone-1">ОВ</div>
-          <div class="avatar avatar-tone-2">АМ</div>
-          <div class="avatar avatar-tone-3">МК</div>
-          <div class="avatar avatar-tone-4">ІП</div>
-        </div>
-        <span><strong class="hero-trust-count">{{ total_volunteers }} волонтерів</strong> вже допомагають щодня. Точна адреса відкрита лише підтвердженому волонтеру.</span>
-      </div>
-    </div>
-
-    <!-- Right: illustration — Ukraine map with 2 live task markers -->
-    <div class="hero-illustration-wrap">
-      <div class="hero-illustration">
-        {% include "partials/_ukraine_map.svg" %}
-
-        {# Kyiv — active critical request #}
-        <div class="map-pin map-pin-kyiv" aria-hidden="true"><div class="map-pin-dot pulse critical"></div></div>
-        {# Lviv — volunteers nearby #}
-        <div class="map-pin map-pin-lviv" aria-hidden="true"><div class="map-pin-dot pulse"></div></div>
-
-        <div class="floating-card fc-top-right">
-          <div class="fc-icon green"><i class="bi bi-check2-circle"></i></div>
-          <div class="fc-body">
-            <div class="fc-title">Запит виконано</div>
-            <div class="fc-sub">Доставка ліків • 800м</div>
-          </div>
-        </div>
-        <div class="floating-card fc-bottom-left">
-          <div class="fc-icon"><i class="bi bi-people-fill"></i></div>
-          <div class="fc-body">
-            <div class="fc-title">3 волонтери поруч</div>
-            <div class="fc-sub">Готові допомогти</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Phone-only: floating-cards stack below illustration (replaces absolute positioning) -->
-      <div class="fc-stack" aria-hidden="false">
-        <div class="floating-card">
-          <div class="fc-icon green"><i class="bi bi-check2-circle"></i></div>
-          <div class="fc-body">
-            <div class="fc-title">Запит виконано</div>
-            <div class="fc-sub">Доставка ліків • 800м</div>
-          </div>
-        </div>
-        <div class="floating-card">
-          <div class="fc-icon"><i class="bi bi-people-fill"></i></div>
-          <div class="fc-body">
-            <div class="fc-title">3 волонтери поруч</div>
-            <div class="fc-sub">Готові допомогти</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== STATS BAR ===== -->
-<section class="stats-bar" aria-labelledby="home-stats-title">
-  <h2 class="visually-hidden" id="home-stats-title">Коротка статистика платформи</h2>
-  <div class="container stats-grid" aria-describedby="home-stats-note">
-    <p class="visually-hidden" id="home-stats-note">Ці числа можуть оновлюватися автоматично без перезавантаження сторінки.</p>
-    <article class="stat-item" aria-label="Користувачів: {{ total_users|intcomma }}">
-      <div class="stat-number" id="stat-users">{{ total_users|intcomma }}</div>
-      <div class="stat-label">Користувачів</div>
-    </article>
-    <article class="stat-item" aria-label="Волонтерів: {{ total_volunteers|intcomma }}">
-      <div class="stat-number" id="stat-volunteers">{{ total_volunteers|intcomma }}</div>
-      <div class="stat-label">Волонтерів</div>
-    </article>
-    <article class="stat-item" aria-label="Отримувачів: {{ total_recipients|intcomma }}">
-      <div class="stat-number" id="stat-recipients">{{ total_recipients|intcomma }}</div>
-      <div class="stat-label">Отримувачів</div>
-    </article>
-    <article class="stat-item" aria-label="Активних запитів: {{ active_requests_count|intcomma }}">
-      <div class="stat-number" id="stat-active-requests">{{ active_requests_count|intcomma }}</div>
-      <div class="stat-label">Активних запитів</div>
-    </article>
-  </div>
-</section>
-
-<!-- ===== MARQUEE ===== -->
-<section class="marquee-section">
-  <div class="marquee-track">
-    <div class="marquee-text">
-      <span>Доставка продуктів</span>
-      <span>Вигул тварин</span>
-      <span>Допомога літнім</span>
-      <span>Ліки з аптеки</span>
-      <span>Транспорт до лікаря</span>
-      <span>Побутова допомога</span>
-      <span>Підтримка переселенців</span>
-      <span>Доставка продуктів</span>
-      <span>Вигул тварин</span>
-      <span>Допомога літнім</span>
-      <span>Ліки з аптеки</span>
-      <span>Транспорт до лікаря</span>
-      <span>Побутова допомога</span>
-      <span>Підтримка переселенців</span>
-    </div>
-    <div class="marquee-text" aria-hidden="true">
-      <span>Доставка продуктів</span>
-      <span>Вигул тварин</span>
-      <span>Допомога літнім</span>
-      <span>Ліки з аптеки</span>
-      <span>Транспорт до лікаря</span>
-      <span>Побутова допомога</span>
-      <span>Підтримка переселенців</span>
-      <span>Доставка продуктів</span>
-      <span>Вигул тварин</span>
-      <span>Допомога літнім</span>
-      <span>Ліки з аптеки</span>
-      <span>Транспорт до лікаря</span>
-      <span>Побутова допомога</span>
-      <span>Підтримка переселенців</span>
-    </div>
-  </div>
-</section>
-
-<!-- ===== HOW IT WORKS ===== -->
-<section class="section section-muted" id="how-it-works">
+<section class="svc-section" aria-labelledby="home-title">
   <div class="container">
-    <div class="section-head">
-      <div class="section-eyebrow">Як це працює</div>
-      <h2 class="section-title">Чотири кроки до допомоги</h2>
-      <p class="section-sub">Простий шлях: створіть запит або оберіть, кому допомогти</p>
+    <div class="svc-hero">
+      <h1 class="svc-title" id="home-title">Допомога з побутовими справами — поруч і безкоштовно</h1>
+      <p class="svc-lead">Купити ліки, донести покупки, провести до лікаря чи розібратися з Дією. Волонтери з вашого району допомагають безкоштовно.</p>
+
+      <div class="svc-doors">
+        {% if user.is_authenticated and user.is_recipient %}
+          <a class="svc-door" href="{% url 'requests:create' %}">
+            <i class="bi bi-plus-circle" aria-hidden="true"></i>
+            <span><strong>Створити запит</strong><span>Опишіть, що потрібно, — волонтери поблизу отримають сповіщення.</span></span>
+          </a>
+          <a class="svc-door" href="{% url 'requests:my-requests' %}">
+            <i class="bi bi-card-checklist" aria-hidden="true"></i>
+            <span><strong>Мої запити</strong><span>Відгуки волонтерів, розмови та статус допомоги.</span></span>
+          </a>
+        {% elif user.is_authenticated and user.is_volunteer %}
+          <a class="svc-door" href="{% url 'requests:list' %}">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <span><strong>Знайти запит поруч</strong><span>Список і карта відкритих запитів.</span></span>
+          </a>
+          <a class="svc-door" href="{% url 'requests:my-responses' %}">
+            <i class="bi bi-card-checklist" aria-hidden="true"></i>
+            <span><strong>Мої відгуки</strong><span>Запити, на які ви відгукнулися, і наступні кроки.</span></span>
+          </a>
+        {% else %}
+          <a class="svc-door" href="{% url 'accounts:register' %}?role=recipient">
+            <i class="bi bi-heart" aria-hidden="true"></i>
+            <span><strong>Мені потрібна допомога</strong><span>Створіть запит — волонтери поблизу отримають сповіщення.</span></span>
+          </a>
+          <a class="svc-door" href="{% url 'accounts:register' %}?role=volunteer">
+            <i class="bi bi-hand-thumbs-up" aria-hidden="true"></i>
+            <span><strong>Я хочу допомагати</strong><span>Знайдіть запит поруч і відгукніться за хвилину.</span></span>
+          </a>
+        {% endif %}
+      </div>
+      {% if not user.is_authenticated %}
+      <p class="svc-hero-foot">Уже маєте акаунт? <a href="{% url 'accounts:login' %}">Увійти</a></p>
+      {% endif %}
     </div>
-    <div class="steps-grid">
-      <div class="step-card">
-        <div class="step-card-top">
-          <div class="step-icon"><i class="bi bi-person-plus"></i></div>
-          <div class="step-number-badge">1</div>
-        </div>
-        <div class="step-title">Реєстрація</div>
-        <div class="step-desc">Створіть акаунт як отримувач допомоги або волонтер за хвилину.</div>
+
+    <dl class="svc-stats" aria-label="Платформа в цифрах">
+      <div><dt>Відкритих запитів</dt><dd>{{ active_requests_count|intcomma }}</dd></div>
+      <div><dt>Виконано запитів</dt><dd>{{ completed_requests_count|intcomma }}</dd></div>
+      <div><dt>Перевірених волонтерів</dt><dd>{{ verified_volunteers_count|intcomma }}</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section class="svc-section svc-section-muted" aria-labelledby="how-title" id="how-it-works">
+  <div class="container">
+    <h2 class="svc-h2" id="how-title">Як це працює</h2>
+    <div class="svc-two-col">
+      <div class="svc-panel">
+        <h3 class="svc-h3"><i class="bi bi-heart" aria-hidden="true"></i> Якщо потрібна допомога</h3>
+        <ol class="svc-steps">
+          <li><strong>Опишіть справу</strong> — що, коли й де. Точну адресу бачитиме лише волонтер, якого ви оберете.</li>
+          <li><strong>Оберіть волонтера</strong> серед тих, хто відгукнувся: видно рейтинг, відгуки й позначку «Перевірений».</li>
+          <li><strong>Домовтеся в розмові</strong> на сайті. Номер телефону показується лише тоді, коли ви самі ним поділитеся.</li>
+          <li><strong>Підтвердіть виконання</strong> й оцініть волонтера.</li>
+        </ol>
       </div>
-      <div class="step-card">
-        <div class="step-card-top">
-          <div class="step-icon"><i class="bi bi-pencil-square"></i></div>
-          <div class="step-number-badge">2</div>
-        </div>
-        <div class="step-title">Запит або пошук</div>
-        <div class="step-desc">Напишіть простими словами, що потрібно, або оберіть запит зі списку чи карти.</div>
-      </div>
-      <div class="step-card">
-        <div class="step-card-top">
-          <div class="step-icon"><i class="bi bi-geo-alt"></i></div>
-          <div class="step-number-badge">3</div>
-        </div>
-        <div class="step-title">Зв'язок поруч</div>
-        <div class="step-desc">Волонтери поблизу бачать ваш запит та відгукуються миттєво.</div>
-      </div>
-      <div class="step-card">
-        <div class="step-card-top">
-          <div class="step-icon"><i class="bi bi-check-circle"></i></div>
-          <div class="step-number-badge">4</div>
-        </div>
-        <div class="step-title">Допомога</div>
-        <div class="step-desc">Координуйте зустріч та отримайте підтримку від волонтера.</div>
+      <div class="svc-panel">
+        <h3 class="svc-h3"><i class="bi bi-hand-thumbs-up" aria-hidden="true"></i> Якщо хочете допомагати</h3>
+        <ol class="svc-steps">
+          <li><strong>Підтвердьте email</strong> — і можна відгукуватися на запити без візиту додому.</li>
+          <li><strong>Пройдіть перевірку</strong> (анкета або код організації), щоб допомагати вдома в людей.</li>
+          <li><strong>Відгукніться на запит</strong> поблизу й дочекайтеся рішення отримувача.</li>
+          <li><strong>Допоможіть і позначте виконання</strong> — отримувач підтвердить і оцінить.</li>
+        </ol>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ===== ACTIVE REQUESTS ===== -->
-<section class="section">
+<section class="svc-section" aria-labelledby="safety-title">
   <div class="container">
-    <div class="section-head">
-      <div class="section-eyebrow">Актуальні запити</div>
-      <h2 class="section-title">Хтось поруч потребує допомоги</h2>
-    </div>
-    <div class="requests-grid">
-      {% for req in recent_requests %}
-      <article class="request-card" aria-labelledby="home-request-title-{{ req.pk }}">
-        <div class="top-row">
-          {% if req.category %}
-          <span class="chip chip-blue">{{ req.category.name }}</span>
-          {% else %}
-          <span class="chip chip-gray">Загальне</span>
-          {% endif %}
-          <span class="chip {% if req.urgency == 'critical' %}chip-red{% elif req.urgency == 'high' %}chip-yellow{% elif req.urgency == 'medium' %}chip-blue{% else %}chip-green{% endif %}">
-            <span class="urgency-dot {{ req.urgency }}"></span>
-            {{ req.get_urgency_display }}
-          </span>
-        </div>
-        <h3 class="request-title" id="home-request-title-{{ req.pk }}">{{ req.title }}</h3>
-        <p class="request-desc">{{ req.description|truncatewords:15 }}</p>
-        <hr class="request-divider">
-        <div class="request-meta-row">
-          <span class="geo"><i class="bi bi-geo-alt"></i>
-            {% if user.is_authenticated and req.recipient_id == user.id %}
-              {{ req.address|truncatechars:35 }}
-            {% else %}
-              Приблизна локація на карті
-            {% endif %}
-          </span>
-          <span class="time">{{ req.created_at|timesince }} тому</span>
-        </div>
-        <a href="{% url 'requests:detail' req.pk %}" class="btn btn-solid btn-block btn-help">
-          Допомогти <i class="bi bi-arrow-right"></i>
-        </a>
-      </article>
-      {% empty %}
-      <div class="empty-state empty-state-grid">
-        <i class="bi bi-inbox empty-icon"></i>
-        <p>Наразі активних запитів немає.</p>
-        <a href="{% url 'accounts:register' %}" class="btn btn-solid">Зареєструватись</a>
-      </div>
-      {% endfor %}
+    <h2 class="svc-h2" id="safety-title">Безпека понад усе</h2>
+    <ul class="svc-facts">
+      <li><i class="bi bi-geo-alt" aria-hidden="true"></i><span><strong>Адреса прихована.</strong> На карті — приблизне місце, точну адресу бачить лише прийнятий волонтер.</span></li>
+      <li><i class="bi bi-patch-check" aria-hidden="true"></i><span><strong>Візити додому — лише перевіреним.</strong> Документи ми не збираємо: перевірку робить модератор або партнерська організація.</span></li>
+      <li><i class="bi bi-flag" aria-hidden="true"></i><span><strong>Модерація і скарги.</strong> Перші запити нових користувачів перевіряються, на будь-що можна поскаржитися.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="svc-section svc-section-muted" aria-labelledby="recent-title">
+  <div class="container">
+    <div class="svc-row-head">
+      <h2 class="svc-h2" id="recent-title">Нові запити</h2>
+      <a href="{% url 'requests:list' %}" class="btn btn-ghost">Усі запити <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
     </div>
     {% if recent_requests %}
-    <div class="section-cta">
-      <a href="{% url 'requests:list' %}" class="btn btn-ghost btn-lg">
-        Усі запити <i class="bi bi-arrow-right"></i>
-      </a>
+    <div class="requests-grid">
+      {% for hr in recent_requests %}{% include "partials/_request_card.html" %}{% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-inbox empty-icon" aria-hidden="true"></i>
+      <p>Зараз відкритих запитів немає.</p>
     </div>
     {% endif %}
   </div>
 </section>
 
-<!-- ===== CTA ===== -->
-{% if not user.is_authenticated %}
-<section class="cta-section">
-  <div class="container cta-inner">
-    <h2 class="cta-title">Приєднуйтесь до спільноти</h2>
-    <p class="cta-sub">Ставайте частиною мережі, що робить українські громади сильнішими день за днем.</p>
-    <div class="cta-actions">
-      <a href="{% url 'accounts:register' %}" class="btn btn-white btn-lg">
-        <i class="bi bi-rocket-takeoff"></i> Зареєструватися
-      </a>
-      <a href="{% url 'requests:map' %}" class="btn btn-outline-white btn-lg">
-        <i class="bi bi-map"></i> Відкрити карту
-      </a>
-    </div>
-  </div>
-</section>
-{% endif %}
-
-{% endblock %}
-
-{% block extra_js %}
-<script>
-(function () {
-  const statMap = {
-    total_users: document.getElementById('stat-users'),
-    total_volunteers: document.getElementById('stat-volunteers'),
-    total_recipients: document.getElementById('stat-recipients'),
-    active_requests: document.getElementById('stat-active-requests'),
-  };
-  const formatter = new Intl.NumberFormat('uk-UA');
-
-  function updateStats(data) {
-    Object.entries(statMap).forEach(([key, element]) => {
-      if (!element || typeof data[key] !== 'number') return;
-      element.textContent = formatter.format(data[key]);
-    });
-  }
-
-  function fetchStats() {
-    fetch('{% url "accounts:live-stats" %}', { credentials: 'same-origin' })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data) => { if (data) updateStats(data); })
-      .catch(() => {});
-  }
-
-  fetchStats();
-  setInterval(fetchStats, 60000);
-})();
-</script>
 {% endblock %}

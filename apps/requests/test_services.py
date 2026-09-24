@@ -562,3 +562,22 @@ class TestModeratorCancel:
 
         refresh(help_request)
         assert help_request.status == Status.CANCELLED
+
+
+class TestLifecycleSteps:
+    def test_current_step_follows_status(self, help_request):
+        from apps.requests.views import lifecycle_steps
+
+        states = [step["state"] for step in lifecycle_steps(help_request, 0)]
+        assert states == ["done", "current", "todo", "todo"]
+
+        help_request.status = Status.AWAITING_CONFIRMATION
+        steps = lifecycle_steps(help_request, 1)
+        assert [s["state"] for s in steps] == ["done", "done", "current", "todo"]
+        assert steps[2]["note"] == "очікує підтвердження"
+
+    def test_closed_requests_have_no_stepper(self, help_request):
+        from apps.requests.views import lifecycle_steps
+
+        help_request.status = Status.CANCELLED
+        assert lifecycle_steps(help_request, 0) is None
