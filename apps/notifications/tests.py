@@ -10,8 +10,7 @@ import pytest
 from django.utils import timezone
 
 from apps.notifications.models import Notification
-from apps.notifications.signals import on_new_request_created
-from apps.requests.models import HelpRequest
+from apps.notifications.services import notify_nearby_volunteers
 from conftest import (
     CategoryFactory,
     HelpRequestFactory,
@@ -200,33 +199,21 @@ class TestNotificationViews:
 # ===================================================================
 
 
-class TestNotificationSignals:
-    """Tests for notification-producing signals."""
+class TestNearbyVolunteerNotifications:
+    """notify_nearby_volunteers() is called when a request is published."""
 
     @pytest.mark.django_db
-    def test_new_request_notifies_matching_verified_volunteer(self):
-        """A verified available volunteer in radius receives NEW_NEARBY_REQUEST."""
-        # Arrange
+    def test_matching_verified_volunteer_notified(self):
         category = CategoryFactory()
         volunteer = VolunteerFactory(
-            is_verified=True,
-            address="Київ",
-            latitude=50.4501,
-            longitude=30.5234,
+            is_verified=True, address="Київ", latitude=50.4501, longitude=30.5234
         )
         volunteer.volunteer_profile.categories.add(category)
-        volunteer.volunteer_profile.radius_km = 10
-        volunteer.volunteer_profile.save()
-
-        # Act — HelpRequestFactory save triggers post_save.
         help_request = HelpRequestFactory(
-            category=category,
-            address="Київ, Хрещатик",
-            latitude=50.4505,
-            longitude=30.5238,
+            category=category, address="Київ, Хрещатик", latitude=50.4505, longitude=30.5238
         )
 
-        # Assert
+        assert notify_nearby_volunteers(help_request) == 1
         assert Notification.objects.filter(
             user=volunteer,
             type=Notification.Type.NEW_NEARBY_REQUEST,
@@ -234,59 +221,51 @@ class TestNotificationSignals:
         ).exists()
 
     @pytest.mark.django_db
-    def test_new_request_skips_unverified_volunteer(self):
-        """Unverified volunteers do not receive nearby request notifications."""
-        # Arrange
-        volunteer = VolunteerFactory(
-            is_verified=False,
-            address="Київ",
-            latitude=50.4501,
-            longitude=30.5234,
-        )
+    def test_unverified_volunteer_skipped(self):
+        VolunteerFactory(is_verified=False, address="Київ", latitude=50.4501, longitude=30.5234)
+        help_request = HelpRequestFactory(latitude=50.4505, longitude=30.5238)
 
-        # Act
-        help_request = HelpRequestFactory(
-            address="Київ, Хрещатик",
-            latitude=50.4505,
-            longitude=30.5238,
-        )
-
-        # Assert
-        assert not Notification.objects.filter(
-            user=volunteer,
-            type=Notification.Type.NEW_NEARBY_REQUEST,
-            related_request=help_request,
-        ).exists()
+        assert notify_nearby_volunteers(help_request) == 0
 
     @pytest.mark.django_db
-    def test_new_request_notification_is_idempotent(self):
-        """Calling the signal twice still leaves one nearby notification."""
-        # Arrange
-        volunteer = VolunteerFactory(
-            is_verified=True,
-            address="Київ",
-            latitude=50.4501,
-            longitude=30.5234,
-        )
-        help_request = HelpRequestFactory(
-            address="Київ, Хрещатик",
-            latitude=50.4505,
-            longitude=30.5238,
-        )
+    def test_volunteer_outside_radius_skipped(self):
+        VolunteerFactory(is_verified=True, latitude=49.8397, longitude=24.0297)  # Lviv
+        help_request = HelpRequestFactory(latitude=50.4505, longitude=30.5238)  # Kyiv
 
-        # Act — simulate a duplicate delivery of the same post_save event.
-        on_new_request_created(
-            sender=HelpRequest,
-            instance=help_request,
-            created=True,
-        )
+        assert notify_nearby_volunteers(help_request) == 0
 
-        # Assert
-        assert (
-            Notification.objects.filter(
-                user=volunteer,
-                type=Notification.Type.NEW_NEARBY_REQUEST,
-                related_request=help_request,
-            ).count()
-            == 1
+    @pytest.mark.django_db
+    def test_other_category_skipped_but_no_preference_matches(self):
+        wanted, other = CategoryFactory(), CategoryFactory()
+        picky = VolunteerFactory(is_verified=True, latitude=50.45, longitude=30.52)
+        picky.volunteer_profile.categories.add(other)
+        open_to_all = VolunteerFactory(is_verified=True, latitude=50.45, longitude=30.52)
+        help_request = HelpRequestFactory(category=wanted, latitude=50.4505, longitude=30.5238)
+
+        notify_nearby_volunteers(help_request)
+
+        notified = set(
+            Notification.objects.filter(related_request=help_request).values_list(
+                "user_id", flat=True
+            )
         )
+        assert notified == {open_to_all.pk}
+
+    @pytest.mark.django_db
+    def test_address_fallback_without_coordinates(self):
+        volunteer = VolunteerFactory(is_verified=True, address="Львів", latitude=None)
+        help_request = HelpRequestFactory(address="м. Львів, вул. Городоцька", latitude=None)
+
+        notify_nearby_volunteers(help_request)
+
+        assert Notification.objects.filter(user=volunteer).exists()
+
+    @pytest.mark.django_db
+    def test_is_idempotent(self):
+        VolunteerFactory(is_verified=True, latitude=50.4501, longitude=30.5234)
+        help_request = HelpRequestFactory(latitude=50.4505, longitude=30.5238)
+
+        notify_nearby_volunteers(help_request)
+        notify_nearby_volunteers(help_request)
+
+        assert Notification.objects.filter(related_request=help_request).count() == 1

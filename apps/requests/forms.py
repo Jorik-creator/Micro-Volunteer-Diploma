@@ -127,3 +127,14 @@ class ResponseForm(forms.ModelForm):
             ),
         }
         labels = {"message": "Повідомлення (необов'язково)"}
+
+
+class ReasonForm(forms.Form):
+    """Short explanation for withdrawing, removing a volunteer or disputing completion."""
+
+    reason = forms.CharField(
+        label="Причина",
+        max_length=300,
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 2, "maxlength": 300}),
+    )

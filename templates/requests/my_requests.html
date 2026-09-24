@@ -41,12 +41,17 @@
     <article class="request-card" aria-labelledby="my-request-title-{{ hr.pk }}">
       <div class="top-row">
         {% if hr.category %}<span class="chip chip-blue">{{ hr.category.name }}</span>{% endif %}
-        <span class="status-badge {% if hr.status == 'active' %}open{% elif hr.status == 'in_progress' %}inprogress{% elif hr.status == 'completed' %}completed{% endif %}">
+        <span class="status-badge status-{{ hr.status }}">
           {{ hr.get_status_display }}
         </span>
       </div>
       <h2 class="request-title" id="my-request-title-{{ hr.pk }}">{{ hr.title }}</h2>
       <p class="request-desc">{{ hr.description|truncatewords:15 }}</p>
+      {% if hr.status == 'awaiting_confirmation' %}
+      <p class="request-callout"><i class="bi bi-patch-question"></i> Волонтер позначив допомогу виконаною — підтвердьте завершення.</p>
+      {% elif hr.pending_count and hr.status == 'active' %}
+      <p class="request-callout"><i class="bi bi-people"></i> Нових відгуків волонтерів: {{ hr.pending_count }}</p>
+      {% endif %}
       <hr class="request-divider">
       <div class="request-meta-row">
         <span class="geo"><i class="bi bi-geo-alt"></i> {{ hr.address|truncatechars:30 }}</span>

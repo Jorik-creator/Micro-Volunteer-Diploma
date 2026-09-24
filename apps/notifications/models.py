@@ -5,12 +5,23 @@ class Notification(models.Model):
     """Внутрішнє сповіщення для користувача."""
 
     class Type(models.TextChoices):
-        NEW_RESPONSE = "new_response", "Новий відгук на запит"
-        REQUEST_ACCEPTED = "request_accepted", "Запит прийнято"
-        REQUEST_REJECTED = "request_rejected", "Запит відхилено"
-        REQUEST_COMPLETED = "request_completed", "Запит виконано"
-        NEW_REVIEW = "new_review", "Новий відгук про вас"
+        # To the recipient
+        NEW_RESPONSE = "new_response", "Новий відгук волонтера"
+        VOLUNTEER_WITHDREW = "volunteer_withdrew", "Волонтер вийшов"
+        MARKED_DONE = "marked_done", "Волонтер позначив виконаним"
+        # To the volunteer
+        REQUEST_ACCEPTED = "request_accepted", "Вас прийнято"
+        REQUEST_REJECTED = "request_rejected", "Відгук відхилено"
+        RESPONSE_CLOSED = "response_closed", "Набір закрито"
+        VOLUNTEER_REMOVED = "volunteer_removed", "Вас знято із запиту"
+        COMPLETION_DISPUTED = "completion_disputed", "Виконання не підтверджено"
         NEW_NEARBY_REQUEST = "new_nearby_request", "Новий запит поблизу"
+        # To both sides
+        REQUEST_COMPLETED = "request_completed", "Запит виконано"
+        REQUEST_CANCELLED = "request_cancelled", "Запит скасовано"
+        REQUEST_EXPIRED = "request_expired", "Запит прострочено"
+        REMINDER = "reminder", "Нагадування"
+        NEW_REVIEW = "new_review", "Нова оцінка"
 
     user = models.ForeignKey(
         "accounts.User",

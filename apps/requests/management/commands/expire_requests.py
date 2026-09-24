@@ -1,24 +1,18 @@
 """
 Management command: expire_requests
 
-Marks overdue help requests as expired.
+Marks overdue help requests as expired and notifies everyone involved.
+Normally this runs as part of `run_periodic_tasks` / POST /tasks/run/.
 
 Usage:
-    python manage.py expire_requests
-
-Schedule (cron every 30 minutes):
-    */30 * * * * cd /app && python manage.py expire_requests
-
-Race condition safety:
-    The ORM UPDATE filters by both status='active' AND needed_date < now().
-    If a request transitions to 'in_progress' between the queryset evaluation
-    and the UPDATE, the SQL WHERE clause excludes it automatically.
+    python manage.py expire_requests [--dry-run]
 """
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from apps.requests.models import HelpRequest
+from apps.requests.services import expire_overdue
 
 
 class Command(BaseCommand):
@@ -28,25 +22,19 @@ class Command(BaseCommand):
         parser.add_argument(
             "--dry-run",
             action="store_true",
-            help="Show how many requests would be expired without making changes.",
+            help="Show how many active requests are overdue without changing them.",
         )
 
     def handle(self, *args, **options):
-        now = timezone.now()
-        qs = HelpRequest.objects.filter(
-            status=HelpRequest.Status.ACTIVE,
-            needed_date__lt=now,
-        )
-
-        count = qs.count()
-
         if options["dry_run"]:
+            count = HelpRequest.objects.filter(
+                status=HelpRequest.Status.ACTIVE, needed_date__lt=timezone.now()
+            ).count()
             self.stdout.write(self.style.WARNING(f"[dry-run] Would expire {count} request(s)."))
             return
 
-        if count == 0:
+        expired = expire_overdue()
+        if expired == 0:
             self.stdout.write(self.style.SUCCESS("No requests to expire."))
-            return
-
-        updated = qs.update(status=HelpRequest.Status.EXPIRED)
-        self.stdout.write(self.style.SUCCESS(f"Successfully expired {updated} request(s)."))
+        else:
+            self.stdout.write(self.style.SUCCESS(f"Successfully expired {expired} request(s)."))

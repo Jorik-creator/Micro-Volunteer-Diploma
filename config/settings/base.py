@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "crispy_forms",
     "crispy_bootstrap5",
     # Project apps
+    "apps.core",
     "apps.accounts",
     "apps.requests",
     "apps.reviews",
@@ -227,3 +228,10 @@ LOGGING = {
     "handlers": {"console": {"class": "logging.StreamHandler"}},
     "root": {"handlers": ["console"], "level": env("LOG_LEVEL", default="INFO")},
 }
+
+
+# ---------------------------------------------------------------------------
+# Periodic tasks — shared secret for the cron endpoint (empty disables it)
+# ---------------------------------------------------------------------------
+
+CRON_SECRET = env("CRON_SECRET", default="")

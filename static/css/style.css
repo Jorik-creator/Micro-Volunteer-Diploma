@@ -770,6 +770,17 @@ textarea:focus-visible,
 .status-badge.open       { background: var(--mv-blue-50);    color: var(--mv-blue-600); }
 .status-badge.inprogress { background: var(--mv-warning-bg); color: var(--mv-warning); }
 .status-badge.completed  { background: var(--mv-success-bg); color: var(--mv-success); }
+.request-callout {
+  display: flex; gap: 8px; align-items: flex-start;
+  background: var(--mv-warning-bg); color: var(--mv-blue-900);
+  border-radius: var(--mv-radius-sm); padding: 8px 12px; margin: 8px 0; font-size: 14px;
+}
+.status-badge.status-active                { background: var(--mv-blue-50);    color: var(--mv-blue-600); }
+.status-badge.status-in_progress           { background: var(--mv-warning-bg); color: var(--mv-warning); }
+.status-badge.status-awaiting_confirmation { background: var(--mv-warning-bg); color: var(--mv-warning); }
+.status-badge.status-completed             { background: var(--mv-success-bg); color: var(--mv-success); }
+.status-badge.status-cancelled,
+.status-badge.status-expired               { background: var(--mv-gray-100); color: var(--mv-gray-700); }
 
 .urgency-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .urgency-dot.critical { background: var(--mv-danger); }

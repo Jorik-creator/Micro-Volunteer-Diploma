@@ -102,9 +102,13 @@ function fallbackCopy(text) {
 {% block content %}
 <!-- Back button -->
 <div class="container detail-toolbar">
-  <a href="{% url 'requests:list' %}" class="btn btn-muted btn-sm">
-    <i class="bi bi-arrow-left"></i> Назад до списку
-  </a>
+  {% if is_owner %}
+  <a href="{% url 'requests:my-requests' %}" class="btn btn-muted btn-sm"><i class="bi bi-arrow-left"></i> Мої запити</a>
+  {% elif user_response %}
+  <a href="{% url 'requests:my-responses' %}" class="btn btn-muted btn-sm"><i class="bi bi-arrow-left"></i> Мої відгуки</a>
+  {% else %}
+  <a href="{% url 'requests:list' %}" class="btn btn-muted btn-sm"><i class="bi bi-arrow-left"></i> Назад до списку</a>
+  {% endif %}
 </div>
 
 <div class="container detail-page-shell">
@@ -120,7 +124,7 @@ function fallbackCopy(text) {
           <span class="urgency-dot {{ help_request.urgency }}"></span>
           {{ help_request.get_urgency_display }}
         </span>
-        <span class="status-badge {% if help_request.status == 'active' %}open{% elif help_request.status == 'in_progress' %}inprogress{% elif help_request.status == 'completed' %}completed{% endif %}">
+        <span class="status-badge status-{{ help_request.status }}">
           {{ help_request.get_status_display }}
         </span>
       </div>
@@ -163,32 +167,84 @@ function fallbackCopy(text) {
       <div class="section-hd">Опис запиту</div>
       <div class="detail-desc">{{ help_request.description }}</div>
 
+      <!-- Owner: completion confirmation -->
+      {% if is_owner and help_request.status == 'awaiting_confirmation' %}
+      <div class="detail-section">
+        <div class="alert alert-warning" role="status">
+          <i class="bi bi-patch-question me-2"></i>
+          Волонтери позначили допомогу виконаною. Підтвердьте завершення — без відповіді запит
+          завершиться автоматично через 72 години.
+        </div>
+        <form method="post" action="{% url 'requests:confirm' help_request.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-solid"><i class="bi bi-check2-circle"></i> Так, допомогу отримано</button>
+        </form>
+        <details class="mt-3">
+          <summary>Ні, ще не виконано</summary>
+          <form method="post" action="{% url 'requests:dispute' help_request.pk %}" class="mt-2">
+            {% csrf_token %}
+            {{ reason_form|crispy }}
+            <button type="submit" class="btn btn-danger-ghost btn-sm">Повідомити волонтерів</button>
+          </form>
+        </details>
+      </div>
+      {% elif is_owner and help_request.status == 'in_progress' %}
+      <div class="detail-section">
+        <form method="post" action="{% url 'requests:confirm' help_request.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-ghost btn-sm" data-confirm-submit="Позначити запит завершеним?">
+            <i class="bi bi-check2-circle"></i> Допомогу вже отримано — завершити запит
+          </button>
+        </form>
+      </div>
+      {% endif %}
+
       <!-- Volunteer action -->
-      {% if user.is_authenticated and user.is_volunteer %}
+      {% if user.is_authenticated and user.is_volunteer and not is_owner %}
       <div class="detail-section">
         <div class="section-hd">Ваша участь</div>
-        {% if user_response %}
-          {% if user_response.status == 'pending' %}
-            <div class="alert alert-info"><i class="bi bi-hourglass-split me-2"></i>Ваш відгук надіслано — очікуйте підтвердження.</div>
-          {% elif user_response.status == 'accepted' %}
-            <div class="alert alert-success">
-              <i class="bi bi-check-circle me-2"></i>Ваш відгук прийнято!
-              {% if help_request.status == 'in_progress' %}
-              <div class="mt-2">
-                <strong>Телефон:</strong> {% if help_request.recipient.phone %}{{ help_request.recipient.phone }}{% else %}не вказано{% endif %}
-              </div>
-              <form method="post" action="{% url 'requests:complete' help_request.pk %}" class="mt-3">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-solid" data-confirm-submit="Позначити запит як виконаний?">
-                  <i class="bi bi-check2-circle"></i> Позначити як виконане
-                </button>
-              </form>
-              {% endif %}
+        {% if user_response and user_response.status == 'pending' %}
+          <div class="alert alert-info"><i class="bi bi-hourglass-split me-2"></i>Ваш відгук надіслано — очікуйте рішення отримувача.</div>
+          <form method="post" action="{% url 'requests:withdraw' help_request.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-muted btn-sm" data-confirm-submit="Відкликати ваш відгук?">
+              <i class="bi bi-arrow-counterclockwise"></i> Відкликати відгук
+            </button>
+          </form>
+        {% elif is_accepted %}
+          <div class="alert alert-success">
+            <i class="bi bi-check-circle me-2"></i>Вас прийнято!
+            {% if help_request.is_open %}
+            <div class="mt-2">
+              <strong>Телефон отримувача:</strong> {% if help_request.recipient.phone %}{{ help_request.recipient.phone }}{% else %}не вказано{% endif %}
             </div>
-          {% elif user_response.status == 'rejected' %}
-            <div class="alert alert-secondary"><i class="bi bi-x-circle me-2"></i>На жаль, ваш відгук було відхилено.</div>
+            {% endif %}
+          </div>
+          {% if help_request.status == 'in_progress' and not user_response.done_at %}
+          <form method="post" action="{% url 'requests:complete' help_request.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-solid" data-confirm-submit="Позначити вашу допомогу виконаною?">
+              <i class="bi bi-check2-circle"></i> Я допоміг(ла) — позначити виконаним
+            </button>
+          </form>
+          {% elif user_response.done_at and help_request.is_open %}
+          <p class="text-muted"><i class="bi bi-clock-history"></i> Ви позначили допомогу виконаною {{ user_response.done_at|date:"d.m.Y H:i" }}. Чекаємо на підтвердження отримувача.</p>
           {% endif %}
-        {% elif help_request.status == 'active' %}
+          {% if help_request.is_open and not user_response.done_at %}
+          <details class="mt-3">
+            <summary>Не можу допомогти</summary>
+            <form method="post" action="{% url 'requests:withdraw' help_request.pk %}" class="mt-2">
+              {% csrf_token %}
+              <p class="text-muted small">Отримувач отримає сповіщення, а запит знову відкриється для інших волонтерів.</p>
+              {{ reason_form|crispy }}
+              <button type="submit" class="btn btn-danger-ghost btn-sm">Вийти із запиту</button>
+            </form>
+          </details>
+          {% endif %}
+        {% elif user_response and not can_respond %}
+          <div class="alert alert-secondary"><i class="bi bi-info-circle me-2"></i>{{ user_response.get_status_display }}{% if user_response.status_reason %}: {{ user_response.status_reason }}{% endif %}</div>
+        {% endif %}
+        {% if can_respond %}
           <form method="post" action="{% url 'requests:respond' help_request.pk %}" aria-label="Форма відгуку на запит">
             {% csrf_token %}
             {{ response_form|crispy }}
@@ -196,50 +252,61 @@ function fallbackCopy(text) {
               <i class="bi bi-hand-thumbs-up"></i> Відгукнутись
             </button>
           </form>
-        {% else %}
+        {% elif not user_response %}
           <p class="text-muted">Набір волонтерів завершено або запит закрито.</p>
         {% endif %}
       </div>
       {% endif %}
 
       <!-- Owner: volunteer responses -->
-      {% if is_owner and responses %}
+      {% if is_owner %}
       <div class="detail-section">
         <div class="section-hd">Відгуки волонтерів</div>
+        {% if responses %}
         <div class="activity-list">
           {% for resp in responses %}
           <article class="activity-row activity-row-top" aria-labelledby="response-title-{{ resp.pk }}">
-            <div class="avatar">{{ resp.volunteer.first_name|first|upper }}{{ resp.volunteer.last_name|first|upper }}</div>
+            <div class="avatar" aria-hidden="true">{{ resp.volunteer.first_name|first|upper }}{{ resp.volunteer.last_name|first|upper }}</div>
             <div class="body">
               <div class="t" id="response-title-{{ resp.pk }}">
                 {{ resp.volunteer.get_full_name }}
                 <span class="chip chip-inline-tight {% if resp.status == 'pending' %}chip-gray{% elif resp.status == 'accepted' %}chip-green{% else %}chip-red{% endif %}">{{ resp.get_status_display }}</span>
+                {% if resp.done_at %}<span class="chip chip-inline-tight chip-green">Позначив(ла) виконаним</span>{% endif %}
               </div>
               {% if resp.message %}<div class="s">{{ resp.message }}</div>{% endif %}
+              {% if resp.status_reason %}<div class="s"><em>{{ resp.status_reason }}</em></div>{% endif %}
               <div class="when when-tight">{{ resp.created_at|date:"d.m.Y H:i" }}</div>
+              {% if resp.status == 'accepted' and help_request.is_open %}
+              <details class="mt-2">
+                <summary>Зняти волонтера</summary>
+                <form method="post" action="{% url 'requests:remove' resp.pk %}" class="mt-2">
+                  {% csrf_token %}
+                  <p class="text-muted small">Наприклад, якщо волонтер не прийшов. Запит знову відкриється для інших.</p>
+                  {{ reason_form|crispy }}
+                  <button type="submit" class="btn btn-danger-ghost btn-sm">Зняти</button>
+                </form>
+              </details>
+              {% endif %}
             </div>
             {% if resp.status == 'pending' and help_request.status == 'active' %}
             <div class="response-actions">
               <form method="post" action="{% url 'requests:accept' resp.pk %}">{% csrf_token %}
-                <button type="submit" class="btn btn-solid btn-sm" title="Підтвердити" aria-label="Підтвердити волонтера {{ resp.volunteer.get_full_name }}"><i class="bi bi-check-lg"></i></button>
+                <button type="submit" class="btn btn-solid btn-sm" aria-label="Прийняти волонтера {{ resp.volunteer.get_full_name }}"><i class="bi bi-check-lg"></i> Прийняти</button>
               </form>
               <form method="post" action="{% url 'requests:reject' resp.pk %}">{% csrf_token %}
-                <button type="submit" class="btn btn-danger-ghost btn-sm" title="Відхилити" aria-label="Відхилити волонтера {{ resp.volunteer.get_full_name }}"><i class="bi bi-x-lg"></i></button>
+                <button type="submit" class="btn btn-danger-ghost btn-sm" aria-label="Відхилити волонтера {{ resp.volunteer.get_full_name }}"><i class="bi bi-x-lg"></i> Відхилити</button>
               </form>
             </div>
             {% endif %}
           </article>
           {% endfor %}
         </div>
+        {% elif help_request.status == 'active' %}
+        <p class="text-muted"><i class="bi bi-hourglass"></i> Поки що ніхто не відгукнувся. Волонтери поблизу вже отримали сповіщення.</p>
+        {% endif %}
       </div>
       {% endif %}
 
-      <!-- Action buttons -->
-      <div class="detail-actions">
-        <a href="{% url 'requests:list' %}" class="btn btn-muted btn-sm">
-          <i class="bi bi-arrow-left"></i> До списку
-        </a>
-      </div>
     </div>
 
     <!-- Sidebar -->
@@ -254,7 +321,7 @@ function fallbackCopy(text) {
             <i class="bi bi-pencil"></i> Редагувати
           </a>
           {% endif %}
-          {% if help_request.status == 'active' or help_request.status == 'in_progress' %}
+          {% if help_request.is_open %}
           <form method="post" action="{% url 'requests:cancel' help_request.pk %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger-ghost btn-sm btn-block" data-confirm-submit="Скасувати запит?">

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Мої відгуки — MicroVolunteer{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container">
+    <div class="inner">
+      <div>
+        <h1 class="page-title">Мої відгуки</h1>
+        <p class="page-sub">Запити, на які ви відгукнулися</p>
+      </div>
+      <a href="{% url 'requests:list' %}" class="btn btn-solid">
+        <i class="bi bi-search"></i> Знайти запит
+      </a>
+    </div>
+  </div>
+</section>
+
+<div class="container page-shell">
+
+  <div class="stat-grid-3 mb-4" aria-label="Статистика моєї участі">
+    <div class="mini-stat mini-stat-center">
+      <div class="n stat-warning">{{ current_count }}</div>
+      <div class="l">Поточних</div>
+    </div>
+    <div class="mini-stat mini-stat-center">
+      <div class="n stat-success">{{ helped_count }}</div>
+      <div class="l">Допомогли</div>
+    </div>
+    <div class="mini-stat mini-stat-center">
+      <div class="n">{{ paginator.count|default:0 }}</div>
+      <div class="l">Усього відгуків</div>
+    </div>
+  </div>
+
+  {% if responses %}
+  <div class="requests-grid">
+    {% for resp in responses %}
+    {% with hr=resp.help_request %}
+    <article class="request-card" aria-labelledby="my-response-title-{{ resp.pk }}">
+      <div class="top-row">
+        {% if hr.category %}<span class="chip chip-blue">{{ hr.category.name }}</span>{% endif %}
+        <span class="status-badge status-{{ hr.status }}">{{ hr.get_status_display }}</span>
+      </div>
+      <h2 class="request-title" id="my-response-title-{{ resp.pk }}">{{ hr.title }}</h2>
+      <p class="request-desc">Ваш відгук: <strong>{{ resp.get_status_display }}</strong></p>
+      {% if resp.status == 'accepted' and hr.status == 'in_progress' and not resp.done_at %}
+      <p class="request-callout"><i class="bi bi-calendar-check"></i> Допомога {{ hr.needed_date|date:"d.m.Y H:i" }}. Після неї позначте виконання.</p>
+      {% endif %}
+      <hr class="request-divider">
+      <div class="request-meta-row">
+        <span class="time"><i class="bi bi-calendar-event"></i> {{ hr.needed_date|date:"d.m.Y H:i" }}</span>
+      </div>
+      <a href="{% url 'requests:detail' hr.pk %}" class="btn btn-solid btn-block btn-help">
+        Відкрити запит <i class="bi bi-arrow-right"></i>
+      </a>
+    </article>
+    {% endwith %}
+    {% endfor %}
+  </div>
+
+  {% if is_paginated %}
+  <nav class="pagination-wrap" aria-label="Навігація сторінками моїх відгуків">
+    <ul class="pagination justify-content-center">
+      {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Попередня сторінка">&laquo;</a></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Наступна сторінка">&raquo;</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-inbox empty-icon"></i>
+    <p>Ви ще не відгукувалися на запити.</p>
+    <a href="{% url 'requests:list' %}" class="btn btn-solid">Переглянути запити</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

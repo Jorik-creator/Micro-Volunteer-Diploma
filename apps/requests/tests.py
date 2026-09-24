@@ -581,7 +581,7 @@ class TestAcceptRejectVolunteer:
     def test_accept_rejects_remaining_pending(
         self, client_logged_in_recipient, help_request, volunteer
     ):
-        """After quota met, remaining pending responses are auto-rejected."""
+        """After quota met, remaining pending responses are closed."""
         # volunteers_needed=1
         v1_resp = ResponseFactory(help_request=help_request, volunteer=volunteer)
         v2 = VolunteerFactory()
@@ -589,12 +589,12 @@ class TestAcceptRejectVolunteer:
 
         client_logged_in_recipient.post(f"/requests/responses/{v1_resp.pk}/accept/")
         v2_resp.refresh_from_db()
-        assert v2_resp.status == Response.Status.REJECTED
+        assert v2_resp.status == Response.Status.CLOSED
 
-    def test_accept_notifies_auto_rejected_volunteers(
+    def test_accept_notifies_closed_volunteers(
         self, client_logged_in_recipient, help_request, volunteer
     ):
-        """Auto-rejected volunteers receive REQUEST_REJECTED notifications."""
+        """Volunteers whose pending response was closed get RESPONSE_CLOSED."""
         # Arrange — volunteers_needed=1, so accepting v1 rejects v2.
         v1_resp = ResponseFactory(help_request=help_request, volunteer=volunteer)
         v2 = VolunteerFactory()
@@ -605,10 +605,10 @@ class TestAcceptRejectVolunteer:
 
         # Assert
         v2_resp.refresh_from_db()
-        assert v2_resp.status == Response.Status.REJECTED
+        assert v2_resp.status == Response.Status.CLOSED
         assert Notification.objects.filter(
             user=v2,
-            type=Notification.Type.REQUEST_REJECTED,
+            type=Notification.Type.RESPONSE_CLOSED,
             related_request=help_request,
         ).exists()
 
@@ -646,7 +646,7 @@ class TestCompleteRequest:
     def test_accepted_volunteer_can_complete(
         self, client_logged_in_volunteer, help_request, volunteer
     ):
-        """Accepted volunteer can mark a request as completed."""
+        """Accepted volunteer marks their part done; the recipient then confirms."""
         help_request.status = HelpRequest.Status.IN_PROGRESS
         help_request.save()
         ResponseFactory(
@@ -657,7 +657,7 @@ class TestCompleteRequest:
         response = client_logged_in_volunteer.post(f"/requests/{help_request.pk}/complete/")
         assert response.status_code == 302
         help_request.refresh_from_db()
-        assert help_request.status == HelpRequest.Status.COMPLETED
+        assert help_request.status == HelpRequest.Status.AWAITING_CONFIRMATION
 
     def test_non_accepted_volunteer_cannot_complete(self, client_logged_in_volunteer, help_request):
         """Volunteer without accepted response cannot complete request."""

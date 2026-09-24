@@ -10,7 +10,7 @@
 {% block content %}
 <section class="page-hero">
   <div class="container">
-    <a href="{% url 'requests:list' %}" class="btn btn-muted btn-sm toolbar-row">
+    <a href="{{ cancel_url }}" class="btn btn-muted btn-sm toolbar-row">
       <i class="bi bi-arrow-left"></i> Назад
     </a>
     <h1 class="page-title">{{ form_title }}</h1>
@@ -22,6 +22,11 @@
   <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
     <div class="card-panel">
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger" role="alert">
+        {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+      </div>
+      {% endif %}
       <div class="form-help-card" role="note">
         <i class="bi bi-lightbulb"></i>
         <div>
@@ -79,7 +84,7 @@
         <button type="submit" class="btn btn-solid btn-lg">
           <i class="bi bi-send"></i> {{ submit_label }}
         </button>
-        <a href="{% url 'requests:my-requests' %}" class="btn btn-muted btn-lg">Скасувати</a>
+        <a href="{{ cancel_url }}" class="btn btn-muted btn-lg">Скасувати</a>
       </div>
     </div>
   </form>

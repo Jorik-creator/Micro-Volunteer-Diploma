@@ -59,11 +59,13 @@
           <li class="nav-item">
             <a class="nav-link" href="{% url 'requests:map' %}">Карта</a>
           </li>
-          {% if user.is_authenticated %}
+          {% if user.is_authenticated and user.is_recipient %}
           <li class="nav-item">
-            {% if user.is_recipient %}
             <a class="nav-link" href="{% url 'requests:my-requests' %}">Мої запити</a>
-            {% endif %}
+          </li>
+          {% elif user.is_authenticated and user.is_volunteer %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'requests:my-responses' %}">Мої відгуки</a>
           </li>
           {% endif %}
         </ul>
