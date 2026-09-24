@@ -31,7 +31,9 @@ htmlcov/
 # Local tooling and private docs
 .opencode/
 opencode.json
-docs/
+docs/*
+!docs/adr/
+!docs/ROADMAP.md
 
 # Project tooling
 .tmp/
