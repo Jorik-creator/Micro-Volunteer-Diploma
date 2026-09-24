@@ -2,10 +2,14 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import (
     AuthenticationForm,
+    SetPasswordForm,
     UserCreationForm,
 )
 from django.contrib.auth.forms import (
     PasswordChangeForm as DjangoPasswordChangeForm,
+)
+from django.contrib.auth.forms import (
+    PasswordResetForm as DjangoPasswordResetForm,
 )
 
 from .models import RecipientProfile, VolunteerProfile
@@ -68,8 +72,8 @@ class RegisterForm(UserCreationForm):
         self.fields["password2"].widget.attrs.update({"autocomplete": "new-password"})
 
     def clean_email(self):
-        email = self.cleaned_data.get("email")
-        if User.objects.filter(email=email).exists():
+        email = self.cleaned_data.get("email", "").strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError("Користувач з такою електронною поштою вже існує.")
         return email
 
@@ -185,5 +189,31 @@ class CustomPasswordChangeForm(DjangoPasswordChangeForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["old_password"].widget.attrs.update({"autocomplete": "current-password"})
+        self.fields["new_password1"].widget.attrs.update({"autocomplete": "new-password"})
+        self.fields["new_password2"].widget.attrs.update({"autocomplete": "new-password"})
+
+
+# ---------------------------------------------------------------------------
+# Password reset
+# ---------------------------------------------------------------------------
+
+
+class SafePasswordResetForm(DjangoPasswordResetForm):
+    """Demo accounts are shared by everyone, so their password cannot be reset."""
+
+    email = forms.EmailField(
+        label="Електронна пошта",
+        widget=forms.EmailInput(
+            attrs={"autocomplete": "email", "placeholder": "email@example.com"}
+        ),
+    )
+
+    def get_users(self, email):
+        return (user for user in super().get_users(email) if not user.is_demo)
+
+
+class StyledSetPasswordForm(SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.fields["new_password1"].widget.attrs.update({"autocomplete": "new-password"})
         self.fields["new_password2"].widget.attrs.update({"autocomplete": "new-password"})

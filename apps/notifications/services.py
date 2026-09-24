@@ -5,25 +5,37 @@ Business code calls notify() explicitly at the moment something happens,
 instead of relying on model signals (see docs/adr/0003).
 """
 
+import logging
+
+from django.conf import settings
+from django.core.mail import send_mail
+from django.db import transaction
+from django.template.loader import render_to_string
+from django.urls import reverse
+
 from apps.requests.utils import haversine_distance
 
-from .models import Notification
+from .models import EMAIL_GROUPS, EmailPreferences, Notification
+
+logger = logging.getLogger(__name__)
 
 
 def notify(user, type, title, message, help_request=None):
-    """Create an in-app notification for one user."""
-    return Notification.objects.create(
+    """Create an in-app notification and, if the user wants it, an email."""
+    notification = Notification.objects.create(
         user=user,
         type=type,
         title=title,
         message=message,
         related_request=help_request,
     )
+    _queue_email(user, notification)
+    return notification
 
 
 def notify_many(users, type, title, message, help_request=None):
     """Create the same notification for several users in one query."""
-    Notification.objects.bulk_create(
+    created = Notification.objects.bulk_create(
         Notification(
             user=user,
             type=type,
@@ -33,6 +45,51 @@ def notify_many(users, type, title, message, help_request=None):
         )
         for user in users
     )
+    for notification in created:
+        _queue_email(notification.user, notification)
+
+
+def preferences_for(user):
+    preferences, _ = EmailPreferences.objects.get_or_create(user=user)
+    return preferences
+
+
+def _wants_email(user, notification):
+    if user.is_demo or not user.is_active or not user.email or not user.email_verified_at:
+        return False
+    group = EMAIL_GROUPS.get(notification.type)
+    return bool(group) and preferences_for(user).wants(group)
+
+
+def _queue_email(user, notification):
+    """Send after commit so a rolled-back action never emails anybody."""
+    if _wants_email(user, notification):
+        transaction.on_commit(lambda: _send_email(user, notification))
+
+
+def _send_email(user, notification):
+    site = settings.SITE_URL.rstrip("/")
+    link = site + (
+        reverse("requests:detail", args=[notification.related_request_id])
+        if notification.related_request_id
+        else reverse("notifications:notification-list")
+    )
+    context = {
+        "user": user,
+        "notification": notification,
+        "link": link,
+        "settings_link": site + reverse("notifications:email-settings"),
+    }
+    try:
+        send_mail(
+            subject=f"{notification.title} — MicroVolunteer",
+            message=render_to_string("emails/notification.txt", context),
+            from_email=None,
+            recipient_list=[user.email],
+            html_message=render_to_string("emails/notification.html", context),
+        )
+    except Exception:  # email provider down must never break the action itself
+        logger.exception("Could not email notification %s", notification.pk)
 
 
 def _volunteer_is_nearby(volunteer, help_request):

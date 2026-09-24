@@ -57,3 +57,64 @@ class Notification(models.Model):
     def __str__(self):
         status = "✓" if self.is_read else "●"
         return f"{status} {self.title} → {self.user}"
+
+
+class EmailPreferences(models.Model):
+    """Which notification groups are also sent by email (ROADMAP stage 6)."""
+
+    class Group(models.TextChoices):
+        RESPONSES = "responses", "Відгуки волонтерів і рішення щодо них"
+        LIFECYCLE = "lifecycle", "Зміни запиту: виконано, скасовано, нагадування"
+        MESSAGES = "messages", "Нові повідомлення в розмовах"
+        REVIEWS = "reviews", "Оцінки"
+        NEARBY = "nearby", "Нові запити поблизу"
+        ACCOUNT = "account", "Перевірка профілю та рішення модераторів"
+
+    user = models.OneToOneField(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="email_preferences",
+        verbose_name="Користувач",
+    )
+    responses = models.BooleanField(Group.RESPONSES.label, default=True)
+    lifecycle = models.BooleanField(Group.LIFECYCLE.label, default=True)
+    messages = models.BooleanField(Group.MESSAGES.label, default=True)
+    reviews = models.BooleanField(Group.REVIEWS.label, default=True)
+    # Can be many per day — opt-in
+    nearby = models.BooleanField(Group.NEARBY.label, default=False)
+    account = models.BooleanField(Group.ACCOUNT.label, default=True)
+
+    class Meta:
+        verbose_name = "Налаштування email"
+        verbose_name_plural = "Налаштування email"
+
+    def __str__(self):
+        return f"Email: {self.user}"
+
+    def wants(self, group):
+        return getattr(self, group, False)
+
+
+T = Notification.Type
+EMAIL_GROUPS = {
+    T.NEW_RESPONSE: EmailPreferences.Group.RESPONSES,
+    T.REQUEST_ACCEPTED: EmailPreferences.Group.RESPONSES,
+    T.REQUEST_REJECTED: EmailPreferences.Group.RESPONSES,
+    T.RESPONSE_CLOSED: EmailPreferences.Group.RESPONSES,
+    T.VOLUNTEER_WITHDREW: EmailPreferences.Group.LIFECYCLE,
+    T.VOLUNTEER_REMOVED: EmailPreferences.Group.LIFECYCLE,
+    T.MARKED_DONE: EmailPreferences.Group.LIFECYCLE,
+    T.COMPLETION_DISPUTED: EmailPreferences.Group.LIFECYCLE,
+    T.REQUEST_COMPLETED: EmailPreferences.Group.LIFECYCLE,
+    T.REQUEST_CANCELLED: EmailPreferences.Group.LIFECYCLE,
+    T.REQUEST_EXPIRED: EmailPreferences.Group.LIFECYCLE,
+    T.REMINDER: EmailPreferences.Group.LIFECYCLE,
+    T.NEW_MESSAGE: EmailPreferences.Group.MESSAGES,
+    T.NEW_REVIEW: EmailPreferences.Group.REVIEWS,
+    T.REVIEW_REMINDER: EmailPreferences.Group.REVIEWS,
+    T.NEW_NEARBY_REQUEST: EmailPreferences.Group.NEARBY,
+    T.REQUEST_APPROVED: EmailPreferences.Group.ACCOUNT,
+    T.REQUEST_REJECTED_BY_MODERATOR: EmailPreferences.Group.ACCOUNT,
+    T.VERIFICATION_DECISION: EmailPreferences.Group.ACCOUNT,
+    T.REPORT_RESOLVED: EmailPreferences.Group.ACCOUNT,
+}

@@ -25,6 +25,7 @@
       <button type="submit" class="btn btn-solid btn-block btn-lg auth-submit">
         <i class="bi bi-door-open"></i> Увійти
       </button>
+      <p class="auth-footer-text mt-2"><a href="{% url 'accounts:password-reset' %}">Забули пароль?</a></p>
     </form>
 
     {% if demo_mode %}

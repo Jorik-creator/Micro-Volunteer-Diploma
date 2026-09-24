@@ -16,12 +16,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseNotAllowed, JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 from django.views.generic import ListView
 
+from .forms import EmailPreferencesForm
 from .models import Notification
+from .services import preferences_for
 
 # ---------------------------------------------------------------------------
 # Список сповіщень
@@ -101,3 +103,18 @@ def notification_count(request):
     """Повертає кількість непрочитаних сповіщень у форматі JSON для polling."""
     count = Notification.objects.filter(user=request.user, is_read=False).count()
     return JsonResponse({"count": count})
+
+
+# ---------------------------------------------------------------------------
+# Налаштування email-сповіщень
+# ---------------------------------------------------------------------------
+
+
+@login_required
+def email_settings(request):
+    form = EmailPreferencesForm(request.POST or None, instance=preferences_for(request.user))
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Налаштування збережено.")
+        return redirect("notifications:email-settings")
+    return render(request, "notifications/email_settings.html", {"form": form})

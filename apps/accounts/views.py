@@ -281,6 +281,13 @@ class ProfileEditView(LoginRequiredMixin, UpdateView):
     def get_object(self, queryset=None):
         return self.request.user
 
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if self.request.user.is_demo:
+            # Shared demo accounts must not be hijacked by changing the email
+            form.fields["email"].disabled = True
+        return form
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
@@ -322,10 +329,19 @@ class ProfileEditView(LoginRequiredMixin, UpdateView):
             )
 
         if form.is_valid() and (role_form is None or role_form.is_valid()):
-            form.save()
+            email_changed = "email" in form.changed_data
+            user = form.save(commit=False)
+            if email_changed:
+                user.email_verified_at = None
+            user.save()
             if role_form:
                 role_form.save()
             messages.success(request, "Профіль оновлено.")
+            if email_changed:
+                emails.send_confirmation(request, user)
+                messages.info(
+                    request, f"Підтвердіть нову адресу — ми надіслали лист на {user.email}."
+                )
             return redirect(self.success_url)
 
         # Re-render with errors
@@ -346,6 +362,12 @@ class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
     template_name = "accounts/password_change.html"
     form_class = CustomPasswordChangeForm
     success_url = reverse_lazy("accounts:profile")
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.is_demo:
+            messages.info(request, "Пароль демо-акаунта змінити не можна.")
+            return redirect("accounts:profile")
+        return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         messages.success(self.request, "Пароль успішно змінено.")

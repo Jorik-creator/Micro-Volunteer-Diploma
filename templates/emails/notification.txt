@@ -1,0 +1,8 @@
+Вітаємо, {{ user.first_name|default:user.username }}!
+
+{{ notification.title }}
+{{ notification.message }}
+
+Відкрити: {{ link }}
+
+Налаштувати, які листи отримувати: {{ settings_link }}

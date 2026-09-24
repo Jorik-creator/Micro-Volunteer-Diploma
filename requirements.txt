@@ -4,6 +4,7 @@ psycopg2-binary>=2.9,<3.0
 gunicorn>=23.0
 whitenoise>=6.9
 django-environ>=0.12
+django-anymail[brevo]>=12.0
 
 # Media & Images
 Pillow>=11.0

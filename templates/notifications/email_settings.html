@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Email-сповіщення — MicroVolunteer{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container">
+    <a href="{% url 'accounts:profile' %}" class="btn btn-muted btn-sm toolbar-row"><i class="bi bi-arrow-left"></i> Профіль</a>
+    <h1 class="page-title">Email-сповіщення</h1>
+    <p class="page-sub">Усі сповіщення завжди видно на сайті. Тут можна обрати, які з них також надсилати на {{ user.email }}.</p>
+  </div>
+</section>
+
+<div class="container page-shell form-shell-sm">
+  {% if not user.email_verified_at %}
+  <div class="alert alert-warning" role="status">Листи надходитимуть після підтвердження email.</div>
+  {% endif %}
+  <form method="post" class="card-panel">
+    {% csrf_token %}
+    <fieldset>
+      <legend class="section-hd">Надсилати на пошту</legend>
+      <div class="settings-toggle-list">
+        {% for field in form %}
+        <label class="settings-toggle" for="{{ field.id_for_label }}">
+          <span>{{ field.label }}</span>
+          <span class="form-check form-switch m-0">{{ field }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-solid">Зберегти</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

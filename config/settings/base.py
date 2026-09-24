@@ -216,6 +216,16 @@ LOGOUT_REDIRECT_URL = "/"
 
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 
+# The free host blocks SMTP ports, so production mail goes through Brevo's
+# HTTPS API (ADR 0005). Setting BREVO_API_KEY switches the backend on.
+BREVO_API_KEY = env("BREVO_API_KEY", default="")
+if BREVO_API_KEY:
+    EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
+    ANYMAIL = {"BREVO_API_KEY": BREVO_API_KEY}
+
+# Absolute links in emails
+SITE_URL = env("SITE_URL", default="http://localhost:8000")
+
 DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL", default="MicroVolunteer <noreply@microvolunteer.local>"
 )

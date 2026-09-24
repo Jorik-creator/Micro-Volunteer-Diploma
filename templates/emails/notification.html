@@ -1,0 +1,8 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<p>Вітаємо, {{ user.first_name|default:user.username }}!</p>
+<p style="font-size:18px;font-weight:700;margin:16px 0 8px;">{{ notification.title }}</p>
+<p>{{ notification.message }}</p>
+<p style="margin:24px 0;"><a href="{{ link }}" style="background:#2563EB;color:#ffffff;padding:14px 24px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">Відкрити</a></p>
+{% endblock %}
+{% block footer %}Не хочете таких листів? <a href="{{ settings_link }}" style="color:#6B7280;">Змініть налаштування</a>.{% endblock %}
