@@ -22,6 +22,7 @@ class Notification(models.Model):
         REQUEST_EXPIRED = "request_expired", "Запит прострочено"
         REMINDER = "reminder", "Нагадування"
         NEW_REVIEW = "new_review", "Нова оцінка"
+        REVIEW_REMINDER = "review_reminder", "Нагадування про оцінку"
 
     user = models.ForeignKey(
         "accounts.User",

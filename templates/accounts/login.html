@@ -27,6 +27,20 @@
       </button>
     </form>
 
+    {% if demo_mode %}
+    <section class="demo-login" aria-labelledby="demo-login-title">
+      <h2 class="demo-login-title" id="demo-login-title">Подивитися демо без реєстрації</h2>
+      <div class="demo-login-buttons">
+        {% for role, label, icon in demo_roles %}
+        <form method="post" action="{% url 'accounts:demo-login' role %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-ghost btn-block"><i class="bi {{ icon }}"></i> {{ label }}</button>
+        </form>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
     <p class="auth-footer-text">
       Немає акаунту? <a href="{% url 'accounts:register' %}">Зареєструватися</a>
     </p>

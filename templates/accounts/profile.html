@@ -54,7 +54,7 @@
     </div>
 
     <!-- Actions — show only to the profile owner -->
-    {% if is_own_profile or user == profile_user %}
+    {% if user == profile_user %}
     <div class="profile-actions">
       <a href="{% url 'accounts:profile-edit' %}" class="btn btn-ghost btn-sm">
         <i class="bi bi-pencil"></i> Редагувати
@@ -62,6 +62,20 @@
     </div>
     {% endif %}
   </div>
+
+  {% if pending_reviews %}
+  <section class="card-panel mb-3" aria-labelledby="pending-reviews-title">
+    <div class="section-hd" id="pending-reviews-title">Залиште оцінку</div>
+    <div class="review-pending-list">
+      {% for help_request, target in pending_reviews %}
+      <div class="review-pending-item">
+        <span><strong>{{ target.first_name|default:target.username }}</strong> — «{{ help_request.title }}»</span>
+        <a href="{% url 'reviews:review-create' help_request.pk target.pk %}" class="btn btn-solid btn-sm"><i class="bi bi-star"></i> Оцінити</a>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
   <!-- Stats grid -->
   <div class="stat-grid-3">
@@ -86,7 +100,7 @@
     {% endif %}
     <div class="mini-stat">
       <div class="n">{{ review_count }}</div>
-      <div class="l">Відгуків отримано</div>
+      <div class="l">Оцінок отримано</div>
     </div>
   </div>
 
@@ -97,7 +111,7 @@
     <button class="tab" id="tab-button-volunteer" data-tab="volunteer" type="button" role="tab" aria-selected="false" aria-controls="tab-volunteer">Волонтерський профіль</button>
     {% endif %}
     {% if reviews %}
-    <button class="tab" id="tab-button-reviews" data-tab="reviews" type="button" role="tab" aria-selected="false" aria-controls="tab-reviews">Відгуки ({{ review_count }})</button>
+    <button class="tab" id="tab-button-reviews" data-tab="reviews" type="button" role="tab" aria-selected="false" aria-controls="tab-reviews">Оцінки ({{ review_count }})</button>
     {% endif %}
   </div>
 
@@ -184,27 +198,10 @@
   <!-- Tab: Reviews -->
   {% if reviews %}
   <div id="tab-reviews" class="tab-panel tab-panel-reviews" role="tabpanel" aria-labelledby="tab-button-reviews" hidden>
+    <div class="card-panel mb-3">{% include "partials/_rating_summary.html" %}</div>
     <div class="activity-list">
       {% for review in reviews %}
-      <div class="activity-row activity-row-top">
-        <div class="avatar">{{ review.author.first_name|first|upper }}{{ review.author.last_name|first|upper }}</div>
-        <div class="body">
-          <div class="t">
-            {{ review.author.get_full_name }}
-            <span class="rating rating-inline" aria-label="Оцінка {{ review.rating }} з 5">
-              {% for i in "12345" %}
-                {% if forloop.counter <= review.rating %}
-                  <i class="bi bi-star-fill" aria-hidden="true"></i>
-                {% else %}
-                  <i class="bi bi-star" aria-hidden="true"></i>
-                {% endif %}
-              {% endfor %}
-            </span>
-          </div>
-          <div class="s">{{ review.comment }}</div>
-        </div>
-        <div class="when">{{ review.created_at|date:"d.m.Y" }}</div>
-      </div>
+        {% include "partials/_review.html" %}
       {% endfor %}
     </div>
   </div>

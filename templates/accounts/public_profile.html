@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile_user.first_name|default:profile_user.username }} — MicroVolunteer{% endblock %}
+
+{% block content %}
+<section class="profile-hero">
+  <div class="container">
+    <nav class="profile-breadcrumb" aria-label="Шлях сторінки">
+      <a href="{% url 'home' %}">Головна</a>
+      <span aria-hidden="true">/</span>
+      <span>{{ profile_user.get_user_type_display }}</span>
+    </nav>
+  </div>
+</section>
+
+<div class="profile-card-wrap">
+  <div class="profile-card">
+    {% if profile_user.avatar %}
+      <img src="{{ profile_user.avatar.url }}" alt="" class="avatar avatar-xl avatar-cover">
+    {% else %}
+      <div class="avatar avatar-xl" aria-hidden="true">{{ profile_user.first_name|first|upper }}{{ profile_user.last_name|first|upper }}</div>
+    {% endif %}
+    <div>
+      {# Only first name and initial — full names and contacts stay private #}
+      <h1 class="profile-name">{{ profile_user.first_name|default:profile_user.username }} {{ profile_user.last_name|first }}.</h1>
+      <div class="profile-handle">{{ profile_user.get_user_type_display }} · на платформі з {{ profile_user.created_at|date:"F Y" }}</div>
+      <div class="profile-chips">
+        {% if profile_user.is_verified %}
+          <span class="chip chip-green"><i class="bi bi-patch-check-fill"></i> Перевірений</span>
+        {% else %}
+          <span class="chip chip-gray"><i class="bi bi-patch-question"></i> Не перевірений</span>
+        {% endif %}
+        {% if rating.average %}
+          <span class="chip chip-yellow"><i class="bi bi-star-fill"></i> {{ rating.average }}/5</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-grid-3">
+    {% if profile_user.is_volunteer %}
+      <div class="mini-stat"><div class="n">{{ helped_count }}</div><div class="l">Допоміг(ла)</div></div>
+      <div class="mini-stat"><div class="n">{{ responses_count }}</div><div class="l">Відгуків на запити</div></div>
+    {% else %}
+      <div class="mini-stat"><div class="n">{{ completed_count }}</div><div class="l">Отримано допомоги</div></div>
+      <div class="mini-stat"><div class="n">{{ requests_count }}</div><div class="l">Усього запитів</div></div>
+    {% endif %}
+    <div class="mini-stat"><div class="n">{{ review_count }}</div><div class="l">Оцінок</div></div>
+  </div>
+
+  <section class="card-panel tab-panel-spaced" aria-labelledby="rating-title">
+    <div class="section-hd" id="rating-title">Рейтинг</div>
+    {% include "partials/_rating_summary.html" %}
+  </section>
+
+  {% if profile_user.is_volunteer and volunteer_profile %}
+  <section class="card-panel tab-panel-spaced" aria-labelledby="about-title">
+    <div class="section-hd" id="about-title">Про волонтера</div>
+    {% if volunteer_profile.bio %}<div class="detail-desc">{{ volunteer_profile.bio }}</div>{% endif %}
+    {% if volunteer_profile.categories.exists %}
+    <div class="profile-chip-list mt-2">
+      {% for cat in volunteer_profile.categories.all %}<span class="chip chip-blue">{{ cat.name }}</span>{% endfor %}
+    </div>
+    {% endif %}
+  </section>
+
+  {% if reviews %}
+  <section class="tab-panel-spaced" aria-labelledby="reviews-title">
+    <div class="section-hd" id="reviews-title">Що кажуть отримувачі</div>
+    <div class="activity-list">
+      {% for review in reviews %}{% include "partials/_review.html" %}{% endfor %}
+    </div>
+  </section>
+  {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

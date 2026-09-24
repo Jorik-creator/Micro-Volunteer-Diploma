@@ -9,7 +9,7 @@ Staff-only dashboard with platform-wide statistics:
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q
 from django.http import HttpResponseForbidden, JsonResponse
 from django.views.generic import TemplateView
 
@@ -56,7 +56,7 @@ class StatsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context["total_reviews"] = Review.objects.count()
 
         # --- Average rating (None when no reviews exist → fall back to 0) ---
-        avg_result = Review.objects.aggregate(avg=Avg("rating"))["avg"]
+        avg_result = Review.objects.published().aggregate(avg=Avg("rating"))["avg"]
         context["avg_rating"] = avg_result if avg_result is not None else 0
 
         # --- Requests grouped by status ---
@@ -74,9 +74,17 @@ class StatsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context["requests_by_category"] = requests_by_category
 
         # --- Top 5 volunteers by number of reviews received ---
-        context["top_volunteers"] = User.objects.annotate(
-            review_count=Count("reviews_received")
-        ).order_by("-review_count")[:5]
+        context["top_volunteers"] = (
+            User.objects.filter(user_type=User.UserType.VOLUNTEER)
+            .annotate(
+                review_count=Count(
+                    "reviews_received",
+                    filter=Q(reviews_received__published_at__isnull=False),
+                )
+            )
+            .filter(review_count__gt=0)
+            .order_by("-review_count")[:5]
+        )
 
         # --- Chart.js data: statuses ---
         # Preserve the canonical Status order for consistent chart rendering
@@ -125,7 +133,7 @@ def stats_data(request):
     categories = {(row["category__name"] or "Без категорії"): row["count"] for row in category_qs}
 
     # Average rating — return null (None → JSON null) when no reviews exist
-    avg_result = Review.objects.aggregate(avg=Avg("rating"))["avg"]
+    avg_result = Review.objects.published().aggregate(avg=Avg("rating"))["avg"]
     avg_rating = float(round(avg_result, 2)) if avg_result is not None else None
 
     return JsonResponse(

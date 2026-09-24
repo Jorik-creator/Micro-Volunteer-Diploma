@@ -167,6 +167,30 @@ function fallbackCopy(text) {
       <div class="section-hd">Опис запиту</div>
       <div class="detail-desc">{{ help_request.description }}</div>
 
+      <!-- Reviews after completion -->
+      {% if review_items %}
+      <div class="detail-section" aria-labelledby="review-block-title">
+        <div class="section-hd" id="review-block-title">Оцінки</div>
+        {% if review_open %}
+        <p class="text-muted small">Оцінку можна залишити до {{ review_deadline|date:"d.m.Y" }}. Її побачать, коли інша сторона теж оцінить вас.</p>
+        {% endif %}
+        <div class="review-pending-list">
+          {% for item in review_items %}
+          <div class="review-pending-item">
+            <span><strong>{{ item.target.first_name|default:item.target.username }} {{ item.target.last_name|first }}.</strong> · {{ item.target.get_user_type_display }}</span>
+            {% if item.done %}
+              <span class="chip chip-green"><i class="bi bi-check2"></i> Оцінено</span>
+            {% elif review_open %}
+              <a href="{% url 'reviews:review-create' help_request.pk item.target.pk %}" class="btn btn-solid btn-sm"><i class="bi bi-star"></i> Оцінити</a>
+            {% else %}
+              <span class="text-muted small">Час для оцінки минув</span>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
       <!-- Owner: completion confirmation -->
       {% if is_owner and help_request.status == 'awaiting_confirmation' %}
       <div class="detail-section">
@@ -269,7 +293,8 @@ function fallbackCopy(text) {
             <div class="avatar" aria-hidden="true">{{ resp.volunteer.first_name|first|upper }}{{ resp.volunteer.last_name|first|upper }}</div>
             <div class="body">
               <div class="t" id="response-title-{{ resp.pk }}">
-                {{ resp.volunteer.get_full_name }}
+                <a href="{% url 'accounts:public-profile' resp.volunteer.pk %}">{{ resp.volunteer.get_full_name }}</a>
+                {% if resp.volunteer.is_verified %}<i class="bi bi-patch-check-fill text-success" title="Перевірений волонтер" aria-label="Перевірений волонтер"></i>{% endif %}
                 <span class="chip chip-inline-tight {% if resp.status == 'pending' %}chip-gray{% elif resp.status == 'accepted' %}chip-green{% else %}chip-red{% endif %}">{{ resp.get_status_display }}</span>
                 {% if resp.done_at %}<span class="chip chip-inline-tight chip-green">Позначив(ла) виконаним</span>{% endif %}
               </div>
@@ -312,7 +337,7 @@ function fallbackCopy(text) {
     <!-- Sidebar -->
     <aside>
       <!-- Owner management -->
-      {% if is_owner %}
+      {% if is_owner and help_request.is_open %}
       <div class="card-panel sidebar-panel">
         <div class="section-hd section-hd-sidebar">Управління запитом</div>
         <div class="sidebar-actions">
@@ -341,7 +366,7 @@ function fallbackCopy(text) {
           <div><i class="bi bi-calendar-plus"></i> Створено: {{ help_request.created_at|date:"d.m.Y" }}</div>
           <div><i class="bi bi-calendar-check"></i> Оновлено: {{ help_request.updated_at|date:"d.m.Y H:i" }}</div>
           {% if can_view_recipient %}
-          <div><i class="bi bi-person"></i> Отримувач: {{ help_request.recipient.get_full_name }}</div>
+          <div><i class="bi bi-person"></i> Отримувач: {% if is_owner %}{{ help_request.recipient.get_full_name }}{% else %}<a href="{% url 'accounts:public-profile' help_request.recipient.pk %}">{{ help_request.recipient.get_full_name }}</a>{% endif %}</div>
           {% else %}
           <div><i class="bi bi-person"></i> Отримувач: <span class="address-hidden">Доступно після підтвердження</span></div>
           {% endif %}

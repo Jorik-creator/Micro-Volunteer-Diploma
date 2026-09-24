@@ -2,8 +2,43 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
+class ReviewQuerySet(models.QuerySet):
+    def published(self):
+        return self.filter(published_at__isnull=False)
+
+
 class Review(models.Model):
-    """Відгук після виконання запиту допомоги."""
+    """
+    Оцінка однієї сторони запиту іншою після його завершення.
+
+    Двостороння і прихована (docs/adr/0006): стає видимою лише коли обидві
+    сторони пари залишили свої оцінки або минуло вікно оцінювання.
+    """
+
+    class Tag(models.TextChoices):
+        # About a volunteer
+        PUNCTUAL = "punctual", "Пунктуальний(а)"
+        POLITE = "polite", "Ввічливий(а)"
+        CAREFUL = "careful", "Дбайливий(а)"
+        IN_TOUCH = "in_touch", "Був(ла) на зв'язку"
+        LATE = "late", "Запізнився(лась)"
+        NO_SHOW = "no_show", "Не з'явився(лась)"
+        # About a recipient
+        CLEAR_REQUEST = "clear_request", "Чіткий опис запиту"
+        WELCOMING = "welcoming", "Привітний(а)"
+        ON_TIME = "on_time", "Був(ла) на місці вчасно"
+        WRONG_INFO = "wrong_info", "Неточна інформація"
+        UNREACHABLE = "unreachable", "Не виходив(ла) на зв'язок"
+
+    VOLUNTEER_TAGS = (Tag.PUNCTUAL, Tag.POLITE, Tag.CAREFUL, Tag.IN_TOUCH, Tag.LATE, Tag.NO_SHOW)
+    RECIPIENT_TAGS = (
+        Tag.CLEAR_REQUEST,
+        Tag.WELCOMING,
+        Tag.ON_TIME,
+        Tag.WRONG_INFO,
+        Tag.UNREACHABLE,
+    )
+    NEGATIVE_TAGS = (Tag.LATE, Tag.NO_SHOW, Tag.WRONG_INFO, Tag.UNREACHABLE)
 
     author = models.ForeignKey(
         "accounts.User",
@@ -27,14 +62,33 @@ class Review(models.Model):
         "Оцінка",
         validators=[MinValueValidator(1), MaxValueValidator(5)],
     )
-    comment = models.TextField("Коментар")
+    tags = models.JSONField("Теги", default=list, blank=True)
+    comment = models.TextField("Коментар", blank=True, max_length=1000)
     created_at = models.DateTimeField("Дата створення", auto_now_add=True)
+    published_at = models.DateTimeField("Опубліковано", null=True, blank=True)
+
+    objects = ReviewQuerySet.as_manager()
 
     class Meta:
-        verbose_name = "Відгук"
-        verbose_name_plural = "Відгуки"
+        verbose_name = "Оцінка"
+        verbose_name_plural = "Оцінки"
         ordering = ["-created_at"]
-        unique_together = ["author", "help_request"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["author", "target", "help_request"], name="one_review_per_pair"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(rating__gte=1, rating__lte=5), name="rating_1_to_5"
+            ),
+        ]
 
     def __str__(self):
         return f"{self.author} → {self.target}: {self.rating}/5"
+
+    @property
+    def is_published(self):
+        return self.published_at is not None
+
+    def get_tags_display(self):
+        labels = dict(self.Tag.choices)
+        return [labels[tag] for tag in self.tags if tag in labels]

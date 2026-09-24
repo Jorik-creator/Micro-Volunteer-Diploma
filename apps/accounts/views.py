@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -6,11 +7,14 @@ from django.contrib.auth.views import (
     LogoutView,
     PasswordChangeView,
 )
-from django.db.models import Avg
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
+from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, TemplateView, UpdateView
+
+from apps.reviews.models import Review
+from apps.reviews.services import pending_reviews, rating_summary
 
 from .forms import (
     CustomPasswordChangeForm,
@@ -21,6 +25,7 @@ from .forms import (
     VolunteerProfileForm,
 )
 from .models import User
+from .permissions import MODERATORS_GROUP, can_view_profile
 
 # ---------------------------------------------------------------------------
 # Home page
@@ -116,6 +121,16 @@ class CustomLoginView(LoginView):
     authentication_form = LoginForm
     redirect_authenticated_user = True
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["demo_mode"] = settings.DEMO_MODE
+        context["demo_roles"] = [
+            ("volunteer", "Я волонтер", "bi-hand-thumbs-up"),
+            ("recipient", "Мені потрібна допомога", "bi-heart"),
+            ("moderator", "Модератор", "bi-shield-check"),
+        ]
+        return context
+
     def form_valid(self, form):
         messages.success(self.request, f"З поверненням, {form.get_user().first_name}!")
         return super().form_valid(form)
@@ -148,25 +163,69 @@ class ProfileView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user = self.get_object()
+        user = self.object
+        context.update(_profile_stats(user))
+        context["pending_reviews"] = pending_reviews(user)
+        return context
 
-        # Rating stats
-        reviews = user.reviews_received.all()
-        context["reviews"] = reviews.order_by("-created_at")[:5]
-        context["review_count"] = reviews.count()
-        agg = reviews.aggregate(avg=Avg("rating"))
-        context["avg_rating"] = round(agg["avg"], 1) if agg["avg"] else None
 
-        # Role-specific stats
-        if user.is_volunteer:
-            context["volunteer_profile"] = getattr(user, "volunteer_profile", None)
-            context["responses_count"] = user.volunteer_responses.count()
-            context["accepted_count"] = user.volunteer_responses.filter(status="accepted").count()
-        elif user.is_recipient:
-            context["recipient_profile"] = getattr(user, "recipient_profile", None)
-            context["requests_count"] = user.help_requests.count()
-            context["completed_count"] = user.help_requests.filter(status="completed").count()
+def _profile_stats(user):
+    """Rating and activity numbers shared by the own and the public profile."""
+    from apps.requests.models import HelpRequest, Response
 
+    summary = rating_summary(user)
+    stats = {
+        "rating": summary,
+        "avg_rating": summary.average,
+        "review_count": summary.count,
+        "reviews": Review.objects.published()
+        .filter(target=user)
+        .select_related("author", "help_request")[:10],
+    }
+    if user.is_volunteer:
+        stats["volunteer_profile"] = getattr(user, "volunteer_profile", None)
+        stats["responses_count"] = user.volunteer_responses.count()
+        stats["accepted_count"] = user.volunteer_responses.filter(
+            status=Response.Status.ACCEPTED
+        ).count()
+        stats["helped_count"] = user.volunteer_responses.filter(
+            status=Response.Status.ACCEPTED, help_request__status=HelpRequest.Status.COMPLETED
+        ).count()
+    elif user.is_recipient:
+        stats["recipient_profile"] = getattr(user, "recipient_profile", None)
+        stats["requests_count"] = user.help_requests.count()
+        stats["completed_count"] = user.help_requests.filter(
+            status=HelpRequest.Status.COMPLETED
+        ).count()
+    return stats
+
+
+class PublicProfileView(LoginRequiredMixin, DetailView):
+    """
+    Another user's profile, visible only to people they deal with
+    (see apps.accounts.permissions). Contacts and address are never shown.
+    """
+
+    model = User
+    template_name = "accounts/public_profile.html"
+    context_object_name = "profile_user"
+
+    def get_object(self, queryset=None):
+        user = super().get_object(queryset)
+        if user.pk == self.request.user.pk:
+            return user
+        if not can_view_profile(self.request.user, user):
+            raise Http404
+        return user
+
+    def get(self, request, *args, **kwargs):
+        if kwargs["pk"] == request.user.pk:
+            return redirect("accounts:profile")
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(_profile_stats(self.object))
         return context
 
 
@@ -255,3 +314,42 @@ class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
     def form_valid(self, form):
         messages.success(self.request, "Пароль успішно змінено.")
         return super().form_valid(form)
+
+
+# ---------------------------------------------------------------------------
+# Demo login (portfolio demo; only when settings.DEMO_MODE is on)
+# ---------------------------------------------------------------------------
+
+# Demo accounts never get is_staff/is_superuser: anyone on the internet can use them
+DEMO_ROLES = {
+    "volunteer": {"user_type": User.UserType.VOLUNTEER},
+    "recipient": {"user_type": User.UserType.RECIPIENT},
+    "moderator": {"groups__name": MODERATORS_GROUP},
+}
+
+
+def _other_demo_roles(role):
+    """Moderator demo user is also a volunteer; keep role buttons distinct."""
+    if role == "moderator":
+        return []
+    return User.objects.filter(groups__name=MODERATORS_GROUP).values("pk")
+
+
+@require_POST
+def demo_login(request, role):
+    """Log in as the demo account of a role with one click — no password involved."""
+    if not settings.DEMO_MODE or role not in DEMO_ROLES:
+        raise Http404
+    user = (
+        User.objects.filter(
+            is_demo=True, is_active=True, is_staff=False, is_superuser=False, **DEMO_ROLES[role]
+        )
+        .exclude(pk__in=_other_demo_roles(role))
+        .first()
+    )
+    if user is None:
+        messages.error(request, "Демо-акаунт ще не створено.")
+        return redirect("accounts:login")
+    login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+    messages.info(request, f"Ви увійшли як демо-користувач: {user.get_full_name()}.")
+    return redirect("home")

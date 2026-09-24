@@ -31,7 +31,13 @@ def test_runs_all_jobs(client, settings):
     response = client.post(URL, HTTP_AUTHORIZATION="Bearer s3cret")
 
     assert response.status_code == 200
-    assert response.json() == {"expire_overdue": 1, "auto_confirm": 0, "send_reminders": 0}
+    assert response.json() == {
+        "expire_overdue": 1,
+        "auto_confirm": 0,
+        "send_reminders": 0,
+        "publish_due": 0,
+        "send_review_reminders": 0,
+    }
     overdue.refresh_from_db()
     assert overdue.status == HelpRequest.Status.EXPIRED
 

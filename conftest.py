@@ -107,6 +107,7 @@ class ReviewFactory(factory.django.DjangoModelFactory):
     help_request = factory.SubFactory(HelpRequestFactory)
     rating = 5
     comment = factory.Faker("paragraph")
+    published_at = factory.LazyFunction(timezone.now)
 
 
 class NotificationFactory(factory.django.DjangoModelFactory):

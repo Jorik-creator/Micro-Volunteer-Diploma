@@ -1,0 +1,16 @@
+{% if rating.count %}
+<div class="rating-summary">
+  <span class="avg">{{ rating.average }}</span>
+  <div>
+    {% include "partials/_stars.html" with value=rating.average|floatformat:"0"|add:"0" %}
+    <div class="text-muted small">{{ rating.count }} оцін{{ rating.count|pluralize:"ка,ки,ок" }}</div>
+  </div>
+</div>
+{% if rating.top_tags %}
+<div class="tag-count-list">
+  {% for tag in rating.top_tags %}<span class="tag-count{% if tag.negative %} negative{% endif %}">{{ tag.label }} · {{ tag.count }}</span>{% endfor %}
+</div>
+{% endif %}
+{% else %}
+<p class="text-muted mb-0">Оцінок поки немає.</p>
+{% endif %}

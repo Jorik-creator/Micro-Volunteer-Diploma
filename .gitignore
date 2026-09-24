@@ -44,3 +44,6 @@ nul
 
 # My stuff
 .docs/
+
+# Claude Code local config
+.claude/

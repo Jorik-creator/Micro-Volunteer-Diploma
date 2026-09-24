@@ -1,0 +1,16 @@
+<article class="activity-row activity-row-top">
+  <div class="avatar" aria-hidden="true">{{ review.author.first_name|first|upper }}{{ review.author.last_name|first|upper }}</div>
+  <div class="body">
+    <div class="t">
+      {{ review.author.first_name|default:review.author.username }} {{ review.author.last_name|first }}.
+      {% include "partials/_stars.html" with value=review.rating %}
+    </div>
+    {% if review.tags %}
+    <div class="tag-count-list">
+      {% for label in review.get_tags_display %}<span class="tag-count">{{ label }}</span>{% endfor %}
+    </div>
+    {% endif %}
+    {% if review.comment %}<div class="s">{{ review.comment }}</div>{% endif %}
+  </div>
+  <div class="when">{{ review.published_at|date:"d.m.Y" }}</div>
+</article>

@@ -1,58 +1,38 @@
 """
 Forms for the reviews app.
 
-ReviewForm — залишити відгук після виконання запиту допомоги.
+ReviewForm — оцінка іншої сторони після завершення запиту.
 """
 
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Field, Layout, Submit
 from django import forms
 
 from .models import Review
 
 
-class ReviewForm(forms.ModelForm):
-    """Форма для створення відгуку (оцінка 1–5 та коментар)."""
+class ReviewForm(forms.Form):
+    """Зірки 1–5, теги залежно від ролі того, кого оцінюють, і необов'язковий коментар."""
 
-    class Meta:
-        model = Review
-        fields = ["rating", "comment"]
-        widgets = {
-            # Числове поле з обмеженням min/max на рівні HTML-атрибутів
-            "rating": forms.NumberInput(
-                attrs={
-                    "min": 1,
-                    "max": 5,
-                    "class": "form-control",
-                }
-            ),
-            # Текстова область для коментаря
-            "comment": forms.Textarea(
-                attrs={
-                    "class": "form-control",
-                }
-            ),
-        }
-        labels = {
-            "rating": "Оцінка (1-5)",
-            "comment": "Коментар",
-        }
+    rating = forms.TypedChoiceField(
+        label="Оцінка",
+        choices=[(i, str(i)) for i in range(5, 0, -1)],
+        coerce=int,
+        widget=forms.RadioSelect,
+        error_messages={"required": "Оберіть оцінку від 1 до 5."},
+    )
+    tags = forms.MultipleChoiceField(
+        label="Що запам'яталося",
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    comment = forms.CharField(
+        label="Коментар (необов'язково)",
+        required=False,
+        max_length=1000,
+        widget=forms.Textarea(attrs={"rows": 3, "maxlength": 1000}),
+    )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, target, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # Налаштування crispy-forms: метод POST та макет полів
-        self.helper = FormHelper()
-        self.helper.form_method = "post"
-        self.helper.layout = Layout(
-            Field("rating"),
-            Field("comment"),
-            Submit("submit", "Надіслати відгук", css_class="btn btn-primary mt-2"),
-        )
-
-    def clean_rating(self):
-        """Перевірка, що оцінка знаходиться в діапазоні 1–5."""
-        rating = self.cleaned_data.get("rating")
-        if rating is not None and not (1 <= rating <= 5):
-            raise forms.ValidationError("Оцінка повинна бути від 1 до 5.")
-        return rating
+        allowed = Review.VOLUNTEER_TAGS if target.is_volunteer else Review.RECIPIENT_TAGS
+        labels = dict(Review.Tag.choices)
+        self.fields["tags"].choices = [(tag.value, labels[tag]) for tag in allowed]

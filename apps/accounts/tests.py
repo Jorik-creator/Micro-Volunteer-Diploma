@@ -410,3 +410,55 @@ class TestDecorators:
         request = _build_request(user=volunteer)
         response = dummy_view(request)
         assert response.status_code == 302  # redirect
+
+
+# ===================================================================
+# DEMO LOGIN
+# ===================================================================
+
+
+@pytest.mark.django_db
+class TestDemoLogin:
+    def test_disabled_by_default(self, client, settings):
+        settings.DEMO_MODE = False
+        assert client.post("/accounts/demo/volunteer/").status_code == 404
+
+    def test_logs_in_demo_volunteer(self, client, settings):
+        settings.DEMO_MODE = True
+        demo = VolunteerFactory(is_demo=True)
+
+        page = client.post("/accounts/demo/volunteer/")
+
+        assert page.status_code == 302
+        assert client.session["_auth_user_id"] == str(demo.pk)
+
+    def test_never_logs_into_staff(self, client, settings):
+        settings.DEMO_MODE = True
+        VolunteerFactory(is_demo=True, is_staff=True)
+
+        client.post("/accounts/demo/volunteer/")
+
+        assert "_auth_user_id" not in client.session
+
+    def test_moderator_role_uses_group(self, client, settings):
+        from django.contrib.auth.models import Group
+
+        from apps.accounts.permissions import MODERATORS_GROUP, is_moderator
+
+        settings.DEMO_MODE = True
+        moderator = VolunteerFactory(is_demo=True)
+        moderator.groups.add(Group.objects.create(name=MODERATORS_GROUP))
+        VolunteerFactory(is_demo=True)
+
+        client.post("/accounts/demo/moderator/")
+
+        assert client.session["_auth_user_id"] == str(moderator.pk)
+        assert is_moderator(moderator)
+
+    def test_get_not_allowed(self, client, settings):
+        settings.DEMO_MODE = True
+        assert client.get("/accounts/demo/volunteer/").status_code == 405
+
+    def test_login_page_shows_buttons(self, client, settings):
+        settings.DEMO_MODE = True
+        assert "Подивитися демо" in client.get("/accounts/login/").content.decode()

@@ -2322,3 +2322,61 @@ html.a11y-calm-mode .filters-bar { box-shadow: none; }
   /* Footer-bottom — stack neatly */
   .footer-bottom { flex-direction: column; align-items: flex-start; gap: 6px; }
 }
+
+/* ---------------------------------------------------------------------------
+   Reviews — star picker, tags, rating summary
+   --------------------------------------------------------------------------- */
+.star-rating { border: 0; padding: 0; margin: 0 0 20px; }
+.star-rating-inputs {
+  display: inline-flex; flex-direction: row-reverse; gap: 4px;
+}
+.star-rating-inputs input {
+  position: absolute; opacity: 0; width: 1px; height: 1px;
+}
+.star-rating-inputs label {
+  font-size: 36px; line-height: 1; color: var(--mv-gray-300); cursor: pointer;
+  padding: 4px; border-radius: var(--mv-radius-sm);
+}
+/* Choices are rendered 5→1 and displayed reversed, so "~ label" fills the lower stars */
+.star-rating-inputs input:checked ~ label,
+.star-rating-inputs label:hover,
+.star-rating-inputs label:hover ~ label { color: #B45309; }
+.star-rating-inputs input:focus-visible + label { outline: 3px solid var(--mv-blue-600); outline-offset: 2px; }
+.star-rating-scale {
+  display: flex; justify-content: space-between; max-width: 230px;
+  font-size: 13px; color: var(--mv-gray-700);
+}
+
+.review-tags { border: 0; padding: 0; margin: 0 0 20px; }
+.review-tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.review-tag { cursor: pointer; }
+.review-tag input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.review-tag span {
+  display: inline-block; padding: 8px 14px; min-height: 44px; line-height: 26px;
+  border: 1.5px solid var(--mv-gray-300); border-radius: var(--mv-radius-pill);
+  color: var(--mv-gray-700); background: #fff;
+}
+.review-tag input:checked + span {
+  border-color: var(--mv-blue-600); background: var(--mv-blue-50); color: var(--mv-blue-800);
+  font-weight: 600;
+}
+.review-tag input:focus-visible + span { outline: 3px solid var(--mv-blue-600); outline-offset: 2px; }
+
+.rating-summary { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.rating-summary .avg { font-size: 32px; font-weight: 700; color: var(--mv-blue-900); }
+.tag-count-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tag-count {
+  font-size: 13px; padding: 4px 10px; border-radius: var(--mv-radius-pill);
+  background: var(--mv-blue-50); color: var(--mv-blue-800);
+}
+.tag-count.negative { background: var(--mv-danger-bg); color: #991B1B; }
+.review-pending-list { display: grid; gap: 10px; }
+.review-pending-item {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px; border-radius: var(--mv-radius-sm); background: var(--mv-warning-bg);
+}
+
+/* Demo login */
+.demo-login { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--mv-gray-200); }
+.demo-login-title { font-size: 15px; font-weight: 600; color: var(--mv-gray-700); margin-bottom: 12px; text-align: center; }
+.demo-login-buttons { display: grid; gap: 8px; }

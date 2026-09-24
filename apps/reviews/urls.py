@@ -6,9 +6,8 @@ app_name = "reviews"
 
 urlpatterns = [
     path(
-        "create/<int:request_pk>/",
+        "create/<int:request_pk>/<int:target_pk>/",
         views.CreateReviewView.as_view(),
         name="review-create",
     ),
-    path("list/<int:user_pk>/", views.ReviewListView.as_view(), name="review-list"),
 ]

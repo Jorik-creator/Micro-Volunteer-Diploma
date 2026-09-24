@@ -14,6 +14,8 @@ PERIODIC_TASKS = [
     "apps.requests.services.expire_overdue",
     "apps.requests.services.auto_confirm",
     "apps.requests.services.send_reminders",
+    "apps.reviews.services.publish_due",
+    "apps.reviews.services.send_review_reminders",
 ]
 
 

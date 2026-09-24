@@ -23,10 +23,13 @@ from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
 from apps.accounts.decorators import recipient_required, volunteer_required
+from apps.reviews import services as review_services
+from apps.reviews.models import Review
 
 from . import services
 from .forms import FilterForm, HelpRequestForm, ReasonForm, ResponseForm
@@ -208,12 +211,32 @@ class HelpRequestDetailView(DetailView):
                 ),
             }
         )
+        if hr.completed_at and (is_owner or is_accepted):
+            context.update(_review_context(hr, user))
         if is_owner:
             context["responses"] = sorted(
                 responses,
                 key=lambda r: (r.status != Response.Status.ACCEPTED, r.status != "pending"),
             )
         return context
+
+
+def _review_context(help_request, user):
+    """Who the participant can still rate on a completed request."""
+    written = set(
+        Review.objects.filter(author=user, help_request=help_request).values_list(
+            "target_id", flat=True
+        )
+    )
+    deadline = review_services.review_deadline(help_request)
+    return {
+        "review_items": [
+            {"target": target, "done": target.pk in written}
+            for target in review_services.counterparts(help_request, user)
+        ],
+        "review_deadline": deadline,
+        "review_open": timezone.now() <= deadline,
+    }
 
 
 def request_status(request, pk):

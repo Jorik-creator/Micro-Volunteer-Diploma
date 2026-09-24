@@ -28,6 +28,11 @@ class User(AbstractUser):
         validators=[FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "webp"])],
     )
     is_verified = models.BooleanField("Верифікований", default=False)
+    is_demo = models.BooleanField(
+        "Демо-акаунт",
+        default=False,
+        help_text="Вхід без пароля кнопкою на сторінці входу, коли DEMO_MODE увімкнено.",
+    )
     created_at = models.DateTimeField("Дата реєстрації", auto_now_add=True)
 
     class Meta:
