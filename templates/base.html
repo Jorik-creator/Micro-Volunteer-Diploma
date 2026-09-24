@@ -65,7 +65,7 @@
             <i class="bi bi-bell" aria-hidden="true"></i>
             <span class="mv-count{% if not unread_count %} d-none{% endif %}" id="notification-badge" aria-live="polite">{{ unread_count|default:0 }}</span>
           </a>
-          <div class="dropdown ms-1">
+          <div class="dropdown ms-1 mv-user-in-bar">
             <button type="button" class="mv-user-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Меню профілю">
               {% avatar user 40 %}
               <span class="d-none d-xl-inline">{{ user|short_name }}</span>
@@ -115,6 +115,23 @@
             <li class="nav-item"><a class="{% nav_class 'moderation:queue' %}" href="{% url 'moderation:queue' %}"><i class="bi bi-shield-check" aria-hidden="true"></i>Модерація</a></li>
             {% endif %}
           </ul>
+          {% if user.is_authenticated %}
+          <div class="mv-user-in-menu">
+            <div class="mv-user-in-menu__head">{% avatar user 40 %}<span><strong>{{ user|short_name }}</strong><span class="mv-micro">{{ user.get_user_type_display|default:"Адміністратор" }}</span></span></div>
+            <ul class="navbar-nav">
+              <li class="nav-item"><a class="{% nav_class 'accounts:profile' %}" href="{% url 'accounts:profile' %}"><i class="bi bi-person" aria-hidden="true"></i>Мій профіль</a></li>
+              <li class="nav-item"><a class="{% nav_class 'notifications:email-settings' %}" href="{% url 'notifications:email-settings' %}"><i class="bi bi-envelope" aria-hidden="true"></i>Листи на пошту</a></li>
+              {% if user.is_staff or is_moderator %}
+              <li class="nav-item"><a class="{% nav_class 'stats:dashboard' %}" href="{% url 'stats:dashboard' %}"><i class="bi bi-bar-chart-line" aria-hidden="true"></i>Статистика</a></li>
+              {% endif %}
+              <li class="nav-item">
+                <form method="post" action="{% url 'accounts:logout' %}" class="m-0">{% csrf_token %}
+                  <button type="submit" class="nav-link mv-link-btn--danger border-0 bg-transparent"><i class="bi bi-box-arrow-right" aria-hidden="true"></i>Вийти</button>
+                </form>
+              </li>
+            </ul>
+          </div>
+          {% endif %}
           <div class="mv-a11y-in-menu" role="group" aria-label="Зручність сайту">
             <button type="button" class="mv-a11y-option" data-a11y-toggle="largeText" aria-pressed="false"><i class="bi bi-type" aria-hidden="true"></i><span><strong>Більший текст</strong></span></button>
             <button type="button" class="mv-a11y-option" data-a11y-toggle="highContrast" aria-pressed="false"><i class="bi bi-circle-half" aria-hidden="true"></i><span><strong>Високий контраст</strong></span></button>

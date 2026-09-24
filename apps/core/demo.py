@@ -83,9 +83,21 @@ def _request(
         longitude=None if extra.get("help_format") == H.REMOTE else lon,
         status=status,
         published_at=None if status in (S.DRAFT, S.PENDING_MODERATION) else timezone.now(),
-        completed_at=timezone.now() - timedelta(days=2) if status == S.COMPLETED else None,
+        completed_at=None,
         **extra,
     )
+    if when < timedelta(0):
+        # Past requests: created a few days before the help, finished the day after
+        created = help_request.needed_date - timedelta(days=3)
+        HelpRequest.objects.filter(pk=help_request.pk).update(
+            created_at=created,
+            published_at=created,
+            status_changed_at=help_request.needed_date + timedelta(hours=20),
+            completed_at=help_request.needed_date + timedelta(hours=20)
+            if status == S.COMPLETED
+            else None,
+        )
+        help_request.refresh_from_db()
     return help_request
 
 
@@ -258,7 +270,9 @@ def seed(seed_value=42):
             maria,
             tech if "смартфон" in title else home,
             title,
-            "Виконано.",
+            "Новий смартфон: встановити месенджер, збільшити шрифт і показати відеодзвінки."
+            if "смартфон" in title
+            else "Пройтися парком біля дому пів години — самій виходити поки страшно.",
             when=-timedelta(days=3),
             status=S.COMPLETED,
             help_format=H.HOME_VISIT,
@@ -266,7 +280,7 @@ def seed(seed_value=42):
         )
         r = _respond(done, volunteer, "Допоможу.")
         r.status = Response.Status.ACCEPTED
-        r.done_at = timezone.now() - timedelta(days=3)
+        r.done_at = done.needed_date + timedelta(hours=2)
         r.save()
         if volunteer is taras:
             Review.objects.create(

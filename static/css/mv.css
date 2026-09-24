@@ -234,9 +234,9 @@ button { font-family: inherit; }
 .mv-avatar--96 { width: 96px; height: 96px; font-size: 32px; }
 .mv-avatar--128 { width: 128px; height: 128px; font-size: 42px; }
 .mv-avatar__badge { /* ~35% of the avatar, pushed outside so initials stay readable */
-  position: absolute; right: -3px; bottom: -3px; width: 16px; height: 16px; border-radius: 50%;
+  position: absolute; right: -5px; bottom: -4px; width: 15px; height: 15px; border-radius: 50%;
   background: #fff; box-shadow: 0 0 0 2px #fff; display: grid; place-items: center;
-  color: var(--mv-blue-600); font-size: 14px; line-height: 1;
+  color: var(--mv-blue-600); font-size: 13px; line-height: 1;
 }
 .mv-avatar--56 .mv-avatar__badge { width: 20px; height: 20px; font-size: 18px; }
 .mv-avatar--96 .mv-avatar__badge, .mv-avatar--128 .mv-avatar__badge { width: 32px; height: 32px; font-size: 26px; right: 2px; bottom: 2px; }
@@ -654,11 +654,18 @@ html.a11y-calm-mode *, html.a11y-calm-mode *::before, html.a11y-calm-mode *::aft
 .mv-link-btn--sm { font-size: 15px; }
 .mv-meta li.is-negative > i { color: var(--mv-warning); }
 /* Narrow phones: keep the logged-in navbar on one row */
-@media (max-width: 419.98px) {
-  .mv-nav .mv-brand span { display: none; }
+/* Phones: profile menu moves into the hamburger, the wordmark stays */
+.mv-user-in-menu { display: none; }
+@media (max-width: 575.98px) {
+  .mv-user-in-bar { display: none; }
+  .mv-user-in-menu { display: block; border-top: 1px solid var(--mv-line); margin-top: 8px; padding-top: 12px; }
+  .mv-user-in-menu__head { display: flex; gap: 12px; align-items: center; padding: 4px 14px 8px; }
+  .mv-user-in-menu__head > span { display: grid; }
+  .mv-nav .mv-brand { font-size: 18px; }
+  .mv-nav .mv-brand i { font-size: 22px; }
   .mv-nav .container { padding-inline: 12px; }
-  .mv-icon-btn { width: 40px; }
 }
+@media (max-width: 359.98px) { .mv-nav .mv-brand span { display: none; } }
 /* crispy wraps each error in <p>/<strong>: keep the icon on the same line */
 .invalid-feedback > p, .invalid-feedback > strong { display: inline; margin: 0; }
 
@@ -687,3 +694,7 @@ html.a11y-calm-mode *, html.a11y-calm-mode *::before, html.a11y-calm-mode *::aft
 /* Hero/CTA buttons stretch on phones */
 @media (max-width: 575.98px) { .mv-hero .mv-cluster > .mv-btn, .mv-cta .mv-btn { width: 100%; } }
 .mv-nowrap { white-space: nowrap; }
+
+/* Long values (emails, links) break nicely instead of mid-word overflow */
+.mv-summary > dd, .mv-meta li { overflow-wrap: anywhere; }
+.mv-nav .mv-user-in-menu .nav-link.mv-link-btn--danger { color: var(--mv-danger); }

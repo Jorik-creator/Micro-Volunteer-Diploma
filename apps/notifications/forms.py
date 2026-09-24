@@ -2,12 +2,20 @@ from django import forms
 
 from .models import EmailPreferences
 
+LABELS = {
+    "responses": "Відгуки волонтерів",
+    "lifecycle": "Хід запиту",
+    "messages": "Повідомлення в розмовах",
+    "reviews": "Оцінки",
+    "nearby": "Запити поблизу",
+    "account": "Профіль і модерація",
+}
 HELP_TEXTS = {
-    "lifecycle": "Виконання, скасування запиту й нагадування перед допомогою",
-    "messages": "Коли в розмові з'являється нове повідомлення",
-    "reviews": "Коли вас оцінили або настав час залишити оцінку",
-    "nearby": "Нові запити у вашому радіусі — буває кілька на день",
-    "account": "Перевірка профілю та рішення модераторів",
+    "lifecycle": "Допомогу позначено виконаною, запит скасовано чи прострочено, нагадування",
+    "messages": "Коли вам пишуть у розмові щодо запиту (не частіше разу на 10 хвилин)",
+    "reviews": "Коли вас оцінили або настав час оцінити іншу сторону",
+    "nearby": "Нові запити у вашому радіусі й категоріях — буває кілька на день",
+    "account": "Рішення щодо перевірки профілю, модерації запитів і ваших скарг",
 }
 RESPONSES_HELP = {
     "recipient": "Коли волонтер відгукується на ваш запит",
@@ -31,6 +39,7 @@ class EmailPreferencesForm(forms.ModelForm):
         if user is not None and user.is_recipient:
             del self.fields["nearby"]
         for name, field in self.fields.items():
+            field.label = LABELS.get(name, field.label)
             field.help_text = (
                 RESPONSES_HELP.get(role, "") if name == "responses" else HELP_TEXTS[name]
             )

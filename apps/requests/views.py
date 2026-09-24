@@ -27,6 +27,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import date_format
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
@@ -320,14 +321,15 @@ def lifecycle_steps(help_request, accepted_count, review_pending=False):
         s.PENDING_MODERATION: "на перевірці",
     }.get(
         status,
-        help_request.published_at and f"{timezone.localtime(help_request.published_at):%d.%m}",
+        help_request.published_at
+        and date_format(timezone.localtime(help_request.published_at), "j E"),
     )
     notes = [
         first_note or "",
         f"{accepted_count} з {help_request.volunteers_needed}",
         "чекає підтвердження"
         if status == s.AWAITING_CONFIRMATION
-        else f"{timezone.localtime(help_request.needed_date):%d.%m, %H:%M}",
+        else date_format(timezone.localtime(help_request.needed_date), "j E, H:i"),
         _completed_note(help_request, review_pending),
     ]
     labels = [
@@ -354,7 +356,7 @@ def _completed_note(help_request, review_pending):
     if review_pending:
         return "залиште оцінку"
     if help_request.completed_at:
-        return f"{timezone.localtime(help_request.completed_at):%d.%m}"
+        return date_format(timezone.localtime(help_request.completed_at), "j E")
     return ""
 
 

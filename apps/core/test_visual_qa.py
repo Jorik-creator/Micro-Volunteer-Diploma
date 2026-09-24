@@ -9,6 +9,7 @@ from datetime import timedelta
 import pytest
 from django.contrib.auth.models import Group
 from django.utils import timezone
+from django.utils.formats import date_format
 
 from apps.accounts.forms import RecipientProfileForm
 from apps.accounts.permissions import MODERATORS_GROUP
@@ -190,7 +191,7 @@ class TestLifecycle:
     def test_completed_note(self):
         hr = HelpRequestFactory(status=Status.COMPLETED, completed_at=timezone.now())
         assert lifecycle_steps(hr, 1, review_pending=True)[3]["note"] == "залиште оцінку"
-        date = f"{timezone.localtime(hr.completed_at):%d.%m}"
+        date = date_format(timezone.localtime(hr.completed_at), "j E")
         assert lifecycle_steps(hr, 1)[3]["note"] == date
 
     def test_detail_page_asks_for_review_only_while_pending(self, client):
