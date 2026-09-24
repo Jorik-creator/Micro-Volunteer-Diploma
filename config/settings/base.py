@@ -253,7 +253,9 @@ if BREVO_API_KEY:
 # Absolute links in emails
 SITE_URL = env(
     "SITE_URL",
-    default=f"https://{RENDER_EXTERNAL_HOSTNAME}" if RENDER_EXTERNAL_HOSTNAME else "http://localhost:8000",
+    default=f"https://{RENDER_EXTERNAL_HOSTNAME}"
+    if RENDER_EXTERNAL_HOSTNAME
+    else "http://localhost:8000",
 )
 
 DEFAULT_FROM_EMAIL = env(
