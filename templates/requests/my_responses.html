@@ -1,73 +1,101 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load static mv_ui %}
 
 {% block title %}Мої відгуки — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/personal.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="page-hero">
+<section class="mv-page-head">
   <div class="container">
-    <div class="inner">
+    <div class="mv-page-head__row">
       <div>
-        <h1 class="page-title">Мої відгуки</h1>
-        <p class="page-sub">Запити, на які ви відгукнулися</p>
+        <h1>Мої відгуки</h1>
+        <p class="mv-lead">Запити, на які ви відгукнулися: де потрібна ваша дія, де чекаєте рішення, і вся історія.</p>
       </div>
-      <a href="{% url 'requests:list' %}" class="btn btn-solid">
-        <i class="bi bi-search"></i> Знайти запит
-      </a>
+      {% if responses %}
+      <a class="mv-btn mv-btn--primary" href="{% url 'requests:list' %}"><i class="bi bi-search" aria-hidden="true"></i>Знайти запит</a>
+      {% endif %}
     </div>
+    {% if responses %}
+    <dl class="mv-stats mv-stats--compact mv-head-stats" aria-label="Моя участь у цифрах">
+      <div class="mv-stat"><dt class="mv-stat__label">Зараз у роботі</dt><dd class="mv-stat__num">{{ current_count }}</dd></div>
+      <div class="mv-stat"><dt class="mv-stat__label">Допомогли</dt><dd class="mv-stat__num">{{ helped_count }}</dd></div>
+      <div class="mv-stat"><dt class="mv-stat__label">Усього відгуків</dt><dd class="mv-stat__num">{{ paginator.count|default:0 }}</dd></div>
+    </dl>
+    {% endif %}
   </div>
 </section>
 
-<div class="container page-shell">
-
-  <div class="stat-grid-3 mb-4" aria-label="Статистика моєї участі">
-    <div class="mini-stat mini-stat-center">
-      <div class="n stat-warning">{{ current_count }}</div>
-      <div class="l">Поточних</div>
-    </div>
-    <div class="mini-stat mini-stat-center">
-      <div class="n stat-success">{{ helped_count }}</div>
-      <div class="l">Допомогли</div>
-    </div>
-    <div class="mini-stat mini-stat-center">
-      <div class="n">{{ paginator.count|default:0 }}</div>
-      <div class="l">Усього відгуків</div>
-    </div>
-  </div>
-
+<div class="container mv-page mv-personal">
   {% if responses %}
-  <div class="requests-grid">
-    {% for resp in responses %}
-    {% with hr=resp.help_request %}
-      {% if resp.status == 'accepted' and hr.status == 'in_progress' and not resp.done_at %}
-        {% include "partials/_request_card.html" with show_status=True card_note="Вас прийнято. Після допомоги позначте виконання." card_action="Відкрити запит" %}
-      {% else %}
-        {% include "partials/_request_card.html" with show_status=True card_note="Ваш відгук: "|add:resp.get_status_display card_action="Відкрити запит" %}
-      {% endif %}
-    {% endwith %}
-    {% endfor %}
-  </div>
-
-  {% if is_paginated %}
-  <nav class="pagination-wrap" aria-label="Навігація сторінками моїх відгуків">
-    <ul class="pagination justify-content-center">
-      {% if page_obj.has_previous %}
-      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Попередня сторінка">&laquo;</a></li>
-      {% endif %}
-      <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
-      {% if page_obj.has_next %}
-      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Наступна сторінка">&raquo;</a></li>
-      {% endif %}
-    </ul>
+  {# Groups are built from the current page; empty groups and their links are hidden by personal.css #}
+  <nav class="mv-tabs mv-jump" aria-label="Розділи сторінки">
+    <a class="mv-tab" href="#needs"><i class="bi bi-exclamation-circle" aria-hidden="true"></i>Потрібна дія</a>
+    <a class="mv-tab" href="#current"><i class="bi bi-hourglass-split" aria-hidden="true"></i>Очікують рішення</a>
+    <a class="mv-tab" href="#past"><i class="bi bi-clock-history" aria-hidden="true"></i>Історія</a>
   </nav>
-  {% endif %}
 
+  <section class="mv-psec mv-psec--action" id="needs" aria-labelledby="needs-title">
+    <div class="mv-psec__head">
+      <h2 class="mv-psec__title" id="needs-title"><i class="bi bi-exclamation-circle" aria-hidden="true"></i>Потрібна ваша дія</h2>
+      <p>Вас прийнято — домовтеся в розмові, допоможіть і позначте виконання.</p>
+    </div>
+    <div class="mv-grid mv-grid--cards">
+      {% for resp in responses %}{% with hr=resp.help_request %}
+      {% if resp.status == 'accepted' and hr.status == 'in_progress' and not resp.done_at %}
+        {% include "partials/_request_card.html" with show_status=True show_address=True card_note="Вас прийнято. Після допомоги позначте виконання." %}
+      {% endif %}
+      {% endwith %}{% endfor %}
+    </div>
+  </section>
+
+  <section class="mv-psec mv-psec--calm" id="current" aria-labelledby="current-title">
+    <div class="mv-psec__head">
+      <h2 class="mv-psec__title" id="current-title"><i class="bi bi-hourglass-split" aria-hidden="true"></i>Очікують рішення</h2>
+      <p>Отримувач ще обирає волонтера або підтверджує, що допомогу отримано.</p>
+    </div>
+    <div class="mv-grid mv-grid--cards">
+      {% for resp in responses %}{% with hr=resp.help_request %}
+      {% if resp.status == 'accepted' and hr.status == 'in_progress' and not resp.done_at %}
+      {% elif resp.status == 'pending' %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Ваш відгук надіслано — отримувач ще не відповів." %}
+      {% elif resp.status == 'accepted' and hr.status == 'in_progress' or resp.status == 'accepted' and hr.status == 'awaiting_confirmation' %}
+        {% include "partials/_request_card.html" with show_status=True show_address=True card_note="Ви позначили виконання — чекаємо підтвердження отримувача." %}
+      {% endif %}
+      {% endwith %}{% endfor %}
+    </div>
+  </section>
+
+  <section class="mv-psec mv-psec--past" id="past" aria-labelledby="past-title">
+    <div class="mv-psec__head">
+      <h2 class="mv-psec__title" id="past-title"><i class="bi bi-clock-history" aria-hidden="true"></i>Історія</h2>
+      <p>Завершені запити та відгуки, які вже не активні.</p>
+    </div>
+    <div class="mv-grid mv-grid--cards">
+      {% for resp in responses %}{% with hr=resp.help_request %}
+      {% if resp.status == 'pending' %}
+      {% elif resp.status == 'accepted' and hr.status == 'in_progress' or resp.status == 'accepted' and hr.status == 'awaiting_confirmation' %}
+      {% elif resp.status == 'accepted' and hr.status == 'completed' %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Ви допомогли — дякуємо!" %}
+      {% elif resp.status == 'rejected' %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Отримувач обрав іншого волонтера." %}
+      {% elif resp.status == 'withdrawn' %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Ви вийшли із запиту." %}
+      {% elif resp.status == 'removed' %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Отримувач зняв вас із запиту." %}
+      {% elif resp.status == 'closed' %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Набір волонтерів закрито." %}
+      {% else %}
+        {# Accepted, but the request was cancelled or expired: its status says it all #}
+        {% include "partials/_request_card.html" with show_status=True %}
+      {% endif %}
+      {% endwith %}{% endfor %}
+    </div>
+  </section>
+
+  {% include "partials/_pagination.html" %}
   {% else %}
-  <div class="empty-state">
-    <i class="bi bi-inbox empty-icon"></i>
-    <p>Ви ще не відгукувалися на запити.</p>
-    <a href="{% url 'requests:list' %}" class="btn btn-solid">Переглянути запити</a>
-  </div>
+  {% url 'requests:list' as list_url %}
+  {% include "partials/_empty.html" with icon="bi-hand-thumbs-up" title="Ви ще не відгукувалися" text="Знайдіть запит поруч — коротка допомога з ліками, покупками чи телефоном дуже цінна." action_url=list_url action_label="Переглянути запити" %}
   {% endif %}
-
 </div>
 {% endblock %}

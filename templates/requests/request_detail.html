@@ -1,431 +1,473 @@
 {% extends "base.html" %}
-{% load crispy_forms_tags %}
+{% load static crispy_forms_tags mv_ui %}
 
 {% block title %}{{ help_request.title }} — MicroVolunteer{% endblock %}
 
-{% block extra_js %}
-<script>
-(function () {
-  // Polling статусу запиту кожні 30 секунд для волонтерів та власника
-  const currentStatus = "{{ help_request.status }}";
-  const statusUrl = "{% url 'requests:status' help_request.pk %}";
-
-  function poll() {
-    fetch(statusUrl, { credentials: 'same-origin' })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data && data.status !== currentStatus) {
-          // Статус змінився — показуємо тост і перезавантажуємо сторінку
-          showStatusToast(data.status_display);
-          setTimeout(() => location.reload(), 2500);
-        }
-      })
-      .catch(() => {});
-  }
-
-  function showStatusToast(newStatus) {
-    // Bootstrap Toast
-    const toastHtml = `
-      <div id="status-toast" class="toast align-items-center text-bg-info border-0 position-fixed bottom-0 end-0 m-3 status-toast"
-           role="alert" aria-live="polite">
-        <div class="d-flex">
-          <div class="toast-body">
-            <i class="bi bi-arrow-repeat me-2"></i>
-            Статус оновлено: <strong>${newStatus}</strong>. Оновлення сторінки…
-          </div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Закрити повідомлення"></button>
-        </div>
-      </div>`;
-    document.body.insertAdjacentHTML('beforeend', toastHtml);
-    const el = document.getElementById('status-toast');
-    new bootstrap.Toast(el, { delay: 3000 }).show();
-  }
-
-  setInterval(poll, 30000);
-})();
-</script>
-
-<script>
-function copyAddress() {
-  const address = document.getElementById('address-text').textContent.trim();
-  const btn = document.getElementById('copy-address-btn');
-  const icon = document.getElementById('copy-icon');
-
-  function showSuccess() {
-    icon.className = 'bi bi-check-lg text-success';
-    btn.title = 'Скопійовано!';
-    btn.setAttribute('aria-label', 'Адресу скопійовано');
-    setTimeout(() => {
-      icon.className = 'bi bi-clipboard';
-      btn.title = 'Скопіювати адресу';
-      btn.setAttribute('aria-label', 'Скопіювати адресу');
-    }, 2000);
-  }
-
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(address).then(showSuccess).catch(() => {
-      fallbackCopy(address);
-      showSuccess();
-    });
-  } else {
-    fallbackCopy(address);
-    showSuccess();
-  }
-}
-
-function fallbackCopy(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.className = 'copy-fallback-textarea';
-  document.body.appendChild(ta);
-  ta.select();
-  try { document.execCommand('copy'); } catch (_) {}
-  document.body.removeChild(ta);
-}
-
-(function () {
-  const copyButton = document.getElementById('copy-address-btn');
-  if (copyButton) copyButton.addEventListener('click', copyAddress);
-
-})();
-</script>
+{% block extra_css %}
+<link href="{% static 'css/pages/request.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<!-- Back button -->
-<div class="container detail-toolbar">
-  {% if is_owner %}
-  <a href="{% url 'requests:my-requests' %}" class="btn btn-muted btn-sm"><i class="bi bi-arrow-left"></i> Мої запити</a>
-  {% elif user_response %}
-  <a href="{% url 'requests:my-responses' %}" class="btn btn-muted btn-sm"><i class="bi bi-arrow-left"></i> Мої відгуки</a>
-  {% else %}
-  <a href="{% url 'requests:list' %}" class="btn btn-muted btn-sm"><i class="bi bi-arrow-left"></i> Назад до списку</a>
-  {% endif %}
-</div>
+<section class="mv-page-head mv-rq-head">
+  <div class="container">
+    {% if is_owner %}
+    <a class="mv-back" href="{% url 'requests:my-requests' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Мої запити</a>
+    {% elif user_response %}
+    <a class="mv-back" href="{% url 'requests:my-responses' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Мої відгуки</a>
+    {% else %}
+    <a class="mv-back" href="{% url 'requests:list' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад до списку</a>
+    {% endif %}
+    <div class="mv-rq-head__meta">
+      {% request_status help_request %}
+      <span class="mv-rq-head__cat">{% category_icon help_request.category %}{% if help_request.category %}{{ help_request.category.name }}{% else %}Інше{% endif %}</span>
+    </div>
+    <h1 class="mv-rq-head__title">{{ help_request.title }}</h1>
+  </div>
+</section>
 
-<div class="container detail-page-shell">
-  <div class="detail-grid">
-    <!-- Main column -->
-    <div class="card-panel">
-      <!-- Header: chips + title -->
-      <div class="detail-header">
-        {% if help_request.category %}
-        <span class="chip chip-blue">{{ help_request.category.name }}</span>
-        {% endif %}
-        <span class="chip {% if help_request.urgency == 'critical' %}chip-red{% elif help_request.urgency == 'high' %}chip-yellow{% elif help_request.urgency == 'medium' %}chip-blue{% else %}chip-green{% endif %}">
-          <span class="urgency-dot {{ help_request.urgency }}"></span>
-          {{ help_request.get_urgency_display }}
-        </span>
-        <span class="chip chip-gray"><i class="bi {% if help_request.help_format == 'home_visit' %}bi-house-door{% elif help_request.help_format == 'doorstep' %}bi-box-seam{% elif help_request.help_format == 'public_place' %}bi-geo{% else %}bi-telephone{% endif %}"></i> {{ help_request.get_help_format_display }}</span>
-        <span class="status-badge status-{{ help_request.status }}">
-          {{ help_request.get_status_display }}
-        </span>
-      </div>
-      <h1 class="detail-title">{{ help_request.title }}</h1>
+<div class="container mv-page">
+  <div class="mv-layout-aside mv-rq-layout">
 
-      {% if lifecycle %}
-      <ol class="lifecycle" aria-label="Етапи запиту">
-        {% for step in lifecycle %}
-        <li class="{{ step.state }}"{% if step.state == 'current' %} aria-current="step"{% endif %}>
-          <span class="dot" aria-hidden="true">{% if step.state == 'done' %}<i class="bi bi-check-lg"></i>{% else %}{{ step.number }}{% endif %}</span>
-          {{ step.label }}{% if step.state == 'done' %}<span class="visually-hidden"> — виконано</span>{% endif %}
-          {% if step.note %}<small>{{ step.note }}</small>{% endif %}
-        </li>
-        {% endfor %}
-      </ol>
-      {% elif help_request.status == 'cancelled' or help_request.status == 'expired' %}
-      <div class="alert alert-secondary" role="status"><i class="bi bi-slash-circle me-2"></i>Запит {{ help_request.get_status_display|lower }}.</div>
-      {% endif %}
+    {# ================= Main column ================= #}
+    <div class="mv-stack--lg mv-rq-main">
 
-      <!-- Meta grid -->
-      <div class="detail-meta-grid">
-        <div>
-          <div class="m-label">Коли</div>
-          <div class="m-value"><i class="bi bi-calendar-event"></i> {{ help_request.needed_date|date:"d.m.Y H:i" }}</div>
-        </div>
-        <div>
-          <div class="m-label">Тривалість</div>
-          <div class="m-value"><i class="bi bi-clock"></i> {{ help_request.get_duration_display }}</div>
-        </div>
-        <div>
-          <div class="m-label">Волонтерів</div>
-          <div class="m-value"><i class="bi bi-people"></i> {{ accepted_count }} / {{ help_request.volunteers_needed }}</div>
-        </div>
-        <div>
-          <div class="m-label">Адреса</div>
-            <div class="m-value address-copy-row">
-            <i class="bi bi-geo-alt"></i>
-            {% if help_request.is_remote %}
-              <span>Онлайн / телефоном</span>
-            {% elif is_accepted or is_owner %}
-              <span id="address-text">{{ help_request.address }}</span>
-              <button type="button" id="copy-address-btn" class="btn btn-muted btn-sm copy-btn" title="Скопіювати адресу" aria-label="Скопіювати адресу">
-                <i class="bi bi-clipboard" id="copy-icon"></i>
-              </button>
-            {% else %}
-              <span class="address-hidden">Доступно після підтвердження</span>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-
-      {% if help_request.photo %}
-      <img src="{{ help_request.photo.url }}" class="img-fluid request-photo" alt="Фото запиту">
-      {% endif %}
-
-      <div class="section-hd">Опис запиту</div>
-      <div class="detail-desc">{{ help_request.description }}</div>
-
+      {# Owner-only states that block publication #}
       {% if is_owner and help_request.status == 'draft' %}
-      <div class="alert alert-info detail-section" role="status">
-        <i class="bi bi-pencil-square me-2"></i>Це чернетка — волонтери її ще не бачать.
-        {% if user.email_verified_at %}
-        <form method="post" action="{% url 'requests:publish' help_request.pk %}" class="mt-2">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-solid btn-sm"><i class="bi bi-send"></i> Опублікувати</button>
-        </form>
-        {% else %}
-        <div class="mt-2">Щоб опублікувати, <a href="{% url 'accounts:profile' %}">підтвердіть email</a>.</div>
-        {% endif %}
+      <div class="mv-note" role="status">
+        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+        <div class="mv-note__body">
+          <strong class="mv-note__title">Це чернетка — волонтери її ще не бачать</strong>
+          {% if user.email_verified_at %}
+          <p>Перевірте деталі й опублікуйте запит, коли будете готові.</p>
+          <form method="post" action="{% url 'requests:publish' help_request.pk %}" class="mt-2">
+            {% csrf_token %}
+            <button type="submit" class="mv-btn mv-btn--primary mv-btn--sm"><i class="bi bi-send" aria-hidden="true"></i>Опублікувати</button>
+          </form>
+          {% else %}
+          <p>Щоб опублікувати запит, <a href="{% url 'accounts:profile' %}">підтвердіть email у профілі</a>.</p>
+          {% endif %}
+        </div>
       </div>
       {% elif is_owner and help_request.status == 'pending_moderation' %}
-      <div class="alert alert-info detail-section" role="status">
-        <i class="bi bi-hourglass-split me-2"></i>Запит перевіряє модератор. Перші запити нових користувачів проходять перевірку — так ми захищаємо волонтерів і отримувачів від шахраїв.
+      <div class="mv-note mv-note--warning" role="status">
+        <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+        <div class="mv-note__body">
+          <strong class="mv-note__title">Запит перевіряє модератор</strong>
+          <p>Перші запити нових користувачів проходять перевірку — так ми захищаємо волонтерів і отримувачів від шахраїв. Ми повідомимо, щойно запит опублікують.</p>
+        </div>
       </div>
       {% elif is_owner and help_request.status == 'rejected' %}
-      <div class="alert alert-warning detail-section" role="status">
-        <i class="bi bi-exclamation-triangle me-2"></i>Запит не пройшов модерацію.
-        {% if help_request.moderation_note %}<div class="mt-1"><strong>Причина:</strong> {{ help_request.moderation_note }}</div>{% endif %}
-        <div class="mt-1">Створіть новий запит з урахуванням зауважень.</div>
+      <div class="mv-note mv-note--danger" role="status">
+        <i class="bi bi-x-octagon" aria-hidden="true"></i>
+        <div class="mv-note__body">
+          <strong class="mv-note__title">Запит не пройшов модерацію</strong>
+          {% if help_request.moderation_note %}<p><strong>Причина:</strong> {{ help_request.moderation_note }}</p>{% endif %}
+          {% if can_edit %}
+          <p>Виправте запит — після збереження він знову піде на перевірку.</p>
+          <a class="mv-btn mv-btn--primary mv-btn--sm" href="{% url 'requests:edit' help_request.pk %}"><i class="bi bi-pencil" aria-hidden="true"></i>Виправити запит</a>
+          {% else %}
+          <p>Створіть новий запит з урахуванням зауважень.</p>
+          {% endif %}
+        </div>
       </div>
       {% endif %}
 
-      <!-- Reviews after completion -->
-      {% if review_items %}
-      <div class="detail-section" aria-labelledby="review-block-title">
-        <div class="section-hd" id="review-block-title">Оцінки</div>
-        {% if review_open %}
-        <p class="text-muted small">Оцінку можна залишити до {{ review_deadline|date:"d.m.Y" }}. Її побачать, коли інша сторона теж оцінить вас.</p>
-        {% endif %}
-        <div class="review-pending-list">
-          {% for item in review_items %}
-          <div class="review-pending-item">
-            <span><strong>{{ item.target.first_name|default:item.target.username }} {{ item.target.last_name|first }}.</strong> · {{ item.target.get_user_type_display }}</span>
-            {% if item.done %}
-              <span class="chip chip-green"><i class="bi bi-check2"></i> Оцінено</span>
-            {% elif review_open %}
-              <a href="{% url 'reviews:review-create' help_request.pk item.target.pk %}" class="btn btn-solid btn-sm"><i class="bi bi-star"></i> Оцінити</a>
+      {# Facts, photo, description #}
+      <section class="mv-card mv-rq-facts-card" aria-labelledby="facts-title">
+        <h2 class="visually-hidden" id="facts-title">Деталі запиту</h2>
+        <dl class="mv-summary mv-rq-facts">
+          <dt><i class="bi bi-calendar-event" aria-hidden="true"></i>Коли</dt>
+          <dd>{{ help_request.needed_date|date:"l, j E, H:i"|capfirst }}</dd>
+
+          <dt><i class="bi bi-stopwatch" aria-hidden="true"></i>Тривалість</dt>
+          <dd>{{ help_request.get_duration_display }}</dd>
+
+          <dt>{% format_icon help_request %}Формат</dt>
+          <dd>
+            {{ help_request.get_help_format_display }}
+            {% if help_request.needs_verified_volunteer %}<span class="mv-rq-fact-note"><i class="bi bi-patch-check-fill" aria-hidden="true"></i>Лише перевірені волонтери</span>{% endif %}
+          </dd>
+
+          <dt><i class="bi bi-geo-alt" aria-hidden="true"></i>Місце</dt>
+          <dd>
+            {% if help_request.is_remote %}
+            Онлайн / телефоном
+            {% elif is_owner or is_accepted %}
+            <span class="mv-rq-address">
+              <span id="address-text">{{ help_request.address }}</span>
+              <button type="button" class="mv-link-btn mv-link-btn--sm" id="copy-address-btn" aria-label="Скопіювати адресу">
+                <i class="bi bi-clipboard" aria-hidden="true"></i><span data-copy-label>Копіювати</span>
+              </button>
+            </span>
             {% else %}
-              <span class="text-muted small">Час для оцінки минув</span>
+            {% if help_request.city %}{{ help_request.city }}{% endif %}
+            <span class="mv-rq-fact-note is-muted"><i class="bi bi-lock" aria-hidden="true"></i>Точна адреса — після прийняття</span>
             {% endif %}
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-      {% endif %}
+          </dd>
 
-      <!-- Owner: completion confirmation -->
-      {% if is_owner and help_request.status == 'awaiting_confirmation' %}
-      <div class="detail-section">
-        <div class="alert alert-warning" role="status">
-          <i class="bi bi-patch-question me-2"></i>
-          Волонтери позначили допомогу виконаною. Підтвердьте завершення — без відповіді запит
-          завершиться автоматично через 72 години.
-        </div>
-        <form method="post" action="{% url 'requests:confirm' help_request.pk %}">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-solid"><i class="bi bi-check2-circle"></i> Так, допомогу отримано</button>
-        </form>
-        <details class="mt-3">
-          <summary>Ні, ще не виконано</summary>
-          <form method="post" action="{% url 'requests:dispute' help_request.pk %}" class="mt-2">
-            {% csrf_token %}
-            {{ reason_form|crispy }}
-            <button type="submit" class="btn btn-danger-ghost btn-sm">Повідомити волонтерів</button>
-          </form>
-        </details>
-      </div>
-      {% elif is_owner and help_request.status == 'in_progress' %}
-      <div class="detail-section">
-        <form method="post" action="{% url 'requests:confirm' help_request.pk %}">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-ghost btn-sm" data-confirm-submit="Позначити запит завершеним?">
-            <i class="bi bi-check2-circle"></i> Допомогу вже отримано — завершити запит
-          </button>
-        </form>
-      </div>
-      {% endif %}
+          <dt><i class="bi bi-people" aria-hidden="true"></i>Волонтери</dt>
+          <dd><span class="mv-num">{{ accepted_count }} з {{ help_request.volunteers_needed }}</span> <span class="mv-rq-dd-muted">прийнято</span></dd>
 
-      <!-- Volunteer action -->
-      {% if user.is_authenticated and user.is_volunteer and not is_owner %}
-      <div class="detail-section">
-        <div class="section-hd">Ваша участь</div>
-        {% if user_response and user_response.status == 'pending' %}
-          <div class="alert alert-info"><i class="bi bi-hourglass-split me-2"></i>Ваш відгук надіслано — очікуйте рішення отримувача.</div>
-          <form method="post" action="{% url 'requests:withdraw' help_request.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-muted btn-sm" data-confirm-submit="Відкликати ваш відгук?">
-              <i class="bi bi-arrow-counterclockwise"></i> Відкликати відгук
-            </button>
-          </form>
-        {% elif is_accepted %}
-          <div class="alert alert-success">
-            <i class="bi bi-check-circle me-2"></i>Вас прийнято!
-            {% if help_request.on_behalf and help_request.is_open %}
-            <div class="mt-2">
-              <strong>Кому допомагаємо:</strong> {{ help_request.beneficiary_name }},
-              <a href="tel:{{ help_request.beneficiary_phone }}">{{ help_request.beneficiary_phone }}</a>
-            </div>
+          <dt>{% urgency_icon help_request %}Терміновість</dt>
+          <dd><span class="mv-urg mv-urg--{{ help_request.urgency }}">{{ help_request.get_urgency_display }}</span></dd>
+
+          {% if help_request.on_behalf %}
+          <dt><i class="bi bi-person-heart" aria-hidden="true"></i>Для кого</dt>
+          <dd>
+            {% if is_owner %}
+            {{ help_request.beneficiary_name }} · <a href="tel:{{ help_request.beneficiary_phone }}">{{ help_request.beneficiary_phone }}</a>
+            {% else %}
+            Для близької людини
+            {% if not is_accepted %}<span class="mv-rq-fact-note is-muted"><i class="bi bi-lock" aria-hidden="true"></i>Контакт — після прийняття</span>{% endif %}
             {% endif %}
-            {% if my_conversation %}
-            <div class="mt-2">
-              <a href="{% url 'conversations:detail' my_conversation.pk %}" class="btn btn-solid btn-sm"><i class="bi bi-chat-dots"></i> Написати отримувачу</a>
-            </div>
-            {% endif %}
-          </div>
-          {% if help_request.status == 'in_progress' and not user_response.done_at %}
-          <form method="post" action="{% url 'requests:complete' help_request.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-solid" data-confirm-submit="Позначити вашу допомогу виконаною?">
-              <i class="bi bi-check2-circle"></i> Я допоміг(ла) — позначити виконаним
-            </button>
-          </form>
-          {% elif user_response.done_at and help_request.is_open %}
-          <p class="text-muted"><i class="bi bi-clock-history"></i> Ви позначили допомогу виконаною {{ user_response.done_at|date:"d.m.Y H:i" }}. Чекаємо на підтвердження отримувача.</p>
+          </dd>
           {% endif %}
-          {% if help_request.is_open and not user_response.done_at %}
-          <details class="mt-3">
-            <summary>Не можу допомогти</summary>
-            <form method="post" action="{% url 'requests:withdraw' help_request.pk %}" class="mt-2">
-              {% csrf_token %}
-              <p class="text-muted small">Отримувач отримає сповіщення, а запит знову відкриється для інших волонтерів.</p>
-              {{ reason_form|crispy }}
-              <button type="submit" class="btn btn-danger-ghost btn-sm">Вийти із запиту</button>
-            </form>
-          </details>
-          {% endif %}
-        {% elif user_response and not can_respond %}
-          <div class="alert alert-secondary"><i class="bi bi-info-circle me-2"></i>{{ user_response.get_status_display }}{% if user_response.status_reason %}: {{ user_response.status_reason }}{% endif %}</div>
-        {% endif %}
-        {% if can_respond and respond_blocked_reason %}
-          <div class="alert alert-warning" role="status">
-            <i class="bi bi-shield-lock me-2"></i>{{ respond_blocked_reason }}
-            <div class="mt-2"><a href="{% url 'accounts:profile' %}" class="btn btn-ghost btn-sm">Перейти до профілю</a></div>
-          </div>
-        {% elif can_respond %}
-          <form method="post" action="{% url 'requests:respond' help_request.pk %}" aria-label="Форма відгуку на запит">
-            {% csrf_token %}
-            {{ response_form|crispy }}
-            <button type="submit" class="btn btn-solid">
-              <i class="bi bi-hand-thumbs-up"></i> Відгукнутись
-            </button>
-          </form>
-        {% elif not user_response %}
-          <p class="text-muted">Набір волонтерів завершено або запит закрито.</p>
-        {% endif %}
-      </div>
-      {% endif %}
+        </dl>
 
-      <!-- Owner: volunteer responses -->
-      {% if is_owner %}
-      <div class="detail-section">
-        <div class="section-hd">Відгуки волонтерів</div>
-        {% if responses %}
-        <div class="activity-list">
-          {% for resp in responses %}
-          <article class="activity-row activity-row-top" aria-labelledby="response-title-{{ resp.pk }}">
-            <div class="avatar" aria-hidden="true">{{ resp.volunteer.first_name|first|upper }}{{ resp.volunteer.last_name|first|upper }}</div>
-            <div class="body">
-              <div class="t" id="response-title-{{ resp.pk }}">
-                <a href="{% url 'accounts:public-profile' resp.volunteer.pk %}">{{ resp.volunteer.get_full_name }}</a>
-                {% if resp.volunteer.is_verified %}<i class="bi bi-patch-check-fill text-success" title="Перевірений волонтер" aria-label="Перевірений волонтер"></i>{% endif %}
-                <span class="chip chip-inline-tight {% if resp.status == 'pending' %}chip-gray{% elif resp.status == 'accepted' %}chip-green{% else %}chip-red{% endif %}">{{ resp.get_status_display }}</span>
-                {% if resp.done_at %}<span class="chip chip-inline-tight chip-green">Позначив(ла) виконаним</span>{% endif %}
-              </div>
-              {% if resp.message %}<div class="s">{{ resp.message }}</div>{% endif %}
-              {% if resp.status_reason %}<div class="s"><em>{{ resp.status_reason }}</em></div>{% endif %}
-              <div class="when when-tight">{{ resp.created_at|date:"d.m.Y H:i" }}</div>
-              {% if resp.status == 'accepted' and resp.conversation_id %}
-              <a href="{% url 'conversations:detail' resp.conversation_id %}" class="btn btn-ghost btn-sm mt-2"><i class="bi bi-chat-dots"></i> Розмова</a>
+        {% if help_request.photo %}
+        <img src="{{ help_request.photo.url }}" class="mv-photo mv-rq-photo" alt="Фото до запиту «{{ help_request.title }}»">
+        {% endif %}
+
+        <h2 class="mv-rq-subtitle">Опис</h2>
+        <div class="mv-rq-desc">{{ help_request.description|linebreaks }}</div>
+      </section>
+
+      {# Reviews after completion #}
+      {% if review_items %}
+      <section class="mv-card" aria-labelledby="reviews-title" id="reviews">
+        <h2 class="mv-card__title" id="reviews-title"><i class="bi bi-star" aria-hidden="true"></i>Оцінки</h2>
+        {% if review_open %}
+        <p class="mv-muted">Оцінку можна залишити до {{ review_deadline|date:"j E" }}. Її побачать, коли інша сторона теж оцінить вас.</p>
+        {% endif %}
+        <ul class="mv-rows">
+          {% for item in review_items %}
+          <li class="mv-row mv-rq-rate">
+            {% avatar item.target 40 %}
+            <div class="mv-row__body">
+              <h3 class="mv-row__title">{{ item.target|short_name }}</h3>
+              <p class="mv-micro mv-mb-0">{{ item.target.get_user_type_display }}</p>
+            </div>
+            <div class="mv-row__side">
+              {% if item.done %}
+              <span class="mv-status mv-status--success"><i class="bi bi-check2-circle" aria-hidden="true"></i>Оцінено</span>
+              {% elif review_open %}
+              <a href="{% url 'reviews:review-create' help_request.pk item.target.pk %}" class="mv-btn mv-btn--primary mv-btn--sm"><i class="bi bi-star" aria-hidden="true"></i>Оцінити</a>
+              {% else %}
+              <span class="mv-status mv-status--muted"><i class="bi bi-clock" aria-hidden="true"></i>Час для оцінки минув</span>
               {% endif %}
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+
+      {# Owner: volunteer responses #}
+      {% if is_owner and help_request.status != 'draft' and help_request.status != 'pending_moderation' and help_request.status != 'rejected' or is_owner and responses %}
+      <section class="mv-card" aria-labelledby="responses-title" id="responses">
+        <div class="mv-rq-card-head">
+          <h2 class="mv-card__title" id="responses-title"><i class="bi bi-people" aria-hidden="true"></i>Відгуки волонтерів</h2>
+          {% if responses %}<span class="mv-count mv-count--blue" aria-label="{{ responses|length }} {{ responses|length|uk_plural:'відгук,відгуки,відгуків' }}">{{ responses|length }}</span>{% endif %}
+        </div>
+        {% if responses %}
+        <ul class="mv-rows">
+          {% for resp in responses %}
+          <li class="mv-row mv-rq-response" id="response-{{ resp.pk }}">
+            {% avatar resp.volunteer 56 %}
+            <div class="mv-row__body">
+              <div class="mv-rq-response__head">
+                <h3 class="mv-row__title"><a href="{% url 'accounts:public-profile' resp.volunteer.pk %}">{{ resp.volunteer.get_full_name|default:resp.volunteer.username }}</a></h3>
+                {% response_status resp %}
+              </div>
+              <p class="mv-micro mv-mb-0">Відгук від {{ resp.created_at|date:"j E, H:i" }}{% if resp.volunteer.is_verified %} · <i class="bi bi-patch-check-fill mv-rq-verified" aria-hidden="true"></i>Перевірений волонтер{% endif %}</p>
+              {% if resp.message %}<p class="mv-row__text mv-rq-quote">{{ resp.message }}</p>{% endif %}
+              {% if resp.status_reason %}<p class="mv-row__text mv-muted"><i class="bi bi-chat-left-text me-1" aria-hidden="true"></i>{{ resp.status_reason }}</p>{% endif %}
+              {% if resp.done_at %}<p class="mv-row__text"><span class="mv-status mv-status--success"><i class="bi bi-check2-all" aria-hidden="true"></i>Позначено виконаним {{ resp.done_at|date:"j E, H:i" }}</span></p>{% endif %}
+
+              {% if resp.status == 'pending' and help_request.status == 'active' or resp.status == 'accepted' and resp.conversation_id %}
+              <div class="mv-row__actions">
+                {% if resp.status == 'pending' and help_request.status == 'active' %}
+                <form method="post" action="{% url 'requests:accept' resp.pk %}">{% csrf_token %}
+                  <button type="submit" class="mv-btn mv-btn--primary mv-btn--sm" aria-label="Прийняти волонтера {{ resp.volunteer.get_full_name|default:resp.volunteer.username }}"><i class="bi bi-check-lg" aria-hidden="true"></i>Прийняти</button>
+                </form>
+                <form method="post" action="{% url 'requests:reject' resp.pk %}">{% csrf_token %}
+                  <button type="submit" class="mv-btn mv-btn--danger mv-btn--sm" aria-label="Відхилити волонтера {{ resp.volunteer.get_full_name|default:resp.volunteer.username }}"><i class="bi bi-x-lg" aria-hidden="true"></i>Відхилити</button>
+                </form>
+                {% endif %}
+                {% if resp.status == 'accepted' and resp.conversation_id %}
+                <a class="mv-btn mv-btn--secondary mv-btn--sm" href="{% url 'conversations:detail' resp.conversation_id %}"><i class="bi bi-chat-dots" aria-hidden="true"></i>Розмова</a>
+                {% endif %}
+              </div>
+              {% endif %}
+
               {% if resp.status == 'accepted' and help_request.is_open %}
-              <details class="mt-2">
-                <summary>Зняти волонтера</summary>
-                <form method="post" action="{% url 'requests:remove' resp.pk %}" class="mt-2">
+              <details class="mv-disclosure mv-disclosure--danger mv-rq-disclosure">
+                <summary><i class="bi bi-person-dash" aria-hidden="true"></i>Зняти волонтера</summary>
+                <form method="post" action="{% url 'requests:remove' resp.pk %}" class="mv-disclosure__body">
                   {% csrf_token %}
-                  <p class="text-muted small">Наприклад, якщо волонтер не прийшов. Запит знову відкриється для інших.</p>
+                  <p class="mv-micro">Наприклад, якщо волонтер не прийшов. Запит знову відкриється для інших.</p>
                   {{ reason_form|crispy }}
-                  <button type="submit" class="btn btn-danger-ghost btn-sm">Зняти</button>
+                  <button type="submit" class="mv-btn mv-btn--danger mv-btn--sm"><i class="bi bi-person-dash" aria-hidden="true"></i>Зняти</button>
                 </form>
               </details>
               {% endif %}
             </div>
-            {% if resp.status == 'pending' and help_request.status == 'active' %}
-            <div class="response-actions">
-              <form method="post" action="{% url 'requests:accept' resp.pk %}">{% csrf_token %}
-                <button type="submit" class="btn btn-solid btn-sm" aria-label="Прийняти волонтера {{ resp.volunteer.get_full_name }}"><i class="bi bi-check-lg"></i> Прийняти</button>
-              </form>
-              <form method="post" action="{% url 'requests:reject' resp.pk %}">{% csrf_token %}
-                <button type="submit" class="btn btn-danger-ghost btn-sm" aria-label="Відхилити волонтера {{ resp.volunteer.get_full_name }}"><i class="bi bi-x-lg"></i> Відхилити</button>
-              </form>
-            </div>
-            {% endif %}
-          </article>
+          </li>
           {% endfor %}
-        </div>
+        </ul>
         {% elif help_request.status == 'active' %}
-        <p class="text-muted"><i class="bi bi-hourglass"></i> Поки що ніхто не відгукнувся. Волонтери поблизу вже отримали сповіщення.</p>
+        <div class="mv-rq-empty">
+          <span class="mv-tile mv-tile--muted" aria-hidden="true"><i class="bi bi-hourglass"></i></span>
+          <div>
+            <p class="mv-rq-empty__title">Поки ніхто не відгукнувся.</p>
+            <p class="mv-muted mv-mb-0">Коли волонтер відгукнеться, ви отримаєте сповіщення й зможете його прийняти.</p>
+          </div>
+        </div>
+        {% else %}
+        <p class="mv-muted mv-mb-0">Відгуків немає.</p>
         {% endif %}
-      </div>
+      </section>
       {% endif %}
 
     </div>
 
-    <!-- Sidebar -->
-    <aside>
-      <!-- Owner management -->
-      {% if is_owner and help_request.is_open %}
-      <div class="card-panel sidebar-panel">
-        <div class="section-hd section-hd-sidebar">Управління запитом</div>
-        <div class="sidebar-actions">
-          {% if help_request.status == 'active' %}
-          <a href="{% url 'requests:edit' help_request.pk %}" class="btn btn-ghost btn-sm btn-block">
-            <i class="bi bi-pencil"></i> Редагувати
-          </a>
-          {% endif %}
-          {% if help_request.is_open %}
-          <form method="post" action="{% url 'requests:cancel' help_request.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-danger-ghost btn-sm btn-block" data-confirm-submit="Скасувати запит?">
-              <i class="bi bi-x-circle"></i> Скасувати запит
-            </button>
-          </form>
-          {% endif %}
+    {# ================= Sidebar ================= #}
+    <aside class="mv-sticky mv-stack mv-rq-aside" aria-label="Етапи та дії">
+
+      {% if lifecycle or help_request.status != 'rejected' %}
+      <section class="mv-card mv-rq-stages" aria-labelledby="stages-title">
+        <h2 class="mv-card__title" id="stages-title">Етапи запиту</h2>
+        {% if lifecycle %}
+        <ol class="mv-stepper mv-stepper--rail mv-rq-stepper">
+          {% for step in lifecycle %}
+          <li class="{% if step.state == 'done' %}is-done{% elif step.state == 'current' %}is-current{% endif %}"{% if step.state == 'current' %} aria-current="step"{% endif %}>
+            <span class="mv-step__dot" aria-hidden="true">{% if step.state == 'done' %}<i class="bi bi-check-lg"></i>{% else %}{{ step.number }}{% endif %}</span>
+            {{ step.label }}{% if step.state == 'done' %}<span class="visually-hidden"> — виконано</span>{% endif %}
+            {% if step.note %}<small>{{ step.note }}</small>{% endif %}
+          </li>
+          {% endfor %}
+        </ol>
+        {% else %}
+        <div class="mv-note mv-note--muted">
+          <i class="bi {% if help_request.status == 'expired' %}bi-calendar-x{% else %}bi-x-circle{% endif %}" aria-hidden="true"></i>
+          <div class="mv-note__body">
+            {% if help_request.status == 'expired' %}Час запиту минув — його закрито.{% else %}Запит скасовано.{% endif %}
+          </div>
         </div>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      {% if is_owner %}
+        {% if help_request.status == 'awaiting_confirmation' or help_request.status == 'in_progress' or can_edit or can_cancel %}
+        <section class="mv-card mv-rq-action{% if help_request.status != 'awaiting_confirmation' %} mv-rq-action--secondary{% endif %}" aria-labelledby="action-title">
+          {% if help_request.status == 'awaiting_confirmation' %}
+          <h2 class="mv-card__title" id="action-title">Допомогу виконано?</h2>
+          <p>Волонтери позначили допомогу виконаною. Підтвердьте — без відповіді запит завершиться автоматично через 72 години.</p>
+          <form method="post" action="{% url 'requests:confirm' help_request.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="mv-btn mv-btn--primary mv-btn--block"><i class="bi bi-check2-circle" aria-hidden="true"></i>Так, допомогу отримано</button>
+          </form>
+          <details class="mv-disclosure mv-disclosure--danger mv-rq-disclosure">
+            <summary><i class="bi bi-exclamation-diamond" aria-hidden="true"></i>Ні, ще не виконано</summary>
+            <form method="post" action="{% url 'requests:dispute' help_request.pk %}" class="mv-disclosure__body">
+              {% csrf_token %}
+              <p class="mv-micro">Волонтери отримають сповіщення, а запит повернеться в роботу.</p>
+              {{ reason_form|crispy }}
+              <button type="submit" class="mv-btn mv-btn--danger mv-btn--sm"><i class="bi bi-send" aria-hidden="true"></i>Повідомити волонтерів</button>
+            </form>
+          </details>
+          {% elif help_request.status == 'in_progress' %}
+          <h2 class="mv-card__title" id="action-title">Керування запитом</h2>
+          <p class="mv-muted">Коли допомогу буде надано, волонтер позначить її виконаною, а ви підтвердите.</p>
+          <form method="post" action="{% url 'requests:confirm' help_request.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="mv-btn mv-btn--secondary mv-btn--block" data-confirm-submit="Позначити запит завершеним?"><i class="bi bi-check2-circle" aria-hidden="true"></i>Допомогу вже отримано — завершити</button>
+          </form>
+          {% else %}
+          <h2 class="mv-card__title" id="action-title">Керування запитом</h2>
+          {% endif %}
+
+          {% if can_edit or can_cancel %}
+          <div class="mv-rq-manage">
+            {% if can_edit and help_request.status != 'rejected' %}
+            <a href="{% url 'requests:edit' help_request.pk %}" class="mv-btn mv-btn--secondary mv-btn--block"><i class="bi bi-pencil" aria-hidden="true"></i>Редагувати</a>
+            {% endif %}
+            {% if can_cancel %}
+            <form method="post" action="{% url 'requests:cancel' help_request.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="mv-link-btn mv-link-btn--danger" data-confirm-submit="Скасувати запит? Волонтери отримають сповіщення."><i class="bi bi-x-circle" aria-hidden="true"></i>Скасувати запит</button>
+            </form>
+            {% endif %}
+          </div>
+          {% endif %}
+        </section>
+        {% endif %}
+
+      {% elif user.is_authenticated and user.is_volunteer %}
+      <section class="mv-card mv-rq-action" aria-labelledby="action-title">
+        <h2 class="mv-card__title" id="action-title">Ваша участь</h2>
+
+        {% if is_accepted %}
+          {% if help_request.status == 'completed' %}
+          <div class="mv-note mv-note--success">
+            <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+            <div class="mv-note__body"><strong class="mv-note__title">Запит завершено</strong><p>Дякуємо за допомогу!</p></div>
+          </div>
+          {% elif help_request.is_open %}
+          <div class="mv-note mv-note--success">
+            <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+            <div class="mv-note__body">
+              <strong class="mv-note__title">Вас прийнято</strong>
+              <p>Домовтеся з отримувачем про деталі в розмові.</p>
+            </div>
+          </div>
+          {% else %}
+          <div class="mv-note mv-note--muted">
+            <i class="bi bi-lock" aria-hidden="true"></i>
+            <div class="mv-note__body">Запит закрито.</div>
+          </div>
+          {% endif %}
+
+          {% if help_request.on_behalf and help_request.is_open %}
+          <div class="mv-rq-contact">
+            <span class="mv-tile mv-tile--sm" aria-hidden="true"><i class="bi bi-person-heart"></i></span>
+            <div>
+              <span class="mv-micro">Кому допомагаємо</span>
+              <strong>{{ help_request.beneficiary_name }}</strong>
+              <a href="tel:{{ help_request.beneficiary_phone }}"><i class="bi bi-telephone me-1" aria-hidden="true"></i>{{ help_request.beneficiary_phone }}</a>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="mv-rq-actions">
+            {% if help_request.status == 'in_progress' and not user_response.done_at %}
+            <form method="post" action="{% url 'requests:complete' help_request.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="mv-btn mv-btn--primary mv-btn--block" data-confirm-submit="Позначити вашу допомогу виконаною?"><i class="bi bi-check2-circle" aria-hidden="true"></i>Я допоміг — позначити виконаним</button>
+            </form>
+            {% if my_conversation %}
+            <a href="{% url 'conversations:detail' my_conversation.pk %}" class="mv-btn mv-btn--secondary mv-btn--block"><i class="bi bi-chat-dots" aria-hidden="true"></i>Написати отримувачу</a>
+            {% endif %}
+            {% elif my_conversation %}
+            <a href="{% url 'conversations:detail' my_conversation.pk %}" class="mv-btn {% if help_request.is_open %}mv-btn--primary{% else %}mv-btn--secondary{% endif %} mv-btn--block"><i class="bi bi-chat-dots" aria-hidden="true"></i>Написати отримувачу</a>
+            {% endif %}
+          </div>
+
+          {% if user_response.done_at and help_request.is_open %}
+          <div class="mv-note mv-note--muted">
+            <i class="bi bi-clock-history" aria-hidden="true"></i>
+            <div class="mv-note__body">Ви позначили допомогу виконаною {{ user_response.done_at|date:"j E, H:i" }}. Чекаємо на підтвердження отримувача.</div>
+          </div>
+          {% endif %}
+
+          {% if help_request.is_open and not user_response.done_at %}
+          <details class="mv-disclosure mv-disclosure--danger mv-rq-disclosure">
+            <summary><i class="bi bi-box-arrow-left" aria-hidden="true"></i>Не можу допомогти</summary>
+            <form method="post" action="{% url 'requests:withdraw' help_request.pk %}" class="mv-disclosure__body">
+              {% csrf_token %}
+              <p class="mv-micro">Отримувач отримає сповіщення, а запит знову відкриється для інших волонтерів.</p>
+              {{ reason_form|crispy }}
+              <button type="submit" class="mv-btn mv-btn--danger mv-btn--sm"><i class="bi bi-box-arrow-left" aria-hidden="true"></i>Вийти із запиту</button>
+            </form>
+          </details>
+          {% endif %}
+
+        {% elif user_response and user_response.status == 'pending' %}
+          <div class="mv-note">
+            <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+            <div class="mv-note__body">
+              <strong class="mv-note__title">Відгук надіслано</strong>
+              <p>Отримувач вирішить, кого прийняти. Ми повідомимо вас про рішення.</p>
+            </div>
+          </div>
+          {% if user_response.message %}<p class="mv-rq-quote mv-rq-quote--own">{{ user_response.message }}</p>{% endif %}
+          <form method="post" action="{% url 'requests:withdraw' help_request.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="mv-link-btn mv-link-btn--muted" data-confirm-submit="Відкликати ваш відгук?"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>Відкликати відгук</button>
+          </form>
+
+        {% elif user_response %}
+          <div class="mv-note mv-note--muted">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            <div class="mv-note__body">
+              {% response_status user_response %}
+              {% if user_response.status_reason %}<p class="mt-1">{{ user_response.status_reason }}</p>{% endif %}
+            </div>
+          </div>
+
+        {% elif can_respond and respond_blocked_reason %}
+          <div class="mv-note mv-note--warning" role="status">
+            <i class="bi bi-shield-lock" aria-hidden="true"></i>
+            <div class="mv-note__body">
+              <p>{{ respond_blocked_reason }}</p>
+              <a href="{% url 'accounts:profile' %}">Перейти до профілю</a>
+            </div>
+          </div>
+
+        {% elif can_respond %}
+          <p class="mv-muted">Отримувач побачить ваш відгук і вирішить, кого прийняти.</p>
+          <form method="post" action="{% url 'requests:respond' help_request.pk %}" aria-label="Відгук на запит">
+            {% csrf_token %}
+            {{ response_form|crispy }}
+            <button type="submit" class="mv-btn mv-btn--primary mv-btn--block"><i class="bi bi-hand-thumbs-up" aria-hidden="true"></i>Відгукнутися</button>
+          </form>
+
+        {% else %}
+          <p class="mv-muted mv-mb-0">Набір волонтерів завершено або запит закрито.</p>
+        {% endif %}
+      </section>
+
+      {% elif not user.is_authenticated %}
+      <section class="mv-card mv-rq-action" aria-labelledby="action-title">
+        <h2 class="mv-card__title" id="action-title">Увійдіть, щоб відгукнутися</h2>
+        <p class="mv-muted">Отримувач побачить ваш відгук і сам вирішить, кого прийняти.</p>
+        <a class="mv-btn mv-btn--primary mv-btn--block" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Увійти</a>
+      </section>
+
+      {% elif not is_moderator %}
+      <div class="mv-note mv-note--muted mv-rq-action">
+        <i class="bi bi-info-circle" aria-hidden="true"></i>
+        <div class="mv-note__body">Відгукуватися на запити можуть волонтери.</div>
       </div>
       {% endif %}
 
-      <!-- Details -->
-      <div class="card-panel">
-        <div class="section-hd section-hd-sidebar">Деталі</div>
-        <div class="sidebar-meta">
-          <div><i class="bi bi-hash"></i> ID: {{ help_request.pk }}</div>
-          <div><i class="bi bi-calendar-plus"></i> Створено: {{ help_request.created_at|date:"d.m.Y" }}</div>
-          <div><i class="bi bi-people"></i> Формат: {{ help_request.get_help_format_display }}</div>
-          <div><i class="bi bi-calendar-check"></i> Оновлено: {{ help_request.updated_at|date:"d.m.Y H:i" }}</div>
-          {% if can_view_recipient %}
-          <div><i class="bi bi-person"></i> Отримувач: {% if is_owner %}{{ help_request.recipient.get_full_name }}{% else %}<a href="{% url 'accounts:public-profile' help_request.recipient.pk %}">{{ help_request.recipient.get_full_name }}</a>{% endif %}</div>
-          {% else %}
-          <div><i class="bi bi-person"></i> Отримувач: <span class="address-hidden">Доступно після підтвердження</span></div>
-          {% endif %}
+      {% if is_moderator and help_request.status == 'pending_moderation' %}
+      <section class="mv-card mv-rq-action" aria-labelledby="moderation-title">
+        <h2 class="mv-card__title" id="moderation-title"><i class="bi bi-shield-check" aria-hidden="true"></i>Модерація</h2>
+        <p class="mv-muted">Запит очікує перевірки. Рішення приймається в черзі модерації.</p>
+        <a class="mv-btn mv-btn--secondary mv-btn--block" href="{% url 'moderation:queue' %}?tab=requests"><i class="bi bi-list-check" aria-hidden="true"></i>Відкрити чергу модерації</a>
+      </section>
+      {% endif %}
+
+      {% if can_view_recipient and not is_owner %}
+      <section class="mv-card mv-rq-person" aria-labelledby="recipient-title">
+        <h2 class="mv-rq-person__label" id="recipient-title">Отримувач</h2>
+        <div class="mv-rq-person__row">
+          {% avatar help_request.recipient 56 %}
+          <div>
+            <a class="mv-rq-person__name" href="{% url 'accounts:public-profile' help_request.recipient.pk %}">{{ help_request.recipient.get_full_name|default:help_request.recipient.username }}</a>
+            {% if help_request.city %}<span class="mv-micro d-block">{{ help_request.city }}</span>{% endif %}
+          </div>
         </div>
+      </section>
+      {% endif %}
+
+      <div class="mv-note mv-note--muted mv-rq-safety">
+        <i class="bi bi-shield-check" aria-hidden="true"></i>
+        <div class="mv-note__body">Не передавайте гроші наперед і дані карток. Якщо щось не так — поскаржтеся.</div>
       </div>
+
       {% if user.is_authenticated and not is_owner %}
-      <div class="sidebar-report">
-        <a href="{% url 'moderation:report' 'request' help_request.pk %}?next={{ request.path|urlencode }}" class="text-muted small"><i class="bi bi-flag"></i> Поскаржитися на запит</a>
-      </div>
+      <a href="{% url 'moderation:report' 'request' help_request.pk %}?next={{ request.path|urlencode }}" class="mv-link-btn mv-link-btn--muted mv-rq-report"><i class="bi bi-flag" aria-hidden="true"></i>Поскаржитися на запит</a>
       {% endif %}
     </aside>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/request-detail.js' %}"
+        data-status-url="{% url 'requests:status' help_request.pk %}"
+        data-status="{{ help_request.status }}"></script>
 {% endblock %}

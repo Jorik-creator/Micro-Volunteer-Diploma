@@ -1,6 +1,5 @@
 {# Ukraine border map — real geometry from mapsicon (MIT, https://github.com/djaiss/mapsicon)  #}
 {# Potrace-traced from high-resolution source raster; NOT hand-simplified.                     #}
-{# Classes are styled from static/css/style.css (.ukraine-map, .ukraine-map__path).             #}
 <svg class="ukraine-map" viewBox="0 0 1024 1024" preserveAspectRatio="xMidYMid meet"
      xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
   <g transform="translate(0,1024) scale(0.1,-0.1)">

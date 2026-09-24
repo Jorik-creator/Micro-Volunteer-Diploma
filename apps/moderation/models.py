@@ -32,7 +32,7 @@ class VerificationRequest(models.Model):
     about = models.TextField("Розкажіть про себе", max_length=1500)
     contact_link = models.URLField("Соцмережа або сторінка організації", blank=True)
     organization = models.CharField("Організація", max_length=150, blank=True)
-    video_call_ok = models.BooleanField("Готовий(а) до короткого відеодзвінка", default=False)
+    video_call_ok = models.BooleanField("Можу поспілкуватися коротким відеодзвінком", default=False)
     invite_code = models.ForeignKey(
         "InviteCode",
         on_delete=models.SET_NULL,

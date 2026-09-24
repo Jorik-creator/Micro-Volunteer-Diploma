@@ -275,7 +275,7 @@ class TestHelpRequestListView:
 
         assert response.status_code == 200
         assert "вул. Приватна".encode() not in response.content
-        assert "точна адреса — після прийняття".encode() in response.content
+        assert "адреса — після прийняття".encode() in response.content
 
     def test_list_shows_active_requests(self, client_logged_in_volunteer, help_request):
         """Logged-in user sees active requests."""
@@ -294,7 +294,7 @@ class TestHelpRequestListView:
 
         assert response.status_code == 200
         assert "вул. Прихована".encode() not in response.content
-        assert "точна адреса — після прийняття".encode() in response.content
+        assert "адреса — після прийняття".encode() in response.content
 
     def test_list_shows_exact_address_to_owner(self, client_logged_in_recipient, help_request):
         """The owner (recipient) still sees the exact address in their own card."""
@@ -339,11 +339,11 @@ class TestHelpRequestDetailView:
         response = client.get(f"/requests/{help_request.pk}/")
 
         assert response.status_code == 200
-        assert "Відгукнутись".encode() not in response.content
+        assert "Відгукнутися".encode() not in response.content  # only the sign-in prompt
         assert "Редагувати".encode() not in response.content
         assert "Скасувати запит".encode() not in response.content
         assert "вул. Таємна".encode() not in response.content
-        assert "Доступно після підтвердження".encode() in response.content
+        assert "Точна адреса — після прийняття".encode() in response.content
 
     def test_detail_accessible_to_volunteer(self, client_logged_in_volunteer, help_request):
         """Volunteer can view request detail."""

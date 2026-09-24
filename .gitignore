@@ -35,6 +35,7 @@ docs/*
 !docs/adr/
 !docs/ROADMAP.md
 !docs/DEPLOY.md
+!docs/DESIGN.md
 
 # Project tooling
 .tmp/

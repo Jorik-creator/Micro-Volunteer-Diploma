@@ -5,7 +5,7 @@
     "fields": {
       "name": "Продукти та харчування",
       "slug": "produkty-ta-kharchuvannia",
-      "icon": "bi-basket",
+      "icon": "bi-basket2",
       "description": "Допомога з покупкою або доставкою продуктів харчування"
     }
   },
@@ -15,7 +15,7 @@
     "fields": {
       "name": "Медична допомога",
       "slug": "medychna-dopomoha",
-      "icon": "bi-heart-pulse",
+      "icon": "bi-capsule",
       "description": "Допомога з ліками, медичними процедурами, транспортуванням до лікаря"
     }
   },
@@ -35,7 +35,7 @@
     "fields": {
       "name": "Прибирання та побут",
       "slug": "prybyrannia-ta-pobut",
-      "icon": "bi-house-heart",
+      "icon": "bi-bucket",
       "description": "Допомога з прибиранням, побутовими справами, дрібним ремонтом"
     }
   },
@@ -45,7 +45,7 @@
     "fields": {
       "name": "Технічна допомога",
       "slug": "tekhnichna-dopomoha",
-      "icon": "bi-tools",
+      "icon": "bi-phone",
       "description": "Допомога з технікою, комп'ютерами, налаштуванням пристроїв"
     }
   },
@@ -65,7 +65,7 @@
     "fields": {
       "name": "Тварини",
       "slug": "tvaryny",
-      "icon": "bi-piggy-bank",
+      "icon": "paw",
       "description": "Допомога з доглядом за тваринами, годівлею, ветеринарією"
     }
   },

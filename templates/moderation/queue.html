@@ -1,107 +1,222 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load static mv_ui %}
 
 {% block title %}Модерація — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/admin.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="page-hero">
+<section class="mv-page-head">
   <div class="container">
-    <div class="inner">
+    <div class="mv-page-head__row">
       <div>
-        <h1 class="page-title">Модерація</h1>
-        <p class="page-sub">Заявки на перевірку, нові запити та скарги</p>
+        <h1>Модерація</h1>
+        <p class="mv-lead">Заявки на перевірку, нові запити та скарги — спершу найстаріші.</p>
       </div>
-      <a href="{% url 'moderation:codes' %}" class="btn btn-ghost"><i class="bi bi-key"></i> Коди організацій</a>
+      <a class="mv-btn mv-btn--secondary" href="{% url 'moderation:codes' %}"><i class="bi bi-key" aria-hidden="true"></i>Коди організацій</a>
     </div>
   </div>
 </section>
 
-<div class="container page-shell">
-  <nav class="tabs mb-3" aria-label="Черги модерації">
-    <a class="tab {% if tab == 'verification' %}active{% endif %}" href="?tab=verification" {% if tab == 'verification' %}aria-current="page"{% endif %}>Перевірка <span class="badge text-bg-light">{{ counts.verification }}</span></a>
-    <a class="tab {% if tab == 'requests' %}active{% endif %}" href="?tab=requests" {% if tab == 'requests' %}aria-current="page"{% endif %}>Нові запити <span class="badge text-bg-light">{{ counts.requests }}</span></a>
-    <a class="tab {% if tab == 'reports' %}active{% endif %}" href="?tab=reports" {% if tab == 'reports' %}aria-current="page"{% endif %}>Скарги <span class="badge text-bg-light">{{ counts.reports }}</span></a>
+{% now "U" as now_ts %}
+<div class="container mv-page">
+  <nav class="mv-tabs" aria-label="Черги модерації">
+    <a class="mv-tab{% if tab == 'verification' %} is-active{% endif %}" href="?tab=verification"{% if tab == 'verification' %} aria-current="page"{% endif %}>
+      <i class="bi bi-patch-check" aria-hidden="true"></i>Перевірка
+      {% if counts.verification %}<span class="mv-count mv-count--blue">{{ counts.verification }}</span>{% endif %}
+    </a>
+    <a class="mv-tab{% if tab == 'requests' %} is-active{% endif %}" href="?tab=requests"{% if tab == 'requests' %} aria-current="page"{% endif %}>
+      <i class="bi bi-card-text" aria-hidden="true"></i>Нові запити
+      {% if counts.requests %}<span class="mv-count mv-count--blue">{{ counts.requests }}</span>{% endif %}
+    </a>
+    <a class="mv-tab{% if tab == 'reports' %} is-active{% endif %}" href="?tab=reports"{% if tab == 'reports' %} aria-current="page"{% endif %}>
+      <i class="bi bi-flag" aria-hidden="true"></i>Скарги
+      {% if counts.reports %}<span class="mv-count">{{ counts.reports }}</span>{% endif %}
+    </a>
   </nav>
 
-  {% if not items %}
-  <div class="empty-state"><i class="bi bi-check2-all empty-icon"></i><p>Черга порожня. Дякуємо!</p></div>
-  {% endif %}
-
-  <div class="moderation-list">
+  <div class="mv-layout-aside">
+  <div>
   {% if tab == 'verification' %}
+    <h2 class="visually-hidden">Заявки на перевірку</h2>
+    <div class="mv-stack--lg">
     {% for item in items %}
-    <article class="card-panel moderation-card" aria-labelledby="v-{{ item.pk }}">
-      <header class="moderation-card-head">
-        <h2 class="h5 mb-0" id="v-{{ item.pk }}">{{ item.user.get_full_name }} <span class="text-muted small">@{{ item.user.username }}</span></h2>
-        <span class="chip chip-blue">{{ item.user.get_user_type_display }}</span>
+    <article class="mv-card mv-mod-item" aria-labelledby="v-{{ item.pk }}">
+      <header class="mv-mod-item__head">
+        <span class="mv-tile" aria-hidden="true"><i class="bi bi-patch-check"></i></span>
+        <div>
+          <h3 class="mv-mod-item__title" id="v-{{ item.pk }}"><a href="{% url 'accounts:public-profile' item.user.pk %}">{{ item.user.get_full_name|default:item.user.username }}</a></h3>
+          <ul class="mv-meta mv-meta--inline">
+            <li><i class="bi {% if item.user.is_volunteer %}bi-heart{% else %}bi-person{% endif %}" aria-hidden="true"></i>{{ item.user.get_user_type_display }}</li>
+            <li><i class="bi bi-calendar-event" aria-hidden="true"></i>Подано {{ item.created_at|date:"j E, H:i" }}</li>
+            {% if item.created_at|date:"U"|add:86400 < now_ts|add:0 %}
+            <li class="is-late"><i class="bi bi-clock-history" aria-hidden="true"></i>Чекає {{ item.created_at|timesince }}</li>
+            {% endif %}
+          </ul>
+        </div>
       </header>
-      <dl class="moderation-facts">
-        <dt>Місто</dt><dd>{{ item.city }}</dd>
-        {% if item.organization %}<dt>Організація</dt><dd>{{ item.organization }}</dd>{% endif %}
-        {% if item.contact_link %}<dt>Посилання</dt><dd><a href="{{ item.contact_link }}" target="_blank" rel="noopener noreferrer nofollow">{{ item.contact_link|truncatechars:60 }}</a></dd>{% endif %}
-        <dt>Відеодзвінок</dt><dd>{{ item.video_call_ok|yesno:"Так,Ні" }}</dd>
-        <dt>Подано</dt><dd>{{ item.created_at|date:"d.m.Y H:i" }}</dd>
+      <dl class="mv-summary">
+        <dt><i class="bi bi-geo-alt" aria-hidden="true"></i>Місто</dt><dd>{{ item.city }}</dd>
+        {% if item.organization %}<dt><i class="bi bi-building" aria-hidden="true"></i>Організація</dt><dd>{{ item.organization }}</dd>{% endif %}
+        {% if item.contact_link %}<dt><i class="bi bi-link-45deg" aria-hidden="true"></i>Посилання</dt><dd><a href="{{ item.contact_link }}" target="_blank" rel="noopener noreferrer nofollow">{{ item.contact_link|truncatechars:60 }}</a></dd>{% endif %}
+        <dt><i class="bi bi-camera-video" aria-hidden="true"></i>Відеодзвінок</dt>
+        <dd>{% if item.video_call_ok %}<span class="mv-status mv-status--success"><i class="bi bi-check-circle-fill" aria-hidden="true"></i>Погоджується</span>{% else %}<span class="mv-status mv-status--muted"><i class="bi bi-dash-circle" aria-hidden="true"></i>Не зазначено</span>{% endif %}</dd>
+        <dt><i class="bi bi-person-badge" aria-hidden="true"></i>На платформі з</dt><dd>{{ item.user.created_at|date:"j E Y" }}</dd>
       </dl>
-      <p class="moderation-text">{{ item.about|linebreaksbr }}</p>
-      <form method="post" action="{% url 'moderation:decide-verification' item.pk %}" class="moderation-actions">
+      <div>
+        <p class="mv-quote__label"><i class="bi bi-chat-quote" aria-hidden="true"></i>Про себе</p>
+        <blockquote class="mv-quote">{{ item.about }}</blockquote>
+      </div>
+      <form method="post" action="{% url 'moderation:decide-verification' item.pk %}" class="mv-mod-item__form">
         {% csrf_token %}
-        <label class="visually-hidden" for="note-v-{{ item.pk }}">Коментар</label>
-        <textarea name="note" id="note-v-{{ item.pk }}" rows="2" class="form-control" placeholder="Коментар (обов'язковий при відмові)"></textarea>
-        <div class="d-flex gap-2 flex-wrap">
-          <button name="decision" value="approve" class="btn btn-solid btn-sm"><i class="bi bi-patch-check"></i> Схвалити</button>
-          <button name="decision" value="reject" class="btn btn-danger-ghost btn-sm">Відхилити</button>
+        <label class="form-label" for="note-v-{{ item.pk }}">Коментар для заявника</label>
+        <p class="form-text" id="note-v-{{ item.pk }}-hint">Обов'язковий, якщо відхиляєте: людина побачить його в сповіщенні.</p>
+        <textarea name="note" id="note-v-{{ item.pk }}" rows="2" maxlength="500" class="form-control" aria-describedby="note-v-{{ item.pk }}-hint"></textarea>
+        <div class="mv-cluster">
+          <button type="submit" name="decision" value="approve" class="mv-btn mv-btn--primary"><i class="bi bi-patch-check" aria-hidden="true"></i>Схвалити</button>
+          <button type="submit" name="decision" value="reject" class="mv-btn mv-btn--danger"><i class="bi bi-x-lg" aria-hidden="true"></i>Відхилити</button>
         </div>
       </form>
     </article>
+    {% empty %}
+    {% include "partials/_empty.html" with icon="bi-patch-check" title="Нових заявок немає" text="Коли хтось заповнить анкету на перевірку, вона з'явиться тут." %}
     {% endfor %}
+    </div>
+
   {% elif tab == 'requests' %}
+    <h2 class="visually-hidden">Нові запити на перевірку</h2>
+    <div class="mv-stack--lg">
     {% for item in items %}
-    <article class="card-panel moderation-card" aria-labelledby="r-{{ item.pk }}">
-      <header class="moderation-card-head">
-        <h2 class="h5 mb-0" id="r-{{ item.pk }}"><a href="{% url 'requests:detail' item.pk %}">{{ item.title }}</a></h2>
-        <span class="chip chip-gray">{{ item.get_help_format_display }}</span>
+    <article class="mv-card mv-mod-item" aria-labelledby="r-{{ item.pk }}">
+      <header class="mv-mod-item__head">
+        <span class="mv-tile" aria-hidden="true">{% category_icon item.category %}</span>
+        <div>
+          <h3 class="mv-mod-item__title" id="r-{{ item.pk }}"><a href="{% url 'requests:detail' item.pk %}">{{ item.title }}</a></h3>
+          <ul class="mv-meta mv-meta--inline">
+            <li>{% avatar item.recipient 40 %}<span><a href="{% url 'accounts:public-profile' item.recipient.pk %}">{{ item.recipient|short_name }}</a> · на платформі з {{ item.recipient.created_at|date:"j E Y" }}</span></li>
+            <li><i class="bi bi-calendar-event" aria-hidden="true"></i>Створено {{ item.created_at|date:"j E, H:i" }}</li>
+            {% if item.created_at|date:"U"|add:86400 < now_ts|add:0 %}
+            <li class="is-late"><i class="bi bi-clock-history" aria-hidden="true"></i>Чекає {{ item.created_at|timesince }}</li>
+            {% endif %}
+          </ul>
+        </div>
       </header>
-      <dl class="moderation-facts">
-        <dt>Отримувач</dt><dd>{{ item.recipient.get_full_name }} (з {{ item.recipient.created_at|date:"d.m.Y" }})</dd>
-        <dt>Коли</dt><dd>{{ item.needed_date|date:"d.m.Y H:i" }}</dd>
-        <dt>Адреса</dt><dd>{{ item.address|default:"онлайн" }}</dd>
+      <dl class="mv-summary">
+        <dt><i class="bi bi-grid" aria-hidden="true"></i>Категорія</dt><dd>{{ item.category.name|default:"Інше" }}</dd>
+        <dt>{% format_icon item %}Формат</dt><dd>{{ item.get_help_format_display }}</dd>
+        <dt><i class="bi bi-alarm" aria-hidden="true"></i>Коли</dt><dd>{{ item.needed_date|date:"D, j E, H:i" }} · {{ item.get_duration_display }}</dd>
+        <dt><i class="bi bi-geo-alt" aria-hidden="true"></i>Адреса</dt><dd>{{ item.address|default:"Онлайн" }}</dd>
+        <dt>{% urgency_icon item %}Терміновість</dt><dd>{{ item.get_urgency_display }}</dd>
       </dl>
-      <p class="moderation-text">{{ item.description|linebreaksbr }}</p>
-      <form method="post" action="{% url 'moderation:decide-request' item.pk %}" class="moderation-actions">
+      {% if item.description %}
+      <div>
+        <p class="mv-quote__label"><i class="bi bi-chat-quote" aria-hidden="true"></i>Опис</p>
+        <blockquote class="mv-quote">{{ item.description }}</blockquote>
+      </div>
+      {% endif %}
+      <form method="post" action="{% url 'moderation:decide-request' item.pk %}" class="mv-mod-item__form">
         {% csrf_token %}
-        <label class="visually-hidden" for="note-r-{{ item.pk }}">Причина відмови</label>
-        <textarea name="note" id="note-r-{{ item.pk }}" rows="2" class="form-control" placeholder="Причина (обов'язкова при відмові)"></textarea>
-        <div class="d-flex gap-2 flex-wrap">
-          <button name="decision" value="approve" class="btn btn-solid btn-sm"><i class="bi bi-check2"></i> Опублікувати</button>
-          <button name="decision" value="reject" class="btn btn-danger-ghost btn-sm">Відхилити</button>
+        <label class="form-label" for="note-r-{{ item.pk }}">Причина відмови</label>
+        <p class="form-text" id="note-r-{{ item.pk }}-hint">Обов'язкова, якщо відхиляєте: автор побачить її й зможе виправити запит.</p>
+        <textarea name="note" id="note-r-{{ item.pk }}" rows="2" maxlength="500" class="form-control" aria-describedby="note-r-{{ item.pk }}-hint"></textarea>
+        <div class="mv-cluster">
+          <button type="submit" name="decision" value="approve" class="mv-btn mv-btn--primary"><i class="bi bi-check-lg" aria-hidden="true"></i>Опублікувати</button>
+          <button type="submit" name="decision" value="reject" class="mv-btn mv-btn--danger"><i class="bi bi-x-lg" aria-hidden="true"></i>Відхилити</button>
         </div>
       </form>
     </article>
+    {% empty %}
+    {% include "partials/_empty.html" with icon="bi-inbox" title="Усі запити перевірено" text="Перші запити нових користувачів з'являться тут перед публікацією." %}
     {% endfor %}
+    </div>
+
   {% else %}
+    <h2 class="visually-hidden">Скарги</h2>
+    <div class="mv-stack--lg">
     {% for item in items %}
-    <article class="card-panel moderation-card" aria-labelledby="c-{{ item.pk }}">
-      <header class="moderation-card-head">
-        <h2 class="h5 mb-0" id="c-{{ item.pk }}">{{ item.get_reason_display }}</h2>
-        {% if item.similar > 1 %}<span class="chip chip-red">скарг: {{ item.similar }}</span>{% endif %}
+    {% with kind=item.content_type.model target=item.target %}
+    <article class="mv-card mv-mod-item" aria-labelledby="c-{{ item.pk }}">
+      <header class="mv-mod-item__head">
+        <span class="mv-tile{% if item.reason == 'fraud' or item.reason == 'unsafe' %} mv-tile--danger{% else %} mv-tile--warning{% endif %}" aria-hidden="true">
+          <i class="bi {% if item.reason == 'fraud' %}bi-cash-coin{% elif item.reason == 'unsafe' %}bi-exclamation-triangle{% elif item.reason == 'offensive' %}bi-emoji-angry{% elif item.reason == 'spam' %}bi-megaphone{% elif item.reason == 'false_info' %}bi-question-octagon{% else %}bi-three-dots{% endif %}"></i>
+        </span>
+        <div>
+          <h3 class="mv-mod-item__title" id="c-{{ item.pk }}">{{ item.get_reason_display }}</h3>
+          <ul class="mv-meta mv-meta--inline">
+            <li>{% avatar item.reporter 40 %}<span>Від {{ item.reporter.get_full_name|default:item.reporter.username }}</span></li>
+            <li><i class="bi bi-calendar-event" aria-hidden="true"></i>{{ item.created_at|date:"j E, H:i" }}</li>
+            {% if item.created_at|date:"U"|add:86400 < now_ts|add:0 %}
+            <li class="is-late"><i class="bi bi-clock-history" aria-hidden="true"></i>Чекає {{ item.created_at|timesince }}</li>
+            {% endif %}
+            {% if item.similar > 1 %}
+            <li class="is-alert"><i class="bi bi-flag-fill" aria-hidden="true"></i>{{ item.similar }} {{ item.similar|uk_plural:"скарга,скарги,скарг" }} на цей об'єкт</li>
+            {% endif %}
+          </ul>
+        </div>
       </header>
-      <dl class="moderation-facts">
-        <dt>Об'єкт</dt><dd>{{ item.content_type.name }} — {{ item.target|default:"видалено" }}</dd>
-        <dt>Від</dt><dd>{{ item.reporter.get_full_name }}</dd>
-        <dt>Подано</dt><dd>{{ item.created_at|date:"d.m.Y H:i" }}</dd>
+      <dl class="mv-summary">
+        <dt><i class="bi {% if kind == 'helprequest' %}bi-card-text{% elif kind == 'user' %}bi-person{% elif kind == 'review' %}bi-star{% elif kind == 'message' %}bi-chat-dots{% else %}bi-box{% endif %}" aria-hidden="true"></i>{{ item.content_type.name|capfirst }}</dt>
+        <dd>
+          {% if not target %}<span class="mv-status mv-status--muted"><i class="bi bi-trash3" aria-hidden="true"></i>Видалено</span>
+          {% elif kind == 'helprequest' %}<a href="{% url 'requests:detail' item.object_id %}">{{ target }}</a>
+          {% elif kind == 'user' %}<a href="{% url 'accounts:public-profile' item.object_id %}">{{ target.get_full_name|default:target.username }}</a>
+          {% elif kind == 'message' %}{{ target }} <a class="ms-1" href="{% url 'conversations:detail' target.conversation_id %}">Відкрити розмову</a>
+          {% else %}{{ target }}{% endif %}
+        </dd>
       </dl>
-      {% if item.comment %}<p class="moderation-text">{{ item.comment|linebreaksbr }}</p>{% endif %}
-      <form method="post" action="{% url 'moderation:decide-report' item.pk %}" class="moderation-actions">
+      {% if item.comment %}
+      <div>
+        <p class="mv-quote__label"><i class="bi bi-chat-quote" aria-hidden="true"></i>Коментар до скарги</p>
+        <blockquote class="mv-quote">{{ item.comment }}</blockquote>
+      </div>
+      {% endif %}
+      <form method="post" action="{% url 'moderation:decide-report' item.pk %}" class="mv-mod-item__form">
         {% csrf_token %}
-        <label class="visually-hidden" for="note-c-{{ item.pk }}">Коментар</label>
-        <textarea name="note" id="note-c-{{ item.pk }}" rows="2" class="form-control" placeholder="Коментар до рішення"></textarea>
-        <div class="d-flex gap-2 flex-wrap">
-          {% if item.measure %}<button name="decision" value="act" class="btn btn-danger-ghost btn-sm" data-confirm-submit="{{ item.measure }}?"><i class="bi bi-slash-circle"></i> {{ item.measure }}</button>{% endif %}
-          <button name="decision" value="dismiss" class="btn btn-muted btn-sm">Порушень немає</button>
+        <label class="form-label" for="note-c-{{ item.pk }}">Коментар до рішення</label>
+        <p class="form-text" id="note-c-{{ item.pk }}-hint">Необов'язково. Зберігається в історії модерації.</p>
+        <textarea name="note" id="note-c-{{ item.pk }}" rows="2" maxlength="500" class="form-control" aria-describedby="note-c-{{ item.pk }}-hint"></textarea>
+        <div class="mv-cluster">
+          {% if item.measure %}<button type="submit" name="decision" value="act" class="mv-btn mv-btn--danger" data-confirm-submit="{{ item.measure }}?"><i class="bi bi-slash-circle" aria-hidden="true"></i>{{ item.measure }}</button>{% endif %}
+          <button type="submit" name="decision" value="dismiss" class="mv-btn mv-btn--secondary"><i class="bi bi-check2" aria-hidden="true"></i>Порушень немає</button>
         </div>
       </form>
     </article>
+    {% endwith %}
+    {% empty %}
+    {% include "partials/_empty.html" with icon="bi-flag" title="Нових скарг немає" text="Скарги користувачів на запити, профілі, оцінки й повідомлення з'являться тут." %}
     {% endfor %}
+    </div>
   {% endif %}
   </div>
+  <aside class="mv-card mv-card--canvas mv-sticky" aria-labelledby="tips-title">
+    <h2 class="mv-card__title" id="tips-title"><i class="bi bi-lightbulb" aria-hidden="true"></i>На що зважати</h2>
+    <ul class="mv-meta">
+    {% if tab == 'verification' %}
+      <li><i class="bi bi-person-check" aria-hidden="true"></i><span>Відповіді звучать як від реальної людини, без шаблонних фраз.</span></li>
+      <li><i class="bi bi-link-45deg" aria-hidden="true"></i><span>Посилання веде на живу сторінку людини чи організації.</span></li>
+      <li><i class="bi bi-camera-video" aria-hidden="true"></i><span>Сумніваєтеся — запропонуйте короткий відеодзвінок.</span></li>
+      <li><i class="bi bi-shield-lock" aria-hidden="true"></i><span>Не просіть документів: ми їх не приймаємо й не зберігаємо.</span></li>
+    {% elif tab == 'requests' %}
+      <li><i class="bi bi-cash-coin" aria-hidden="true"></i><span>Жодних прохань про гроші, передоплату чи дані карток.</span></li>
+      <li><i class="bi bi-card-checklist" aria-hidden="true"></i><span>Один запит — одна побутова справа з реальним часом і місцем.</span></li>
+      <li><i class="bi bi-house-door" aria-hidden="true"></i><span>Формат відповідає справі: візит додому — лише коли без нього ніяк.</span></li>
+      <li><i class="bi bi-chat-left-text" aria-hidden="true"></i><span>Відхиляючи, поясніть, що саме виправити.</span></li>
+    {% else %}
+      <li><i class="bi bi-people" aria-hidden="true"></i><span>Кілька скарг на один об'єкт — сильний сигнал.</span></li>
+      <li><i class="bi bi-chat-dots" aria-hidden="true"></i><span>Розмову відкривайте лише для перевірки скарги.</span></li>
+      <li><i class="bi bi-slash-circle" aria-hidden="true"></i><span>Захід застосовується одразу й закриває скаргу.</span></li>
+      <li><i class="bi bi-telephone" aria-hidden="true"></i><span>Загроза життю — радьте телефонувати 102 або 112.</span></li>
+    {% endif %}
+    </ul>
+  </aside>
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // On narrow screens keep the active queue tab in view
+  (function () {
+    var active = document.querySelector('.mv-tabs .mv-tab.is-active');
+    if (active) active.parentNode.scrollLeft = active.offsetLeft - active.parentNode.offsetLeft - 16;
+  })();
+</script>
 {% endblock %}

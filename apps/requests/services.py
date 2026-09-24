@@ -27,7 +27,8 @@ RStatus = Response.Status
 
 MAX_ACTIVE_REQUESTS = 10
 PREMODERATED_REQUESTS = 3  # first requests of a not-yet-verified recipient (ADR 0002)
-CANCELLABLE = (Status.DRAFT, Status.PENDING_MODERATION, *HelpRequest.OPEN_STATUSES)
+UNFINISHED = (Status.DRAFT, Status.PENDING_MODERATION, *HelpRequest.OPEN_STATUSES)
+CANCELLABLE = (*UNFINISHED, Status.REJECTED)
 AUTO_CONFIRM_AFTER = timedelta(hours=72)
 REMIND_AFTER_END = timedelta(hours=24)
 EXPIRE_IN_PROGRESS_AFTER_END = timedelta(days=7)
@@ -68,7 +69,8 @@ def _set_status(help_request, status, now=None):
 def _set_response_status(response, status, reason=""):
     response.status = status
     response.status_reason = reason[:300]
-    response.save(update_fields=["status", "status_reason"])
+    response.status_changed_at = timezone.now()
+    response.save(update_fields=["status", "status_reason", "status_changed_at"])
 
 
 def _close_pending(help_request, reason):
@@ -77,7 +79,7 @@ def _close_pending(help_request, reason):
         help_request.responses.filter(status=RStatus.PENDING).select_related("volunteer")
     )
     help_request.responses.filter(pk__in=[r.pk for r in pending]).update(
-        status=RStatus.CLOSED, status_reason=reason
+        status=RStatus.CLOSED, status_reason=reason, status_changed_at=timezone.now()
     )
     return [r.volunteer for r in pending]
 
@@ -93,7 +95,7 @@ def _accepted_volunteers(help_request):
 
 def can_create_request(user):
     """Return an error message when the recipient may not create one more request."""
-    open_count = HelpRequest.objects.filter(recipient=user, status__in=CANCELLABLE)
+    open_count = HelpRequest.objects.filter(recipient=user, status__in=UNFINISHED)
     if open_count.count() >= MAX_ACTIVE_REQUESTS:
         return (
             f"Досягнуто максимум відкритих запитів ({MAX_ACTIVE_REQUESTS}). "
@@ -115,10 +117,29 @@ def needs_premoderation_on_edit(recipient):
 
 
 def _go_live(help_request):
+    """Publish and notify nearby volunteers; returns how many were notified."""
     help_request.published_at = timezone.now()
     help_request.save(update_fields=["published_at"])
     _set_status(help_request, Status.ACTIVE)
-    transaction.on_commit(lambda: notify_nearby_volunteers(help_request))
+    # Synchronous, so the recipient can be told the real count: the rows roll
+    # back with the transaction and emails go out only after commit anyway.
+    return notify_nearby_volunteers(help_request)
+
+
+def notified_volunteers_count(help_request):
+    """How many volunteers were told about the request when it went live."""
+    return Notification.objects.filter(
+        related_request=help_request, type=Notification.Type.NEW_NEARBY_REQUEST
+    ).count()
+
+
+def published_message(help_request):
+    """Honest copy about who has actually been told about a published request."""
+    count = notified_volunteers_count(help_request)
+    if not count:
+        return "Волонтери побачать його у списку й на карті."
+    noun = "волонтеру" if count % 10 == 1 and count % 100 != 11 else "волонтерам"
+    return f"Сповіщення надіслано {count} {noun} поруч."
 
 
 def create_request(help_request, recipient):
@@ -167,7 +188,7 @@ def approve(help_request, moderator):
         help_request.recipient,
         Notification.Type.REQUEST_APPROVED,
         "Запит опубліковано",
-        f"Модератор перевірив запит «{help_request.title}». Волонтери поблизу вже його бачать.",
+        f"Модератор перевірив запит «{help_request.title}». {published_message(help_request)}",
         help_request,
     )
 
@@ -202,6 +223,8 @@ def editable_fields_error(help_request, changed_fields, new_volunteers_needed):
     """
     if not help_request.is_editable:
         return "Редагувати цей запит уже не можна."
+    if help_request.status == Status.REJECTED:
+        return None
     has_responses = help_request.responses.filter(
         status__in=[RStatus.PENDING, RStatus.ACCEPTED]
     ).exists()
@@ -212,7 +235,7 @@ def editable_fields_error(help_request, changed_fields, new_volunteers_needed):
         )
     accepted = help_request.accepted_responses().count()
     if new_volunteers_needed < accepted:
-        return f"Ви вже прийняли {accepted} волонтер(ів) — менше вказати не можна."
+        return f"Уже прийнято волонтерів: {accepted}. Менше вказати не можна."
     return None
 
 
@@ -225,8 +248,13 @@ def after_edit(help_request, changed_fields=()):
     Re-review content changes of recipients who are still premoderated
     (otherwise an approved request could be edited into a scam), and start
     the work if volunteers_needed was lowered to the accepted count.
+    A fixed rejected request goes back to the moderator; the old moderation
+    note stays until approval so the moderator sees what was wrong.
     """
     help_request = _lock(help_request)
+    if help_request.status == Status.REJECTED:
+        _set_status(help_request, Status.PENDING_MODERATION)
+        return
     if (
         help_request.status == Status.ACTIVE
         and set(changed_fields) & set(CONTENT_FIELDS)
@@ -283,7 +311,7 @@ def respond(help_request, volunteer, message=""):
     notify(
         help_request.recipient,
         Notification.Type.NEW_RESPONSE,
-        f"{_name(volunteer)} відгукнувся(лась) на ваш запит",
+        f"Новий відгук від волонтера: {_name(volunteer)}",
         f"Запит «{help_request.title}». Перегляньте відгук і прийміть або відхиліть його.",
         help_request,
     )
@@ -319,11 +347,15 @@ def accept(response, recipient):
 
     _set_response_status(response, RStatus.ACCEPTED)
     conversation_services.open_for(response)
+    details = (
+        "розмова з отримувачем" if help_request.is_remote else "адреса й розмова з отримувачем"
+    )
     notify(
         response.volunteer,
         Notification.Type.REQUEST_ACCEPTED,
         "Вас прийнято як волонтера",
-        f"Отримувач прийняв вашу допомогу із запитом «{help_request.title}».",
+        f"Отримувач прийняв вашу допомогу із запитом «{help_request.title}». "
+        f"Відкрийте запит — там {details}.",
         help_request,
     )
 
@@ -480,8 +512,8 @@ def mark_done(response, volunteer):
     notify(
         help_request.recipient,
         Notification.Type.MARKED_DONE,
-        "Волонтер позначив допомогу виконаною",
-        f"{_name(volunteer)} позначив(ла) запит «{help_request.title}» виконаним. "
+        f"Допомогу позначено виконаною: {_name(volunteer)}",
+        f"Запит «{help_request.title}». "
         + (
             "Підтвердьте завершення або повідомте, якщо щось не так. "
             "Без відповіді запит завершиться автоматично через 72 години."
@@ -536,6 +568,14 @@ def dispute_completion(help_request, recipient, reason=""):
     )
 
 
+def _cancel(help_request, pending_reason):
+    """Cancel; returns every volunteer involved (accepted and still pending)."""
+    accepted = _accepted_volunteers(help_request)
+    _set_status(help_request, Status.CANCELLED)
+    closed = _close_pending(help_request, pending_reason)
+    return [*accepted, *closed]
+
+
 @transaction.atomic
 def cancel(help_request, recipient):
     help_request = _lock(help_request)
@@ -544,11 +584,9 @@ def cancel(help_request, recipient):
     if help_request.status not in CANCELLABLE:
         raise TransitionError("Цей запит не можна скасувати.")
 
-    accepted = _accepted_volunteers(help_request)
-    _set_status(help_request, Status.CANCELLED)
-    closed = _close_pending(help_request, "Отримувач скасував запит.")
+    volunteers = _cancel(help_request, "Отримувач скасував запит.")
     notify_many(
-        [*accepted, *closed],
+        volunteers,
         Notification.Type.REQUEST_CANCELLED,
         "Запит скасовано",
         f"Отримувач скасував запит «{help_request.title}». Дякуємо за готовність допомогти!",
@@ -563,16 +601,48 @@ def cancel_by_moderator(help_request, reason):
     if help_request.status not in CANCELLABLE:
         raise TransitionError("Цей запит уже закрито.")
 
-    accepted = _accepted_volunteers(help_request)
-    _set_status(help_request, Status.CANCELLED)
-    closed = _close_pending(help_request, "Запит закрито модератором.")
+    volunteers = _cancel(help_request, "Запит закрито модератором.")
     notify_many(
-        [help_request.recipient, *accepted, *closed],
+        [help_request.recipient, *volunteers],
         Notification.Type.REQUEST_CANCELLED,
         "Запит закрито модератором",
         f"Запит «{help_request.title}» закрито модератором. Причина: {reason}",
         help_request,
     )
+
+
+@transaction.atomic
+def _cancel_as_owner_left(help_request, reason):
+    help_request = _lock(help_request)
+    if help_request.status not in CANCELLABLE:
+        return
+    volunteers = _cancel(help_request, reason)
+    notify_many(
+        volunteers,
+        Notification.Type.REQUEST_CANCELLED,
+        "Запит скасовано",
+        f"Запит «{help_request.title}» закрито. Причина: {reason}",
+        help_request,
+    )
+
+
+def close_open_work_of(user, reason):
+    """
+    The user leaves the platform (account deleted or blocked): cancel their
+    unfinished requests and take them off requests they volunteer on, telling
+    the other side. The user is not notified — they can no longer sign in.
+    """
+    for help_request in HelpRequest.objects.filter(recipient=user, status__in=CANCELLABLE):
+        _cancel_as_owner_left(help_request, reason)
+    for response in Response.objects.filter(
+        volunteer=user,
+        status__in=[RStatus.PENDING, RStatus.ACCEPTED],
+        help_request__status__in=HelpRequest.OPEN_STATUSES,
+    ):
+        try:
+            withdraw(response, user, reason)
+        except TransitionError:  # e.g. already marked done, so leaving is not allowed
+            remove_by_moderator(response, reason)
 
 
 # ---------------------------------------------------------------------------
@@ -581,6 +651,7 @@ def cancel_by_moderator(help_request, reason):
 
 
 def _expire(help_request, now):
+    never_reviewed = help_request.status == Status.PENDING_MODERATION
     accepted = _accepted_volunteers(help_request)
     _set_status(help_request, Status.EXPIRED, now)
     closed = _close_pending(help_request, "Час запиту минув.")
@@ -588,7 +659,10 @@ def _expire(help_request, now):
         help_request.recipient,
         Notification.Type.REQUEST_EXPIRED,
         "Запит прострочено",
-        f"Час запиту «{help_request.title}» минув. За потреби створіть новий.",
+        f"Модератор не встиг перевірити запит «{help_request.title}» до дати допомоги — "
+        "створіть новий з актуальною датою."
+        if never_reviewed
+        else f"Час запиту «{help_request.title}» минув. За потреби створіть новий.",
         help_request,
     )
     notify_many(

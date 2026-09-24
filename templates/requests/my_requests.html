@@ -1,81 +1,95 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load static mv_ui %}
 
 {% block title %}Мої запити — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/personal.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="page-hero">
+<section class="mv-page-head">
   <div class="container">
-    <div class="inner">
+    <div class="mv-page-head__row">
       <div>
-        <h1 class="page-title">Мої запити</h1>
-        <p class="page-sub">Ваші активні та завершені запити</p>
+        <h1>Мої запити</h1>
+        <p class="mv-lead">Що потребує вашої відповіді, що вже в роботі й що завершено.</p>
       </div>
-      <a href="{% url 'requests:create' %}" class="btn btn-solid">
-        <i class="bi bi-plus-lg"></i> Новий запит
-      </a>
+      {% if requests %}
+      <a class="mv-btn mv-btn--primary" href="{% url 'requests:create' %}"><i class="bi bi-plus-lg" aria-hidden="true"></i>Новий запит</a>
+      {% endif %}
     </div>
+    {% if requests %}
+    <dl class="mv-stats mv-stats--compact mv-head-stats" aria-label="Мої запити в цифрах">
+      <div class="mv-stat"><dt class="mv-stat__label">Шукають волонтера</dt><dd class="mv-stat__num">{{ active_count }}</dd></div>
+      <div class="mv-stat"><dt class="mv-stat__label">У процесі</dt><dd class="mv-stat__num">{{ in_progress_count }}</dd></div>
+      <div class="mv-stat"><dt class="mv-stat__label">Виконано</dt><dd class="mv-stat__num">{{ completed_count }}</dd></div>
+    </dl>
+    {% endif %}
   </div>
 </section>
 
-<div class="container page-shell">
-
-  <!-- Stats row -->
-  <div class="stat-grid-3 mb-4" aria-label="Статистика моїх запитів">
-    <div class="mini-stat mini-stat-center">
-      <div class="n">{{ active_count }}</div>
-      <div class="l">Активних</div>
-    </div>
-    <div class="mini-stat mini-stat-center">
-      <div class="n stat-warning">{{ in_progress_count }}</div>
-      <div class="l">В процесі</div>
-    </div>
-    <div class="mini-stat mini-stat-center">
-      <div class="n stat-success">{{ completed_count }}</div>
-      <div class="l">Виконано</div>
-    </div>
-  </div>
-
+<div class="container mv-page mv-personal">
   {% if requests %}
-  <div class="requests-grid">
-    {% for hr in requests %}
-    {% if hr.status == 'awaiting_confirmation' %}
-      {% include "partials/_request_card.html" with show_status=True card_note="Волонтер позначив допомогу виконаною — підтвердьте завершення." card_action="Підтвердити" %}
-    {% elif hr.status == 'active' and hr.pending_count %}
-      {% include "partials/_request_card.html" with show_status=True card_note="Нових відгуків волонтерів: " card_note_value=hr.pending_count card_action="Переглянути відгуки" %}
-    {% else %}
-      {% include "partials/_request_card.html" with show_status=True %}
-    {% endif %}
-    {% endfor %}
-  </div>
-
-  <!-- Pagination -->
-  {% if is_paginated %}
-  <nav class="pagination-wrap" aria-label="Навігація сторінками моїх запитів">
-    <ul class="pagination justify-content-center">
-      {% if page_obj.has_previous %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Попередня сторінка">&laquo;</a>
-      </li>
-      {% endif %}
-      <li class="page-item disabled">
-        <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-      </li>
-      {% if page_obj.has_next %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Наступна сторінка">&raquo;</a>
-      </li>
-      {% endif %}
-    </ul>
+  {# Groups are built from the current page; empty groups and their links are hidden by personal.css #}
+  <nav class="mv-tabs mv-jump" aria-label="Розділи сторінки">
+    <a class="mv-tab" href="#needs"><i class="bi bi-exclamation-circle" aria-hidden="true"></i>Потребують дії</a>
+    <a class="mv-tab" href="#current"><i class="bi bi-circle-half" aria-hidden="true"></i>Активні</a>
+    <a class="mv-tab" href="#past"><i class="bi bi-archive" aria-hidden="true"></i>Завершені</a>
   </nav>
-  {% endif %}
 
+  <section class="mv-psec mv-psec--action" id="needs" aria-labelledby="needs-title">
+    <div class="mv-psec__head">
+      <h2 class="mv-psec__title" id="needs-title"><i class="bi bi-exclamation-circle" aria-hidden="true"></i>Потребують вашої дії</h2>
+      <p>Відповідайте волонтерам і підтверджуйте виконання — так допомога прийде швидше.</p>
+    </div>
+    <div class="mv-grid mv-grid--cards">
+      {% for hr in requests %}
+      {% if hr.status == 'awaiting_confirmation' %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Волонтер позначив допомогу виконаною — підтвердьте, що допомогу отримано." card_action="Підтвердити" %}
+      {% elif hr.status == 'active' and hr.pending_count %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Нових відгуків волонтерів: " card_note_value=hr.pending_count card_action="Переглянути відгуки" %}
+      {% elif hr.status == 'draft' %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Чернетка — опублікуйте після підтвердження email." card_action="Відкрити чернетку" %}
+      {% elif hr.status == 'rejected' %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Відхилено модератором — відредагуйте й надішліть знову." card_action="Виправити" %}
+      {% endif %}
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="mv-psec mv-psec--calm" id="current" aria-labelledby="current-title">
+    <div class="mv-psec__head">
+      <h2 class="mv-psec__title" id="current-title"><i class="bi bi-circle-half" aria-hidden="true"></i>Активні</h2>
+      <p>Опубліковані запити та ті, з якими вже допомагають.</p>
+    </div>
+    <div class="mv-grid mv-grid--cards">
+      {% for hr in requests %}
+      {% if hr.status == 'pending_moderation' %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Модератор перевіряє запит перед публікацією." %}
+      {% elif hr.status == 'active' and not hr.pending_count %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Запит бачать волонтери поруч — ми сповістимо про відгуки." %}
+      {% elif hr.status == 'in_progress' %}
+        {% include "partials/_request_card.html" with show_status=True card_note="Волонтер допомагає — деталі узгоджуйте в розмові." %}
+      {% endif %}
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="mv-psec mv-psec--past" id="past" aria-labelledby="past-title">
+    <div class="mv-psec__head">
+      <h2 class="mv-psec__title" id="past-title"><i class="bi bi-archive" aria-hidden="true"></i>Завершені й закриті</h2>
+      <p>Виконані, скасовані та прострочені запити.</p>
+    </div>
+    <div class="mv-grid mv-grid--cards">
+      {% for hr in requests %}
+      {% if hr.status == 'completed' or hr.status == 'cancelled' or hr.status == 'expired' %}
+        {% include "partials/_request_card.html" with show_status=True %}
+      {% endif %}
+      {% endfor %}
+    </div>
+  </section>
+
+  {% include "partials/_pagination.html" %}
   {% else %}
-  <div class="empty-state">
-    <i class="bi bi-inbox empty-icon"></i>
-    <p>У вас ще немає запитів.</p>
-    <a href="{% url 'requests:create' %}" class="btn btn-solid">Створити перший запит</a>
-  </div>
+  {% url 'requests:create' as create_url %}
+  {% include "partials/_empty.html" with icon="bi-card-checklist" title="Запитів поки немає" text="Опишіть, з чим потрібна допомога, — волонтери поруч побачать запит і відгукнуться." action_url=create_url action_label="Створити перший запит" %}
   {% endif %}
-
 </div>
 {% endblock %}

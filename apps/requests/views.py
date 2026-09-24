@@ -55,9 +55,17 @@ def _perform(request, action, *args, success=None, **kwargs):
     return result
 
 
-def _reason(request):
+def _perform_with_reason(request, action, *args, success=None):
+    """
+    _perform with the optional ReasonForm text appended to args. An invalid
+    reason (e.g. too long) is reported as is — silently dropping it made the
+    service complain that no reason was given.
+    """
     form = ReasonForm(request.POST)
-    return form.cleaned_data["reason"] if form.is_valid() else ""
+    if not form.is_valid():
+        messages.error(request, form.errors["reason"][0])
+        return None
+    return _perform(request, action, *args, form.cleaned_data["reason"], success=success)
 
 
 PUBLISH_MESSAGES = {
@@ -65,8 +73,13 @@ PUBLISH_MESSAGES = {
     HelpRequest.Status.PENDING_MODERATION: (
         "Запит надіслано на перевірку модератору. Зазвичай це займає кілька годин."
     ),
-    HelpRequest.Status.ACTIVE: "Запит опубліковано! Волонтери поблизу вже отримали сповіщення.",
 }
+
+
+def _publish_message(help_request):
+    if help_request.status == HelpRequest.Status.ACTIVE:
+        return f"Запит опубліковано. {services.published_message(help_request)}"
+    return PUBLISH_MESSAGES[help_request.status]
 
 
 class RecipientOnlyMixin(LoginRequiredMixin):
@@ -110,6 +123,8 @@ class HelpRequestListView(ListView):
                 qs = qs.filter(category=data["category"])
             if data.get("urgency"):
                 qs = qs.filter(urgency=data["urgency"])
+            if data.get("help_format"):
+                qs = qs.filter(help_format=data["help_format"])
             if data.get("duration"):
                 qs = qs.filter(duration=data["duration"])
             if data.get("date_from"):
@@ -119,11 +134,20 @@ class HelpRequestListView(ListView):
             if data.get("city"):
                 # Only the public city field — never the private address (it could be probed)
                 qs = qs.filter(city__icontains=data["city"])
+            user = self.request.user
+            if data.get("can_take") and user.is_authenticated and user.is_volunteer:
+                qs = qs.exclude(recipient=user).exclude(responses__volunteer=user)
+                if not user.is_verified:
+                    qs = qs.exclude(help_format=HelpRequest.HelpFormat.HOME_VISIT)
         return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user = self.request.user
         context["filter_form"] = FilterForm(self.request.GET)
+        context["volunteer_can_take_home_visits"] = bool(
+            user.is_authenticated and user.is_volunteer and user.is_verified
+        )
         # Keep active filters in pagination links without duplicating "page"
         query = self.request.GET.copy()
         query.pop("page", None)
@@ -168,7 +192,10 @@ def map_data(request):
                 "urgency": hr.urgency,
                 "urgency_display": hr.get_urgency_display(),
                 "category": hr.category.name if hr.category else "",
-                "needed_date": hr.needed_date.strftime("%d.%m.%Y %H:%M"),
+                "help_format": hr.help_format,
+                "help_format_display": hr.get_help_format_display(),
+                "city": hr.city,
+                "needed_date": timezone.localtime(hr.needed_date).strftime("%d.%m.%Y %H:%M"),
                 "duration": hr.get_duration_display(),
                 "lat": lat,
                 "lon": lon,
@@ -228,6 +255,8 @@ class HelpRequestDetailView(DetailView):
                 "accepted_count": len(accepted),
                 "accepted_responses": accepted,
                 "is_owner": is_owner,
+                "can_edit": is_owner and hr.is_editable,
+                "can_cancel": is_owner and hr.status in services.CANCELLABLE,
                 "user_response": user_response,
                 "is_accepted": is_accepted,
                 # Recipient PII is only revealed to the owner or an accepted volunteer
@@ -325,7 +354,12 @@ def _review_context(help_request, user):
 
 def request_status(request, pk):
     """Current status as JSON for polling; same visibility rules as the detail page."""
-    help_request = get_object_or_404(HelpRequest.objects.visible_to(request.user), pk=pk)
+    visible = (
+        HelpRequest.objects.all()
+        if is_moderator(request.user)
+        else HelpRequest.objects.visible_to(request.user)
+    )
+    help_request = get_object_or_404(visible, pk=pk)
     return JsonResponse(
         {
             "status": help_request.status,
@@ -356,7 +390,7 @@ class HelpRequestCreateView(RecipientOnlyMixin, CreateView):
 
     def form_valid(self, form):
         self.object = services.create_request(form.save(commit=False), self.request.user)
-        messages.success(self.request, PUBLISH_MESSAGES[self.object.status])
+        messages.success(self.request, _publish_message(self.object))
         return redirect(self.get_success_url())
 
     def get_success_url(self):
@@ -372,7 +406,7 @@ class HelpRequestCreateView(RecipientOnlyMixin, CreateView):
 
 
 class HelpRequestUpdateView(LoginRequiredMixin, UpdateView):
-    """Edit an active help request (owner only)."""
+    """Edit an unfinished request (owner only); a rejected one goes back to moderation."""
 
     model = HelpRequest
     form_class = HelpRequestForm
@@ -517,12 +551,11 @@ def respond_to_request(request, pk):
 @require_POST
 def withdraw_response(request, pk):
     response = get_object_or_404(Response, help_request_id=pk, volunteer=request.user)
-    _perform(
+    _perform_with_reason(
         request,
         services.withdraw,
         response,
         request.user,
-        _reason(request),
         success="Ви вийшли із запиту.",
     )
     return redirect("requests:detail", pk=pk)
@@ -582,12 +615,11 @@ def reject_volunteer(request, response_id):
 @require_POST
 def remove_volunteer(request, response_id):
     response = _own_response(request, response_id)
-    reopened = _perform(
+    reopened = _perform_with_reason(
         request,
         services.remove,
         response,
         request.user,
-        _reason(request),
         success="Волонтера знято із запиту.",
     )
     if reopened:
@@ -613,12 +645,11 @@ def confirm_completion(request, pk):
 @require_POST
 def dispute_completion(request, pk):
     help_request = get_object_or_404(HelpRequest, pk=pk, recipient=request.user)
-    _perform(
+    _perform_with_reason(
         request,
         services.dispute_completion,
         help_request,
         request.user,
-        _reason(request),
         success="Волонтерам повідомлено, що допомогу ще не завершено.",
     )
     return redirect("requests:detail", pk=pk)
@@ -629,11 +660,12 @@ def dispute_completion(request, pk):
 def publish_request(request, pk):
     help_request = get_object_or_404(HelpRequest, pk=pk, recipient=request.user)
     try:
-        status = services.publish(help_request, request.user)
+        services.publish(help_request, request.user)
     except TransitionError as error:
         messages.error(request, str(error))
     else:
-        messages.success(request, PUBLISH_MESSAGES[status])
+        help_request.refresh_from_db()
+        messages.success(request, _publish_message(help_request))
     return redirect("requests:detail", pk=pk)
 
 

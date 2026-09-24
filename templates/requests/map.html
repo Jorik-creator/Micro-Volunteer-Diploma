@@ -1,213 +1,82 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Карта запитів — MicroVolunteer{% endblock %}
-{% block body_class %}map-page{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link href="{% static 'css/pages/browse.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<div class="map-page-wrap">
-  <!-- Toolbar overlay -->
-  <div class="map-toolbar">
-    <div class="map-toolbar-card">
-      <strong class="map-toolbar-title"><i class="bi bi-map me-1"></i>Карта запитів</strong>
-      <a href="{% url 'requests:list' %}" class="btn btn-muted btn-sm">
-        <i class="bi bi-list-ul"></i> Усі запити
-      </a>
-      <button type="button" class="btn btn-ghost btn-sm map-list-toggle" id="map-list-toggle" aria-expanded="false" aria-controls="map-access-list">
-        <i class="bi bi-card-list"></i> <span id="map-list-toggle-label">Показати список</span>
-      </button>
+<div class="mv-map-page bw-map-page">
+  <div class="bw-map-page__head">
+    <div class="mv-spread bw-map-page__title">
+      <h1 class="mv-h2 mv-mb-0">Карта запитів</h1>
+      <nav class="bw-switch" aria-label="Вигляд">
+        <a class="bw-switch__item" href="{% url 'requests:list' %}"><i class="bi bi-list-ul" aria-hidden="true"></i>Список</a>
+        <a class="bw-switch__item" href="{% url 'requests:map' %}" aria-current="page"><i class="bi bi-map" aria-hidden="true"></i>Карта</a>
+      </nav>
     </div>
-  </div>
+    <p class="mv-muted bw-map-page__lead">На карті — приблизне місце (у межах ~150 м). Точну адресу бачить лише прийнятий волонтер.</p>
 
-  <!-- Map -->
-  <p id="map-help" class="visually-hidden">
-    Інтерактивна карта показує приблизне розташування активних запитів. Нижче є список цих самих запитів для користувачів клавіатури та екранного диктора.
-  </p>
-  <div id="map" aria-label="Інтерактивна карта активних запитів" aria-describedby="map-help"></div>
-
-  <!-- Accessible list alternative for screen readers, keyboard users, and mobile users -->
-  <section class="map-access-panel" id="map-access-list" aria-labelledby="map-access-title" tabindex="-1" hidden>
-    <div class="map-access-head">
+    <form class="bw-map-filters" id="map-filters" aria-label="Фільтри карти">
       <div>
-        <h2 class="map-access-title" id="map-access-title">Список запитів на карті</h2>
-        <p class="map-access-note">Ті самі запити, що й на мапі. Зручно для диктора екрана та клавіатури.</p>
-        <p class="map-status" id="map-status" aria-live="polite">Завантажуємо запити…</p>
+        <label class="form-label" for="map-filter-category">Категорія</label>
+        <select class="form-select" id="map-filter-category" disabled>
+          <option value="">Усі категорії</option>
+        </select>
       </div>
-      <button type="button" class="a11y-close" id="map-access-close" aria-label="Сховати список запитів">
-        <i class="bi bi-x-lg"></i>
-      </button>
+      <div>
+        <label class="form-label" for="map-filter-urgency">Терміновість</label>
+        <select class="form-select" id="map-filter-urgency" disabled>
+          <option value="">Будь-яка</option>
+          <option value="critical">Критична</option>
+          <option value="high">Висока</option>
+          <option value="medium">Середня</option>
+          <option value="low">Низька</option>
+        </select>
+      </div>
+      <div class="bw-map-filters__wide" id="map-filter-format-wrap" hidden>
+        <label class="form-label" for="map-filter-format">Формат допомоги</label>
+        <select class="form-select" id="map-filter-format" disabled>
+          <option value="">Будь-який</option>
+        </select>
+      </div>
+    </form>
+
+    <div class="bw-legend">
+      <h2 class="bw-legend__title" id="map-legend-title">Мітки: терміновість</h2>
+      <ul class="mv-meta bw-legend__list" aria-labelledby="map-legend-title">
+        <li><span class="mv-urg mv-urg--critical"><i class="bi bi-reception-4" aria-hidden="true"></i>Критична</span></li>
+        <li><span class="mv-urg mv-urg--high"><i class="bi bi-reception-3" aria-hidden="true"></i>Висока</span></li>
+        <li><span class="mv-urg mv-urg--medium"><i class="bi bi-reception-2" aria-hidden="true"></i>Середня</span></li>
+        <li><span class="mv-urg mv-urg--low"><i class="bi bi-reception-1" aria-hidden="true"></i>Низька</span></li>
+      </ul>
     </div>
-    <ul class="map-results-list" id="map-results-list"></ul>
-  </section>
-
-  <!-- Legend toggle (visible on phone) -->
-  <button type="button" class="map-legend-toggle" id="map-legend-toggle"
-          aria-expanded="false" aria-controls="map-legend">
-    <i class="bi bi-info-circle"></i>
-    <span>Легенда</span>
-  </button>
-
-  <!-- Legend overlay -->
-  <div class="map-legend" id="map-legend">
-    <button type="button" class="map-legend-close" aria-label="Закрити" id="map-legend-close">
-      <i class="bi bi-x-lg"></i>
-    </button>
-    <span class="map-legend-item"><span class="urgency-dot critical"></span> Критична</span>
-    <span class="map-legend-item"><span class="urgency-dot high"></span> Висока</span>
-    <span class="map-legend-item"><span class="urgency-dot medium"></span> Середня</span>
-    <span class="map-legend-item"><span class="urgency-dot low"></span> Низька</span>
   </div>
+
+  <div class="mv-map-page__map bw-map-page__map">
+    <p id="map-help" class="visually-hidden">Інтерактивна карта з приблизним розташуванням активних запитів. Ті самі запити є у списку поруч з картою.</p>
+    <div id="map" role="region" aria-label="Інтерактивна карта активних запитів" aria-describedby="map-help"
+         data-map-url="{% url 'requests:map-data' %}"></div>
+    <div class="bw-map-fallback" id="map-fallback" hidden>
+      <span class="mv-tile mv-tile--lg mv-tile--muted" aria-hidden="true"><i class="bi bi-map"></i></span>
+      <p class="mv-mb-0"><strong>Карта недоступна.</strong> Перевірте з'єднання з інтернетом або скористайтеся списком запитів.</p>
+    </div>
+  </div>
+
+  <section class="bw-map-page__list" id="map-list" aria-labelledby="map-list-title">
+    <div class="mv-spread">
+      <h2 class="mv-h4 mv-mb-0" id="map-list-title">Запити на карті</h2>
+      <p class="mv-micro mv-mb-0" id="map-status" aria-live="polite">Завантажуємо запити…</p>
+    </div>
+    <ul class="mv-rows bw-map-rows" id="map-results"></ul>
+  </section>
 </div>
-
-<script>
-(function () {
-  const toggle = document.getElementById('map-legend-toggle');
-  const legend = document.getElementById('map-legend');
-  const close  = document.getElementById('map-legend-close');
-  if (!toggle || !legend) return;
-  toggle.addEventListener('click', function () {
-    const open = legend.classList.toggle('is-open');
-    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-  if (close) close.addEventListener('click', function () {
-    legend.classList.remove('is-open');
-    toggle.setAttribute('aria-expanded', 'false');
-  });
-})();
-
-(function () {
-  const toggle = document.getElementById('map-list-toggle');
-  const label = document.getElementById('map-list-toggle-label');
-  const panel = document.getElementById('map-access-list');
-  const close = document.getElementById('map-access-close');
-  if (!toggle || !panel) return;
-  const mobileQuery = window.matchMedia('(max-width: 767.98px)');
-
-  function setOpen(open) {
-    panel.hidden = !open;
-    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (label) label.textContent = open ? 'Сховати список' : 'Показати список';
-    if (open) panel.focus({ preventScroll: true });
-  }
-
-  function syncForViewport() {
-    setOpen(!mobileQuery.matches);
-  }
-
-  syncForViewport();
-  if (typeof mobileQuery.addEventListener === 'function') {
-    mobileQuery.addEventListener('change', syncForViewport);
-  }
-  toggle.addEventListener('click', function () { setOpen(panel.hidden); });
-  if (close) close.addEventListener('click', function () { setOpen(false); toggle.focus(); });
-})();
-</script>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-(function () {
-  const mapEl = document.getElementById('map');
-  const resultsList = document.getElementById('map-results-list');
-  const status = document.getElementById('map-status');
-  let map = null;
-
-  if (!window.L) {
-    mapEl.innerHTML = '<div class="map-fallback"><div><i class="bi bi-map"></i><p>Карта недоступна. Перевірте з\'єднання з інтернетом або скористайтеся списком запитів.</p></div></div>';
-  } else {
-    map = L.map('map', { zoomControl: false }).setView([50.4501, 30.5234], 10);
-    L.control.zoom({ position: 'topright' }).addTo(map);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 20,
-    }).addTo(map);
-  }
-
-  const urgencyColors = {
-    critical: '#DC2626',
-    high:     '#D97706',
-    medium:   '#3B82F6',
-    low:      '#16A34A',
-  };
-
-  function makeIcon(urgency) {
-    const color = urgencyColors[urgency] || '#6B7280';
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="36" viewBox="0 0 24 36">
-      <path fill="${color}" stroke="#fff" stroke-width="1.5"
-        d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z"/>
-      <circle fill="#fff" cx="12" cy="12" r="5"/>
-    </svg>`;
-    return L.divIcon({
-      html: svg,
-      iconSize: [24, 36],
-      iconAnchor: [12, 36],
-      popupAnchor: [0, -36],
-      className: '',
-    });
-  }
-
-  function escapeHtml(value) {
-    return String(value || '').replace(/[&<>"]/g, function (char) {
-      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[char];
-    });
-  }
-
-  function renderListItem(item, index) {
-    if (!resultsList) return;
-    const title = escapeHtml(item.title || 'Запит допомоги');
-    const category = escapeHtml(item.category || 'Загальне');
-    const neededDate = escapeHtml(item.needed_date || 'Дата не вказана');
-    const duration = escapeHtml(item.duration || 'Тривалість не вказана');
-    const urgency = escapeHtml(item.urgency_display || item.urgency || 'Терміновість не вказана');
-    const url = escapeHtml(item.url || '#');
-
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <article class="map-result-card" aria-labelledby="map-result-title-${index}">
-        <h3 class="map-result-card-title" id="map-result-title-${index}">${title}</h3>
-        <div class="map-result-meta">
-          <span><strong>Категорія:</strong> ${category}</span>
-          <span><strong>Терміновість:</strong> ${urgency}</span>
-          <span><strong>Коли потрібно:</strong> ${neededDate}</span>
-          <span><strong>Тривалість:</strong> ${duration}</span>
-        </div>
-        <div class="map-result-actions">
-          <a href="${url}" class="btn btn-solid btn-sm">Відкрити деталі</a>
-        </div>
-      </article>`;
-    resultsList.appendChild(li);
-  }
-
-  fetch('{% url "requests:map-data" %}')
-    .then(r => r.json())
-    .then(data => {
-      if (status) status.textContent = data.length ? `Знайдено ${data.length} запитів.` : 'Наразі активних запитів на мапі немає.';
-      if (resultsList) resultsList.innerHTML = '';
-
-      data.forEach((item, index) => {
-        if (map) {
-          L.marker([item.lat, item.lon], { icon: makeIcon(item.urgency) })
-            .addTo(map)
-            .bindPopup(`
-              <strong>${escapeHtml(item.title)}</strong><br>
-              <span class="text-muted">${escapeHtml(item.category)}</span><br>
-              📅 ${escapeHtml(item.needed_date)}<br>
-              ⏱ ${escapeHtml(item.duration)}<br>
-              <a href="${escapeHtml(item.url)}" class="btn btn-sm btn-primary map-details-btn mt-1">Деталі</a>
-            `);
-        }
-        renderListItem(item, index);
-      });
-    })
-    .catch(() => {
-      console.error('Failed to load map data');
-      if (status) status.textContent = 'Не вдалося завантажити список запитів. Спробуйте оновити сторінку або відкрийте повний список.';
-    });
-})();
-</script>
+<script src="{% static 'js/map.js' %}"></script>
 {% endblock %}

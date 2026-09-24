@@ -1,16 +1,15 @@
-{% if rating.count %}
-<div class="rating-summary">
-  <span class="avg">{{ rating.average }}</span>
-  <div>
-    {% include "partials/_stars.html" with value=rating.average|floatformat:"0"|add:"0" %}
-    <div class="text-muted small">{{ rating.count }} оцін{{ rating.count|pluralize:"ка,ки,ок" }}</div>
-  </div>
+{% load mv_ui %}{% if rating.count %}
+<div class="mv-cluster">
+  <span class="mv-rating mv-h2 mv-mb-0"><i class="bi bi-star-fill" aria-hidden="true"></i>{{ rating.average }}</span>
+  <span class="mv-muted">{{ rating.count }} {{ rating.count|uk_plural:"оцінка,оцінки,оцінок" }}</span>
 </div>
 {% if rating.top_tags %}
-<div class="tag-count-list">
-  {% for tag in rating.top_tags %}<span class="tag-count{% if tag.negative %} negative{% endif %}">{{ tag.label }} · {{ tag.count }}</span>{% endfor %}
-</div>
+<ul class="mv-meta mv-meta--inline mt-3">
+  {% for tag in rating.top_tags %}
+  <li{% if tag.negative %} class="is-negative"{% endif %}><i class="bi {% if tag.negative %}bi-exclamation-circle{% else %}bi-hand-thumbs-up{% endif %}" aria-hidden="true"></i>{{ tag.label }} · {{ tag.count }}</li>
+  {% endfor %}
+</ul>
 {% endif %}
 {% else %}
-<p class="text-muted mb-0">Оцінок поки немає.</p>
+<p class="mv-muted mv-mb-0"><i class="bi bi-star me-2" aria-hidden="true"></i>Оцінок поки немає.</p>
 {% endif %}

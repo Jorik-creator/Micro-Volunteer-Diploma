@@ -1,39 +1,61 @@
-{% extends "base.html" %}
-{% load crispy_forms_tags %}
+{% extends "base.html" %}{% load static crispy_forms_tags %}
 
 {% block title %}Перевірка профілю — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/admin.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="page-hero">
+<section class="mv-page-head">
   <div class="container">
-    <a href="{% url 'accounts:profile' %}" class="btn btn-muted btn-sm toolbar-row"><i class="bi bi-arrow-left"></i> Профіль</a>
-    <h1 class="page-title">Стати перевіреним</h1>
-    <p class="page-sub">Бейдж «Перевірений» відкриває візити додому для волонтерів і публікацію запитів без премодерації для отримувачів.</p>
+    <a class="mv-back" href="{% url 'accounts:profile' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад до профілю</a>
+    <h1>Стати перевіреним</h1>
+    <p class="mv-lead">Позначка «Перевірений» відкриває волонтерам візити додому, а отримувачам — публікацію запитів без премодерації.</p>
   </div>
 </section>
 
-<div class="container page-shell form-shell-sm">
-  <div class="card-panel mb-3">
-    <div class="section-hd">Є код від організації?</div>
-    <p class="text-muted small">Волонтерські центри та соцслужби видають коди своїм людям — перевірка миттєва.</p>
-    <form method="post" action="{% url 'moderation:redeem-code' %}" class="d-flex gap-2 flex-wrap align-items-end">
-      {% csrf_token %}
-      <div class="flex-grow-1">{{ code_form.code|as_crispy_field }}</div>
-      <button type="submit" class="btn btn-solid mb-3">Активувати</button>
-    </form>
-  </div>
+<div class="container mv-page">
+  <div class="mv-form-col mv-stack--lg">
+    <div class="mv-note">
+      <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
+      <div class="mv-note__body">
+        <strong class="mv-note__title">Документи не потрібні</strong>
+        <p>Ми не просимо паспорт чи інші документи й не зберігаємо їх. Модератор може лише запропонувати короткий відеодзвінок.</p>
+      </div>
+    </div>
 
-  <form method="post" class="card-panel">
-    {% csrf_token %}
-    <div class="section-hd">Або заповніть коротку анкету</div>
-    <div class="info-banner">
-      <i class="bi bi-shield-lock-fill"></i>
-      <span>Ми <strong>не просимо</strong> паспорт чи інші документи і не зберігаємо їх. Модератор може запропонувати короткий відеодзвінок.</span>
-    </div>
-    {{ form|crispy }}
-    <div class="form-actions">
-      <button type="submit" class="btn btn-solid"><i class="bi bi-send"></i> Надіслати заявку</button>
-    </div>
-  </form>
+    <section class="mv-card" aria-labelledby="path-code">
+      <div class="mv-path-head">
+        <span class="mv-tile mv-tile--success" aria-hidden="true"><i class="bi bi-lightning-charge"></i></span>
+        <div>
+          <h2 id="path-code">Є код від організації?</h2>
+          <p>Волонтерські центри й соцслужби видають коди своїм людям. Перевірка — миттєва.</p>
+        </div>
+      </div>
+      <form method="post" action="{% url 'moderation:redeem-code' %}" class="mv-code-form">
+        {% csrf_token %}
+        {{ code_form.code|as_crispy_field }}
+        <button type="submit" class="mv-btn mv-btn--secondary"><i class="bi bi-key" aria-hidden="true"></i>Активувати код</button>
+      </form>
+    </section>
+
+    <div class="mv-divider mv-mt-0 mv-mb-0" aria-hidden="true">або</div>
+
+    <section class="mv-card" aria-labelledby="path-form">
+      <div class="mv-path-head">
+        <span class="mv-tile" aria-hidden="true"><i class="bi bi-card-text"></i></span>
+        <div>
+          <h2 id="path-form">Коротка анкета</h2>
+          <p>Кілька відповідей про вас. Модератор розгляне їх і повідомить про рішення.</p>
+        </div>
+      </div>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "partials/_form_errors.html" %}
+        {{ form|crispy }}
+        <div class="mv-card__foot">
+          <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-send" aria-hidden="true"></i>Надіслати заявку</button>
+        </div>
+      </form>
+    </section>
+  </div>
 </div>
 {% endblock %}

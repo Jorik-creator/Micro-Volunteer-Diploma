@@ -11,6 +11,7 @@ from datetime import timedelta
 
 from django.db import transaction
 from django.db.models import F, Q
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.notifications.models import Notification
@@ -75,6 +76,7 @@ def _notify_other(conversation, sender, preview):
             f"Нове повідомлення від {_name(sender)}",
             f"Запит «{conversation.help_request.title}»: {preview[:120]}",
             conversation.help_request,
+            link=reverse("conversations:detail", args=[conversation.pk]),
         )
 
 
@@ -103,7 +105,7 @@ def send(conversation, sender, body, kind=Message.Kind.TEXT):
     _notify_other(
         conversation,
         sender,
-        body if kind == Message.Kind.TEXT else "поділився(лась) номером телефону",
+        body if kind == Message.Kind.TEXT else "надіслано номер телефону",
     )
     return message
 
@@ -134,16 +136,18 @@ def conversations_for(user):
 
 
 def unread_count(user):
-    return (
+    unread = (
         Conversation.objects.filter(
             Q(recipient=user, last_message_at__gt=F("recipient_read_at"))
             | Q(recipient=user, recipient_read_at__isnull=True, last_message_at__isnull=False)
             | Q(volunteer=user, last_message_at__gt=F("volunteer_read_at"))
             | Q(volunteer=user, volunteer_read_at__isnull=True, last_message_at__isnull=False)
         )
+        .select_related("help_request")
         .distinct()
-        .count()
     )
+    # Archived ones are hidden from the list, so they must not light up the badge
+    return sum(1 for conversation in unread if not conversation.is_archived)
 
 
 def serialize(message, viewer):

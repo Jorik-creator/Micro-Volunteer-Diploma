@@ -1,106 +1,67 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load static mv_ui %}
 
 {% block title %}Сповіщення — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/personal.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="page-hero">
+<section class="mv-page-head">
   <div class="container">
-    <div class="inner">
+    <div class="mv-narrow mv-page-head__row">
       <div>
-        <h1 class="page-title">
-          Сповіщення
-          {% if unread_count > 0 %}
-          <span class="chip chip-red chip-inline">{{ unread_count }}</span>
-          {% endif %}
-        </h1>
-        <p class="page-sub">Нові та прочитані повідомлення про запити, відгуки й статуси</p>
+        <h1>Сповіщення</h1>
+        <p class="mv-lead">Відгуки, рішення, повідомлення й зміни статусів ваших запитів.</p>
       </div>
-      {% if unread_count > 0 %}
-      <form method="post" action="/notifications/mark-all-read/">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-muted btn-sm" aria-label="Позначити всі сповіщення як прочитані">
-          <i class="bi bi-check2-all"></i> Позначити всі як прочитані
-        </button>
-      </form>
-      {% endif %}
+      <div class="mv-cluster">
+        <a class="mv-btn mv-btn--ghost" href="{% url 'notifications:email-settings' %}"><i class="bi bi-envelope" aria-hidden="true"></i>Листи на пошту</a>
+        {% if unread_count %}
+        <form method="post" action="{% url 'notifications:mark-all-read' %}" class="m-0">
+          {% csrf_token %}
+          <button type="submit" class="mv-btn mv-btn--secondary"><i class="bi bi-check2-all" aria-hidden="true"></i>Позначити всі прочитаними</button>
+        </form>
+        {% endif %}
+      </div>
     </div>
   </div>
 </section>
 
-<div class="container page-shell form-shell-lg">
-  <div class="activity-list">
-    {% for notification in notifications %}
-    <article class="activity-row activity-row-top{% if not notification.is_read %} activity-unread{% endif %}" aria-labelledby="notification-title-{{ notification.pk }}">
-      <div class="activity-icon" aria-hidden="true">
-        {% if notification.type == "new_response" %}
-          <i class="bi bi-chat-dots"></i>
-        {% elif notification.type == "request_accepted" %}
-          <i class="bi bi-check-circle"></i>
-        {% elif notification.type == "request_rejected" %}
-          <i class="bi bi-x-circle"></i>
-        {% elif notification.type == "request_completed" %}
-          <i class="bi bi-trophy"></i>
-        {% elif notification.type == "new_review" %}
-          <i class="bi bi-star"></i>
-        {% elif notification.type == "new_nearby_request" %}
-          <i class="bi bi-geo-alt"></i>
-        {% else %}
-          <i class="bi bi-bell{% if notification.is_read %}-slash{% endif %}"></i>
-        {% endif %}
-      </div>
-      <div class="body">
-        <div class="t" id="notification-title-{{ notification.pk }}">
-          {{ notification.title }}
-          {% if not notification.is_read %}<span class="chip chip-blue chip-inline-tight">Нове</span>{% endif %}
+<div class="container mv-page">
+  <div class="mv-narrow">
+    {% if notifications %}
+    {% now "Y-m-d" as today %}{% now "Y" as this_year %}{% now "z" as today_doy %}
+    {% regroup notifications by created_at|date:"Y-m-d" as days %}
+    {% for day in days %}
+    {% with first=day.list.0.created_at %}
+    <h2 class="mv-group-title">{% if day.grouper == today %}Сьогодні{% elif first|date:"Y" == this_year and first|date:"z"|add:1 == today_doy|add:0 %}Вчора{% elif first|date:"Y" == this_year %}{{ first|date:"j E, l" }}{% else %}{{ first|date:"j E Y" }}{% endif %}</h2>
+    {% endwith %}
+    <ul class="mv-rows mv-rows--joined mv-notifs">
+      {% for n in day.list %}
+      <li class="mv-row{% if not n.is_read %} is-unread{% endif %}">
+        {% notification_tile n %}
+        <div class="mv-row__body">
+          <h3 class="mv-row__title">{% if not n.is_read %}<span class="visually-hidden">Непрочитане: </span>{% endif %}{{ n.title }}</h3>
+          {% if n.message %}<p class="mv-row__text">{{ n.message }}</p>{% endif %}
+          <div class="mv-notifs__foot">
+            <time class="mv-micro" datetime="{{ n.created_at|date:'c' }}" title="{{ n.created_at|date:'j E Y, H:i' }}">{% if day.grouper == today %}{{ n.created_at|timesince }} тому{% else %}{{ n.created_at|date:"H:i" }}{% endif %}</time>
+            {% if n.url != request.path %}
+            <a class="mv-link-btn mv-link-btn--sm" href="{{ n.url }}">Відкрити<span class="visually-hidden">: {{ n.title }}</span><i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+            {% endif %}
+            {% if not n.is_read %}
+            <form method="post" action="{% url 'notifications:mark-read' n.pk %}" class="m-0">
+              {% csrf_token %}
+              <button type="submit" class="mv-link-btn mv-link-btn--muted mv-link-btn--sm"><i class="bi bi-check2" aria-hidden="true"></i>Позначити прочитаним</button>
+            </form>
+            {% endif %}
+          </div>
         </div>
-        <div class="s">{{ notification.message }}</div>
-        {% if notification.related_request %}
-        <div class="notification-link">
-          <a href="/requests/{{ notification.related_request.pk }}/" aria-label="Переглянути пов’язаний запит: {{ notification.related_request.title }}">
-            <i class="bi bi-box-arrow-up-right"></i> Переглянути запит
-          </a>
-        </div>
-        {% endif %}
-        {% if not notification.is_read %}
-        <div class="notification-action">
-          <form method="post" action="/notifications/mark-read/{{ notification.pk }}/" class="d-inline">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-muted btn-sm" aria-label="Позначити сповіщення як прочитане">
-              <i class="bi bi-check2"></i> Прочитано
-            </button>
-          </form>
-        </div>
-        {% endif %}
-      </div>
-      <div class="when">{{ notification.created_at|timesince }} тому</div>
-    </article>
-    {% empty %}
-    <div class="empty-state">
-      <i class="bi bi-bell-slash empty-icon"></i>
-      <p>Немає сповіщень</p>
-    </div>
-    {% endfor %}
-  </div>
-
-  <!-- Pagination -->
-  {% if is_paginated %}
-  <nav class="pagination-wrap" aria-label="Навігація по сторінках">
-    <ul class="pagination justify-content-center">
-      {% if page_obj.has_previous %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Попередня сторінка">&laquo;</a>
       </li>
-      {% endif %}
-      <li class="page-item disabled">
-        <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-      </li>
-      {% if page_obj.has_next %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Наступна сторінка">&raquo;</a>
-      </li>
-      {% endif %}
+      {% endfor %}
     </ul>
-  </nav>
-  {% endif %}
+    {% endfor %}
+
+    {% include "partials/_pagination.html" %}
+    {% else %}
+    {% include "partials/_empty.html" with icon="bi-bell" title="Сповіщень поки немає" text="Тут з'являться відгуки волонтерів, рішення щодо запитів і нові повідомлення." %}
+    {% endif %}
+  </div>
 </div>
 {% endblock %}

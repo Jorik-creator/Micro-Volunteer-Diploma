@@ -1,0 +1,38 @@
+{% load static %}<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Щось пішло не так — MicroVolunteer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="{% static 'css/mv.css' %}" rel="stylesheet">
+  <link href="{% static 'css/pages/admin.css' %}" rel="stylesheet">
+</head>
+<body>
+  {# Standalone on purpose: rendered without request context, so no base.html, no context processors, no url reversing. #}
+  <header class="mv-nav">
+    <div class="container d-flex align-items-center mv-error-nav">
+      <a class="mv-brand" href="/" aria-label="MicroVolunteer — на головну">
+        <i class="bi bi-heart-pulse-fill" aria-hidden="true"></i><span>Micro<b>Volunteer</b></span>
+      </a>
+    </div>
+  </header>
+  <main id="main-content">
+    <div class="container">
+      <section class="mv-error">
+        <span class="mv-tile mv-tile--lg mv-tile--danger" aria-hidden="true"><i class="bi bi-tools"></i></span>
+        <div class="mv-thread" aria-hidden="true"></div>
+        <span class="mv-error__code">Помилка 500</span>
+        <h1>Щось пішло не так</h1>
+        <p>Ми вже знаємо про збій і виправляємо його. Спробуйте оновити сторінку за хвилину.</p>
+        <div class="mv-cluster">
+          <a class="mv-btn mv-btn--primary" href="/"><i class="bi bi-house-door" aria-hidden="true"></i>На головну</a>
+          <a class="mv-btn mv-btn--secondary" href="/requests/"><i class="bi bi-list-ul" aria-hidden="true"></i>До запитів</a>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

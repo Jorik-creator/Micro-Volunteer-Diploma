@@ -18,18 +18,18 @@ class Review(models.Model):
 
     class Tag(models.TextChoices):
         # About a volunteer
-        PUNCTUAL = "punctual", "Пунктуальний(а)"
-        POLITE = "polite", "Ввічливий(а)"
-        CAREFUL = "careful", "Дбайливий(а)"
-        IN_TOUCH = "in_touch", "Був(ла) на зв'язку"
-        LATE = "late", "Запізнився(лась)"
-        NO_SHOW = "no_show", "Не з'явився(лась)"
+        PUNCTUAL = "punctual", "Пунктуальність"
+        POLITE = "polite", "Ввічливість"
+        CAREFUL = "careful", "Дбайливість"
+        IN_TOUCH = "in_touch", "На зв'язку"
+        LATE = "late", "Запізнення"
+        NO_SHOW = "no_show", "Неявка на зустріч"
         # About a recipient
         CLEAR_REQUEST = "clear_request", "Чіткий опис запиту"
-        WELCOMING = "welcoming", "Привітний(а)"
-        ON_TIME = "on_time", "Був(ла) на місці вчасно"
+        WELCOMING = "welcoming", "Привітність"
+        ON_TIME = "on_time", "Вчасно на місці"
         WRONG_INFO = "wrong_info", "Неточна інформація"
-        UNREACHABLE = "unreachable", "Не виходив(ла) на зв'язок"
+        UNREACHABLE = "unreachable", "Не було зв'язку"
 
     VOLUNTEER_TAGS = (Tag.PUNCTUAL, Tag.POLITE, Tag.CAREFUL, Tag.IN_TOUCH, Tag.LATE, Tag.NO_SHOW)
     RECIPIENT_TAGS = (

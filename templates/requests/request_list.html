@@ -1,102 +1,91 @@
 {% extends "base.html" %}
-{% load crispy_forms_tags %}
+{% load static crispy_forms_tags mv_ui %}
 
 {% block title %}Запити допомоги — MicroVolunteer{% endblock %}
 
+{% block extra_css %}<link href="{% static 'css/pages/browse.css' %}" rel="stylesheet">{% endblock %}
+
 {% block content %}
-<!-- Page hero -->
-<section class="page-hero">
+<section class="mv-page-head">
   <div class="container">
-    <div class="inner">
+    <div class="mv-page-head__row">
       <div>
-        <h1 class="page-title">Запити допомоги</h1>
-        <p class="page-sub">Знайдіть, кому можете допомогти просто зараз</p>
+        <h1>Запити допомоги</h1>
+        <p class="mv-lead">Відкриті запити від людей поруч. Точну адресу бачить лише волонтер, якого прийняли.</p>
       </div>
-      {% if user.is_authenticated and user.is_recipient %}
-      <a href="{% url 'requests:create' %}" class="btn btn-solid">
-        <i class="bi bi-plus-lg"></i> Новий запит
-      </a>
-      {% endif %}
+      <div class="mv-cluster">
+        <nav class="bw-switch" aria-label="Вигляд">
+          <a class="bw-switch__item" href="{% url 'requests:list' %}{% if filter_query %}?{{ filter_query }}{% endif %}" aria-current="page"><i class="bi bi-list-ul" aria-hidden="true"></i>Список</a>
+          <a class="bw-switch__item" href="{% url 'requests:map' %}"><i class="bi bi-map" aria-hidden="true"></i>Карта</a>
+        </nav>
+        {% if user.is_authenticated and user.is_recipient %}
+        <a class="mv-btn mv-btn--primary" href="{% url 'requests:create' %}"><i class="bi bi-plus-lg" aria-hidden="true"></i>Новий запит</a>
+        {% endif %}
+      </div>
     </div>
   </div>
 </section>
 
-<div class="container page-shell">
-  <!-- Filters bar -->
-  <form method="get" class="filters-bar" role="search" aria-label="Фільтри запитів допомоги">
-    <div>
-      {{ filter_form.category|as_crispy_field }}
-    </div>
-    <div>
-      {{ filter_form.urgency|as_crispy_field }}
-    </div>
-    <div>
-      {{ filter_form.duration|as_crispy_field }}
-    </div>
-    <div>
-      {{ filter_form.city|as_crispy_field }}
-    </div>
-    <div>
-      {{ filter_form.date_from|as_crispy_field }}
-    </div>
-    <div>
-      {{ filter_form.date_to|as_crispy_field }}
-    </div>
-    <div class="filters-actions">
-      <button type="submit" class="btn btn-solid btn-sm">
-        <i class="bi bi-funnel"></i> Застосувати
+<div class="container mv-page">
+  <div class="row g-4">
+    <div class="col-lg-3">
+      <button class="mv-btn mv-btn--secondary mv-btn--block d-lg-none bw-filter-toggle" type="button"
+              data-bs-toggle="collapse" data-bs-target="#request-filters" aria-expanded="false" aria-controls="request-filters">
+        <i class="bi bi-sliders" aria-hidden="true"></i>Фільтри{% if filter_query %} · застосовано{% endif %}
       </button>
-      <a href="{% url 'requests:list' %}" class="btn btn-muted btn-sm" title="Скинути фільтри" aria-label="Скинути всі фільтри">
-        <i class="bi bi-x-lg"></i> Скинути
-      </a>
+      <div class="collapse d-lg-block" id="request-filters">
+        <form method="get" class="mv-card bw-filters" role="search" data-clean-query aria-labelledby="filters-title">
+          <h2 class="bw-filters__title" id="filters-title"><i class="bi bi-sliders" aria-hidden="true"></i>Фільтри</h2>
+          {% for field in filter_form %}
+            {% if field.name == "can_take" %}
+              {% if user.is_authenticated and user.is_volunteer %}
+              <div class="bw-filters__take">
+                {{ field|as_crispy_field }}
+                {% if not volunteer_can_take_home_visits %}<p class="form-text mv-mb-0">Візити додому стануть доступні після перевірки.</p>{% endif %}
+              </div>
+              {% endif %}
+            {% else %}
+              {{ field|as_crispy_field }}
+            {% endif %}
+          {% endfor %}
+          <div class="bw-filters__actions">
+            <button type="submit" class="mv-btn mv-btn--primary mv-btn--block"><i class="bi bi-search" aria-hidden="true"></i>Показати запити</button>
+            {% if filter_query %}
+            <a class="mv-link-btn mv-link-btn--muted" href="{% url 'requests:list' %}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>Скинути фільтри</a>
+            {% endif %}
+          </div>
+        </form>
+      </div>
     </div>
-  </form>
 
-  <!-- Results bar -->
-  <div class="results-bar">
-    <div class="results-count">
-      Знайдено: <strong>{{ paginator.count|default:requests|length }}</strong>
+    <div class="col-lg-9">
+      <div class="mv-spread bw-results-bar">
+        <h2 class="visually-hidden">Результати</h2>
+        <p class="mv-mb-0">
+          Знайдено <strong class="mv-num">{{ paginator.count }}</strong> {{ paginator.count|uk_plural:"запит,запити,запитів" }}
+        </p>
+        {% if paginator.count %}<p class="mv-micro mv-mb-0"><i class="bi bi-sort-down me-1" aria-hidden="true"></i>Спершу найтерміновіші</p>{% endif %}
+      </div>
+
+      {% if requests %}
+      <div class="mv-grid mv-grid--cards bw-results">
+        {% for hr in requests %}
+        {% include "partials/_request_card.html" %}
+        {% endfor %}
+      </div>
+      {% include "partials/_pagination.html" with extra_query=filter_query %}
+      {% elif filter_query %}
+      {% url 'requests:list' as reset_url %}
+      {% include "partials/_empty.html" with icon="bi-search" title="За цими фільтрами нічого не знайшли" text="Спробуйте прибрати частину фільтрів або обрати інші дати." action_url=reset_url action_label="Скинути фільтри" %}
+      {% elif user.is_authenticated and user.is_recipient %}
+      {% url 'requests:create' as create_url %}
+      {% include "partials/_empty.html" with icon="bi-inbox" title="Зараз відкритих запитів немає" text="Потрібна допомога? Опишіть справу — волонтери поруч отримають сповіщення." action_url=create_url action_label="Створити запит" %}
+      {% else %}
+      {% include "partials/_empty.html" with icon="bi-inbox" title="Зараз відкритих запитів немає" text="Нові запити з'являться тут, щойно хтось попросить про допомогу." %}
+      {% endif %}
     </div>
-    <a href="{% url 'requests:map' %}" class="btn btn-ghost btn-sm">
-      <i class="bi bi-map"></i> На карті
-    </a>
   </div>
-
-  <!-- Requests grid -->
-  {% if requests %}
-  <div class="requests-grid">
-    {% for hr in requests %}
-    {% include "partials/_request_card.html" with card_action="Детальніше і допомогти" %}
-    {% endfor %}
-  </div>
-
-  <!-- Pagination -->
-  {% if is_paginated %}
-  <nav class="pagination-wrap" aria-label="Сторінки результатів">
-    <ul class="pagination justify-content-center">
-      {% if page_obj.has_previous %}
-      <li class="page-item">
-        <a class="page-link" href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.previous_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">&laquo;</a>
-      </li>
-      {% endif %}
-      <li class="page-item disabled">
-        <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-      </li>
-      {% if page_obj.has_next %}
-      <li class="page-item">
-        <a class="page-link" href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.next_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">&raquo;</a>
-      </li>
-      {% endif %}
-    </ul>
-  </nav>
-  {% endif %}
-
-  {% else %}
-  <div class="empty-state">
-    <i class="bi bi-inbox empty-icon"></i>
-    <p>Немає активних запитів за вашими фільтрами.</p>
-    <a href="{% url 'requests:list' %}" class="btn btn-ghost btn-sm">Скинути фільтри</a>
-  </div>
-  {% endif %}
 </div>
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/browse.js' %}"></script>{% endblock %}

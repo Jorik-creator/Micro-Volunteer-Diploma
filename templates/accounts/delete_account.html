@@ -1,33 +1,40 @@
 {% extends "base.html" %}
-{% load crispy_forms_tags %}
+{% load static crispy_forms_tags %}
 
 {% block title %}Видалити акаунт — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/account.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="page-hero">
-  <div class="container">
-    <a href="{% url 'accounts:profile' %}" class="btn btn-muted btn-sm toolbar-row"><i class="bi bi-arrow-left"></i> Профіль</a>
-    <h1 class="page-title">Видалити акаунт</h1>
+<section class="mv-page-head">
+  <div class="container mv-form-col">
+    <a class="mv-back" href="{% url 'accounts:profile' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>До профілю</a>
+    <h1>Видалити акаунт</h1>
+    <p class="mv-lead">Це остаточно: відновити акаунт після видалення неможливо.</p>
   </div>
 </section>
 
-<div class="container page-shell form-shell-sm">
-  <div class="card-panel danger-zone">
-    <p><strong>Що станеться:</strong></p>
-    <ul>
-      <li>ваші відкриті запити буде скасовано, а з запитів, де ви волонтер, вас буде знято — інших учасників сповістимо;</li>
-      <li>ім'я, email, телефон, адреси, фото, тексти повідомлень і заявка на перевірку будуть стерті;</li>
-      <li>ваші оцінки інших людей залишаться з підписом «Видалений користувач»;</li>
-      <li>увійти в акаунт більше не вийде, відновити його неможливо.</li>
-    </ul>
-    <form method="post" novalidate>
-      {% csrf_token %}
-      {{ form|crispy }}
-      <div class="form-actions">
-        <button type="submit" class="btn btn-danger btn-lg">Видалити акаунт назавжди</button>
-        <a href="{% url 'accounts:profile' %}" class="btn btn-muted btn-lg">Скасувати</a>
-      </div>
-    </form>
+<div class="container mv-page">
+  <div class="mv-form-col">
+    <section class="mv-card mv-card--danger" aria-labelledby="consequences-title">
+      <h2 class="mv-card__title" id="consequences-title"><span class="mv-tile mv-tile--danger" aria-hidden="true"><i class="bi bi-exclamation-triangle"></i></span>Що станеться</h2>
+      <ul class="mv-meta">
+        <li><i class="bi bi-x-circle" aria-hidden="true"></i><span>Ваші відкриті запити буде скасовано, а з запитів, де ви волонтер, вас буде знято — інших учасників сповістимо.</span></li>
+        <li><i class="bi bi-eraser" aria-hidden="true"></i><span>Ім'я, email, телефон, адреси, фото, тексти повідомлень і заявка на перевірку будуть стерті.</span></li>
+        <li><i class="bi bi-star" aria-hidden="true"></i><span>Ваші оцінки інших людей залишаться з підписом «Видалений користувач».</span></li>
+        <li><i class="bi bi-lock" aria-hidden="true"></i><span>Увійти в акаунт більше не вийде, відновити його неможливо.</span></li>
+      </ul>
+
+      {% include "partials/_form_errors.html" %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {{ form.password|as_crispy_field }}
+        {{ form.confirm|as_crispy_field }}
+        <div class="mv-form-actions mt-4">
+          <button type="submit" class="mv-btn mv-btn--danger-solid"><i class="bi bi-trash3" aria-hidden="true"></i>Видалити акаунт назавжди</button>
+          <a href="{% url 'accounts:profile' %}" class="mv-btn mv-btn--ghost">Скасувати</a>
+        </div>
+      </form>
+    </section>
   </div>
 </div>
 {% endblock %}

@@ -1,113 +1,235 @@
 {% extends "base.html" %}
-{% load humanize %}
+{% load static humanize mv_ui %}
 
 {% block title %}MicroVolunteer — допомога з побутовими справами поруч{% endblock %}
 
+{% block extra_css %}<link href="{% static 'css/pages/browse.css' %}" rel="stylesheet">{% endblock %}
+
 {% block content %}
+{% demo_mode as is_demo %}
+{% with newest=recent_requests.0 %}
 
-<section class="svc-section" aria-labelledby="home-title">
-  <div class="container">
-    <div class="svc-hero">
-      <h1 class="svc-title" id="home-title">Допомога з побутовими справами — поруч і безкоштовно</h1>
-      <p class="svc-lead">Купити ліки, донести покупки, провести до лікаря чи розібратися з Дією. Волонтери з вашого району допомагають безкоштовно.</p>
+<section class="mv-hero" aria-labelledby="home-title">
+  <div class="container mv-hero__grid">
+    <div>
+      <p class="mv-eyebrow"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>Допомога поруч — безкоштовно</p>
+      <h1 id="home-title">Маленька допомога — <em>великі зміни</em></h1>
+      <p class="mv-lead">Купити ліки, донести покупки, провести до лікаря чи розібратися з Дією. Волонтери з вашого району допомагають безкоштовно.</p>
 
-      <div class="svc-doors">
+      <div class="mv-cluster">
         {% if user.is_authenticated and user.is_recipient %}
-          <a class="svc-door" href="{% url 'requests:create' %}">
-            <i class="bi bi-plus-circle" aria-hidden="true"></i>
-            <span><strong>Створити запит</strong><span>Опишіть, що потрібно, — волонтери поблизу отримають сповіщення.</span></span>
-          </a>
-          <a class="svc-door" href="{% url 'requests:my-requests' %}">
-            <i class="bi bi-card-checklist" aria-hidden="true"></i>
-            <span><strong>Мої запити</strong><span>Відгуки волонтерів, розмови та статус допомоги.</span></span>
-          </a>
+          <a class="mv-btn mv-btn--primary" href="{% url 'requests:create' %}"><i class="bi bi-plus-lg" aria-hidden="true"></i>Створити запит</a>
+          <a class="mv-btn mv-btn--secondary" href="{% url 'requests:my-requests' %}"><i class="bi bi-card-checklist" aria-hidden="true"></i>Мої запити</a>
         {% elif user.is_authenticated and user.is_volunteer %}
-          <a class="svc-door" href="{% url 'requests:list' %}">
-            <i class="bi bi-search" aria-hidden="true"></i>
-            <span><strong>Знайти запит поруч</strong><span>Список і карта відкритих запитів.</span></span>
-          </a>
-          <a class="svc-door" href="{% url 'requests:my-responses' %}">
-            <i class="bi bi-card-checklist" aria-hidden="true"></i>
-            <span><strong>Мої відгуки</strong><span>Запити, на які ви відгукнулися, і наступні кроки.</span></span>
-          </a>
+          <a class="mv-btn mv-btn--primary" href="{% url 'requests:list' %}"><i class="bi bi-search" aria-hidden="true"></i>Знайти запит поруч</a>
+          <a class="mv-btn mv-btn--secondary" href="{% url 'requests:my-responses' %}"><i class="bi bi-card-checklist" aria-hidden="true"></i>Мої відгуки</a>
+        {% elif user.is_authenticated %}
+          <a class="mv-btn mv-btn--primary" href="{% url 'requests:list' %}"><i class="bi bi-list-ul" aria-hidden="true"></i>Усі запити</a>
+          <a class="mv-btn mv-btn--secondary" href="{% url 'requests:map' %}"><i class="bi bi-map" aria-hidden="true"></i>Карта запитів</a>
+        {% elif is_demo %}
+          <a class="mv-btn mv-btn--primary" href="{% url 'accounts:login' %}"><i class="bi bi-heart" aria-hidden="true"></i>Мені потрібна допомога</a>
+          <a class="mv-btn mv-btn--secondary" href="{% url 'accounts:login' %}"><i class="bi bi-hand-thumbs-up" aria-hidden="true"></i>Я хочу допомагати</a>
         {% else %}
-          <a class="svc-door" href="{% url 'accounts:register' %}?role=recipient">
-            <i class="bi bi-heart" aria-hidden="true"></i>
-            <span><strong>Мені потрібна допомога</strong><span>Створіть запит — волонтери поблизу отримають сповіщення.</span></span>
-          </a>
-          <a class="svc-door" href="{% url 'accounts:register' %}?role=volunteer">
-            <i class="bi bi-hand-thumbs-up" aria-hidden="true"></i>
-            <span><strong>Я хочу допомагати</strong><span>Знайдіть запит поруч і відгукніться за хвилину.</span></span>
-          </a>
+          <a class="mv-btn mv-btn--primary" href="{% url 'accounts:register' %}?role=recipient"><i class="bi bi-heart" aria-hidden="true"></i>Мені потрібна допомога</a>
+          <a class="mv-btn mv-btn--secondary" href="{% url 'accounts:register' %}?role=volunteer"><i class="bi bi-hand-thumbs-up" aria-hidden="true"></i>Я хочу допомагати</a>
         {% endif %}
       </div>
       {% if not user.is_authenticated %}
-      <p class="svc-hero-foot">Уже маєте акаунт? <a href="{% url 'accounts:login' %}">Увійти</a></p>
+      <p class="bw-hero-login mv-muted">
+        {% if is_demo %}Це демо-версія: оберіть роль на сторінці входу, реєстрація не потрібна.
+        {% else %}Уже маєте акаунт? <a href="{% url 'accounts:login' %}">Увійти</a>{% endif %}
+      </p>
       {% endif %}
+
+      <div class="mv-hero__trust">
+        <span class="mv-tile mv-tile--sm" aria-hidden="true"><i class="bi bi-shield-lock"></i></span>
+        <p class="mv-mb-0">
+          {% if verified_volunteers_count %}<strong>{{ verified_volunteers_count|intcomma }} {{ verified_volunteers_count|uk_plural:"перевірений волонтер,перевірені волонтери,перевірених волонтерів" }}</strong> готові допомогти. {% endif %}Точну адресу бачить лише волонтер, якого ви оберете.
+        </p>
+      </div>
     </div>
 
-    <dl class="svc-stats" aria-label="Платформа в цифрах">
-      <div><dt>Відкритих запитів</dt><dd>{{ active_requests_count|intcomma }}</dd></div>
-      <div><dt>Виконано запитів</dt><dd>{{ completed_requests_count|intcomma }}</dd></div>
-      <div><dt>Перевірених волонтерів</dt><dd>{{ verified_volunteers_count|intcomma }}</dd></div>
+    <div class="mv-hero__art bw-hero-art">
+      <div class="bw-hero-map">
+        {% include "partials/_ukraine_map.svg" %}
+        <span class="mv-pin{% if newest.urgency == 'critical' or newest.urgency == 'high' %} mv-pin--hot{% endif %} bw-pin--kyiv" aria-hidden="true"></span>
+        <span class="mv-pin bw-pin--lviv" aria-hidden="true"></span>
+        <span class="mv-pin bw-pin--odesa" aria-hidden="true"></span>
+      </div>
+
+      {% if newest %}
+      <a class="mv-float mv-float--tr bw-float" href="{% url 'requests:detail' newest.pk %}">
+        <span class="mv-tile mv-tile--sm" aria-hidden="true">{% category_icon newest.category %}</span>
+        <span class="bw-float__body">
+          <span class="bw-float__label">Новий запит{% if newest.city %} · {{ newest.city }}{% endif %}</span>
+          <strong>{{ newest.title|truncatechars:48 }}</strong>
+        </span>
+      </a>
+      {% endif %}
+
+      {% if completed_requests_count %}
+      <div class="mv-float mv-float--bl bw-float">
+        <span class="mv-tile mv-tile--sm mv-tile--success" aria-hidden="true"><i class="bi bi-check2-all"></i></span>
+        <span class="bw-float__body">
+          <strong>{{ completed_requests_count|intcomma }} {{ completed_requests_count|uk_plural:"запит виконано,запити виконано,запитів виконано" }}</strong>
+          <span>разом із волонтерами</span>
+        </span>
+      </div>
+      {% elif active_requests_count %}
+      <div class="mv-float mv-float--bl bw-float">
+        <span class="mv-tile mv-tile--sm" aria-hidden="true"><i class="bi bi-people"></i></span>
+        <span class="bw-float__body">
+          <strong>{{ active_requests_count|intcomma }} {{ active_requests_count|uk_plural:"запит чекає,запити чекають,запитів чекають" }}</strong>
+          <span>на волонтерів просто зараз</span>
+        </span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="bw-stats-band" aria-labelledby="stats-title">
+  <div class="container">
+    <h2 class="visually-hidden" id="stats-title">Платформа в цифрах</h2>
+    <dl class="mv-stats bw-stats">
+      <div class="mv-stat"><dt class="mv-stat__label">Відкритих запитів</dt><dd class="mv-stat__num">{{ active_requests_count|intcomma }}</dd></div>
+      <div class="mv-stat"><dt class="mv-stat__label">Виконано запитів</dt><dd class="mv-stat__num">{{ completed_requests_count|intcomma }}</dd></div>
+      <div class="mv-stat"><dt class="mv-stat__label">Перевірених волонтерів</dt><dd class="mv-stat__num">{{ verified_volunteers_count|intcomma }}</dd></div>
+      <div class="mv-stat"><dt class="mv-stat__label">Вартість для отримувача</dt><dd class="mv-stat__num">0 ₴</dd></div>
     </dl>
   </div>
 </section>
 
-<section class="svc-section svc-section-muted" aria-labelledby="how-title" id="how-it-works">
+{# Category links: from a `categories` context variable when the view provides one, otherwise from the newest requests #}
+{% if categories %}
+<section class="mv-section--tight" aria-labelledby="cats-title">
   <div class="container">
-    <h2 class="svc-h2" id="how-title">Як це працює</h2>
-    <div class="svc-two-col">
-      <div class="svc-panel">
-        <h3 class="svc-h3"><i class="bi bi-heart" aria-hidden="true"></i> Якщо потрібна допомога</h3>
-        <ol class="svc-steps">
-          <li><strong>Опишіть справу</strong> — що, коли й де. Точну адресу бачитиме лише волонтер, якого ви оберете.</li>
-          <li><strong>Оберіть волонтера</strong> серед тих, хто відгукнувся: видно рейтинг, відгуки й позначку «Перевірений».</li>
-          <li><strong>Домовтеся в розмові</strong> на сайті. Номер телефону показується лише тоді, коли ви самі ним поділитеся.</li>
-          <li><strong>Підтвердіть виконання</strong> й оцініть волонтера.</li>
-        </ol>
-      </div>
-      <div class="svc-panel">
-        <h3 class="svc-h3"><i class="bi bi-hand-thumbs-up" aria-hidden="true"></i> Якщо хочете допомагати</h3>
-        <ol class="svc-steps">
-          <li><strong>Підтвердьте email</strong> — і можна відгукуватися на запити без візиту додому.</li>
-          <li><strong>Пройдіть перевірку</strong> (анкета або код організації), щоб допомагати вдома в людей.</li>
-          <li><strong>Відгукніться на запит</strong> поблизу й дочекайтеся рішення отримувача.</li>
-          <li><strong>Допоможіть і позначте виконання</strong> — отримувач підтвердить і оцінить.</li>
-        </ol>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="svc-section" aria-labelledby="safety-title">
-  <div class="container">
-    <h2 class="svc-h2" id="safety-title">Безпека понад усе</h2>
-    <ul class="svc-facts">
-      <li><i class="bi bi-geo-alt" aria-hidden="true"></i><span><strong>Адреса прихована.</strong> На карті — приблизне місце, точну адресу бачить лише прийнятий волонтер.</span></li>
-      <li><i class="bi bi-patch-check" aria-hidden="true"></i><span><strong>Візити додому — лише перевіреним.</strong> Документи ми не збираємо: перевірку робить модератор або партнерська організація.</span></li>
-      <li><i class="bi bi-flag" aria-hidden="true"></i><span><strong>Модерація і скарги.</strong> Перші запити нових користувачів перевіряються, на будь-що можна поскаржитися.</span></li>
+    <h2 class="bw-cats-title" id="cats-title">З чим допомагають волонтери</h2>
+    <ul class="mv-cats bw-cats">
+      {% for cat in categories %}
+      <li><a class="mv-cat" href="{% url 'requests:list' %}?category={{ cat.pk }}"><span class="mv-tile" aria-hidden="true">{% category_icon cat %}</span>{{ cat.name }}</a></li>
+      {% endfor %}
     </ul>
   </div>
 </section>
-
-<section class="svc-section svc-section-muted" aria-labelledby="recent-title">
+{% elif recent_requests %}
+{% regroup recent_requests|dictsort:"category.name" by category as request_cats %}
+<section class="mv-section--tight" aria-labelledby="cats-title">
   <div class="container">
-    <div class="svc-row-head">
-      <h2 class="svc-h2" id="recent-title">Нові запити</h2>
-      <a href="{% url 'requests:list' %}" class="btn btn-ghost">Усі запити <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+    <h2 class="bw-cats-title" id="cats-title">З чим просять допомогти зараз</h2>
+    <ul class="mv-cats bw-cats">
+      {% for group in request_cats %}{% if group.grouper %}
+      <li><a class="mv-cat" href="{% url 'requests:list' %}?category={{ group.grouper.pk }}"><span class="mv-tile" aria-hidden="true">{% category_icon group.grouper %}</span>{{ group.grouper.name }}</a></li>
+      {% endif %}{% endfor %}
+      <li><a class="mv-cat" href="{% url 'requests:list' %}"><span class="mv-tile mv-tile--muted" aria-hidden="true"><i class="bi bi-grid"></i></span>Усі запити</a></li>
+    </ul>
+  </div>
+</section>
+{% endif %}
+
+<section class="mv-section mv-section--canvas" aria-labelledby="how-title" id="how-it-works">
+  <div class="container">
+    <div class="mv-section-head mv-section-head--center">
+      <p class="mv-eyebrow">Як це працює</p>
+      <h2 id="how-title">Чотири кроки до допомоги</h2>
+      <p class="mv-lead">Однаково просто і тим, хто просить, і тим, хто допомагає.</p>
+      <div class="mv-thread mv-thread--center" aria-hidden="true"></div>
+    </div>
+
+    <div class="mv-howto">
+      <div class="mv-card">
+        <h3 class="mv-card__title"><i class="bi bi-heart" aria-hidden="true"></i>Якщо потрібна допомога</h3>
+        <ol>
+          <li><div class="mv-tile" aria-hidden="true"><i class="bi bi-pencil-square"></i></div>
+            <div><strong>Опишіть справу</strong><span>Що, коли й де. Точну адресу бачитиме лише волонтер, якого ви оберете.</span></div></li>
+          <li><div class="mv-tile" aria-hidden="true"><i class="bi bi-person-check"></i></div>
+            <div><strong>Оберіть волонтера</strong><span>Серед тих, хто відгукнувся: видно рейтинг, відгуки й позначку «Перевірений».</span></div></li>
+          <li><div class="mv-tile" aria-hidden="true"><i class="bi bi-chat-dots"></i></div>
+            <div><strong>Домовтеся в розмові</strong><span>На сайті. Номер телефону показується лише тоді, коли ви самі ним поділитеся.</span></div></li>
+          <li><div class="mv-tile mv-tile--success" aria-hidden="true"><i class="bi bi-check2-circle"></i></div>
+            <div><strong>Підтвердіть виконання</strong><span>І оцініть волонтера — це допомагає іншим.</span></div></li>
+        </ol>
+      </div>
+      <div class="mv-card">
+        <h3 class="mv-card__title"><i class="bi bi-hand-thumbs-up" aria-hidden="true"></i>Якщо хочете допомагати</h3>
+        <ol>
+          <li><div class="mv-tile" aria-hidden="true"><i class="bi bi-envelope-check"></i></div>
+            <div><strong>Підтвердьте email</strong><span>І можна відгукуватися на запити без візиту додому.</span></div></li>
+          <li><div class="mv-tile" aria-hidden="true"><i class="bi bi-patch-check"></i></div>
+            <div><strong>Пройдіть перевірку</strong><span>Анкета або код організації — щоб допомагати вдома в людей.</span></div></li>
+          <li><div class="mv-tile" aria-hidden="true"><i class="bi bi-geo-alt"></i></div>
+            <div><strong>Відгукніться на запит</strong><span>Поблизу — і дочекайтеся рішення отримувача.</span></div></li>
+          <li><div class="mv-tile mv-tile--success" aria-hidden="true"><i class="bi bi-check2-circle"></i></div>
+            <div><strong>Допоможіть і позначте виконання</strong><span>Отримувач підтвердить і оцінить.</span></div></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mv-section" aria-labelledby="recent-title">
+  <div class="container">
+    <div class="mv-section-head mv-spread bw-head-row">
+      <div>
+        <p class="mv-eyebrow">Актуальні запити</p>
+        <h2 id="recent-title" class="mv-mb-0">Хтось поруч потребує допомоги</h2>
+        <div class="mv-thread" aria-hidden="true"></div>
+      </div>
+      <a class="mv-btn mv-btn--secondary" href="{% url 'requests:list' %}">Усі запити<i class="bi bi-arrow-right" aria-hidden="true"></i></a>
     </div>
     {% if recent_requests %}
-    <div class="requests-grid">
-      {% for hr in recent_requests %}{% include "partials/_request_card.html" %}{% endfor %}
+    <div class="mv-grid mv-grid--cards">
+      {% for hr in recent_requests|slice:":3" %}{% include "partials/_request_card.html" %}{% endfor %}
     </div>
     {% else %}
-    <div class="empty-state">
-      <i class="bi bi-inbox empty-icon" aria-hidden="true"></i>
-      <p>Зараз відкритих запитів немає.</p>
-    </div>
+    {% include "partials/_empty.html" with icon="bi-inbox" title="Зараз відкритих запитів немає" text="Нові запити з'являться тут, щойно хтось попросить про допомогу." %}
     {% endif %}
   </div>
 </section>
 
+<section class="mv-section mv-section--canvas" aria-labelledby="safety-title">
+  <div class="container">
+    <div class="row g-4 g-lg-5 align-items-center">
+      <div class="col-lg-5">
+        <p class="mv-eyebrow">Безпека</p>
+        <h2 id="safety-title">Безпека понад усе</h2>
+        <p class="mv-lead">Ми не збираємо документів і не показуємо адрес — довіра будується на перевірці, відгуках і модерації.</p>
+        <a class="mv-link-btn" href="{% url 'rules' %}">Правила платформи<i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      </div>
+      <div class="col-lg-7">
+        <ul class="mv-card bw-facts">
+          <li><span class="mv-tile" aria-hidden="true"><i class="bi bi-geo-alt"></i></span>
+            <div><strong>Адреса прихована</strong><span>На карті — приблизне місце. Точну адресу бачить лише прийнятий волонтер.</span></div></li>
+          <li><span class="mv-tile" aria-hidden="true"><i class="bi bi-patch-check"></i></span>
+            <div><strong>Візити додому — лише перевіреним</strong><span>Перевірку робить модератор або партнерська організація.</span></div></li>
+          <li><span class="mv-tile" aria-hidden="true"><i class="bi bi-flag"></i></span>
+            <div><strong>Модерація і скарги</strong><span>Перші запити нових користувачів перевіряються, на будь-що можна поскаржитися.</span></div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if not user.is_authenticated %}
+<section class="mv-section" aria-labelledby="cta-title">
+  <div class="container">
+    <div class="mv-cta bw-cta">
+      <div class="bw-cta__body">
+        <h2 id="cta-title">Приєднуйтесь до спільноти</h2>
+        <p>Станьте частиною мережі, що робить українські громади сильнішими — день за днем, справа за справою.</p>
+      </div>
+      <div class="mv-cluster">
+        {% if is_demo %}
+        <a class="mv-btn mv-btn--white mv-btn--lg" href="{% url 'accounts:login' %}"><i class="bi bi-play-circle" aria-hidden="true"></i>Спробувати демо</a>
+        {% else %}
+        <a class="mv-btn mv-btn--white mv-btn--lg" href="{% url 'accounts:register' %}"><i class="bi bi-person-plus" aria-hidden="true"></i>Зареєструватися</a>
+        {% endif %}
+        <a class="mv-btn mv-btn--outline-white mv-btn--lg" href="{% url 'requests:map' %}"><i class="bi bi-map" aria-hidden="true"></i>Відкрити карту</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% endwith %}
 {% endblock %}

@@ -1,9 +1,9 @@
 """
 Views for the stats app.
 
-Staff-only dashboard with platform-wide statistics:
-  StatsView   — TemplateView rendering Chart.js dashboard (staff only, 403 for others)
-  stats_data  — JSON endpoint for dynamic chart data (staff only, FBV)
+Dashboard with platform-wide statistics for staff and moderators:
+  StatsView   — TemplateView rendering Chart.js dashboard (403 for others)
+  stats_data  — JSON endpoint for dynamic chart data (FBV)
 """
 
 from django.contrib.auth.decorators import login_required
@@ -14,28 +14,45 @@ from django.http import HttpResponseForbidden, JsonResponse
 from django.views.generic import TemplateView
 
 from apps.accounts.models import User
+from apps.accounts.permissions import is_moderator
 from apps.requests.models import HelpRequest
 from apps.reviews.models import Review
 
+S = HelpRequest.Status
+# One color per status, shared by the badges and the chart
+STATUS_COLORS = {
+    S.DRAFT: "muted",
+    S.PENDING_MODERATION: "warning",
+    S.REJECTED: "danger",
+    S.ACTIVE: "blue",
+    S.IN_PROGRESS: "navy",
+    S.AWAITING_CONFIRMATION: "warning",
+    S.COMPLETED: "success",
+    S.CANCELLED: "muted",
+    S.EXPIRED: "danger",
+}
+
+
+def can_see_stats(user):
+    return user.is_authenticated and (user.is_staff or is_moderator(user))
+
+
 # ---------------------------------------------------------------------------
-# Staff dashboard (CBV)
+# Staff / moderator dashboard (CBV)
 # ---------------------------------------------------------------------------
 
 
 class StatsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     """
-    Platform statistics dashboard — staff only.
+    Platform statistics dashboard — staff and moderators.
 
-    Returns 403 (not redirect) for authenticated non-staff users via
-    raise_exception = True. LoginRequiredMixin is first in MRO so
-    unauthenticated users are redirected to login before the staff check runs.
+    Anonymous users are redirected to login; other signed-in users get 403.
     """
 
     template_name = "stats/dashboard.html"
 
     def test_func(self):
-        """Allow access only to staff members."""
-        return self.request.user.is_staff
+        return can_see_stats(self.request.user)
 
     def handle_no_permission(self):
         """
@@ -53,7 +70,7 @@ class StatsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         # --- Aggregate counts ---
         context["total_requests"] = HelpRequest.objects.count()
-        context["total_reviews"] = Review.objects.count()
+        context["total_reviews"] = Review.objects.published().count()
 
         # --- Average rating (None when no reviews exist → fall back to 0) ---
         avg_result = Review.objects.published().aggregate(avg=Avg("rating"))["avg"]
@@ -92,6 +109,11 @@ class StatsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context["status_keys"] = status_order
         context["status_labels"] = [HelpRequest.Status(s).label for s in status_order]
         context["status_data"] = [requests_by_status.get(s, 0) for s in status_order]
+        # [(value, label, count, color_key)] for all statuses, in lifecycle order
+        context["status_summary"] = [
+            (s, HelpRequest.Status(s).label, requests_by_status.get(s, 0), STATUS_COLORS[s])
+            for s in status_order
+        ]
 
         # --- Chart.js data: categories ---
         context["category_labels"] = list(requests_by_category.keys())
@@ -110,7 +132,7 @@ def stats_data(request):
     """
     Return platform statistics as JSON for Chart.js AJAX refresh.
 
-    Staff-only: returns 403 for authenticated non-staff users.
+    Staff and moderators only: returns 403 for other signed-in users.
     Response shape:
       {
         "statuses": {"active": N, "in_progress": N, ...},
@@ -118,7 +140,7 @@ def stats_data(request):
         "avg_rating": float | null
       }
     """
-    if not request.user.is_staff:
+    if not can_see_stats(request.user):
         return HttpResponseForbidden()
 
     # Build status counts for every canonical status value

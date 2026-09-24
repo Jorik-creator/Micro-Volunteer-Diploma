@@ -36,7 +36,7 @@ class CreateReviewView(LoginRequiredMixin, FormView):
 
     def form_valid(self, form):
         try:
-            services.submit_review(
+            review = services.submit_review(
                 self.request.user,
                 self.help_request,
                 self.target,
@@ -46,6 +46,9 @@ class CreateReviewView(LoginRequiredMixin, FormView):
             )
         except services.ReviewError as error:
             messages.error(self.request, str(error))
+            return redirect("requests:detail", pk=self.help_request.pk)
+        if review.is_published:
+            messages.success(self.request, "Дякуємо! Оцінки обох сторін опубліковано.")
         else:
             messages.success(
                 self.request,

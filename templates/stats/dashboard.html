@@ -1,236 +1,97 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}{% load static mv_ui %}
 
 {% block title %}Статистика — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/admin.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="page-hero">
+<section class="mv-page-head">
   <div class="container">
-    <h1 class="page-title">
-      <i class="bi bi-bar-chart-line me-2"></i>Статистика платформи
-      <span class="chip chip-red chip-inline">Admin</span>
-    </h1>
-    <p class="page-sub">Аналітика та дані MicroVolunteer</p>
+    <h1>Статистика</h1>
+    <p class="mv-lead">Як працює платформа: запити за статусами й категоріями, оцінки та найактивніші волонтери.</p>
   </div>
 </section>
 
-<div class="container page-shell">
+<div class="container mv-page">
+  <div class="mv-stack--lg">
+    <section class="mv-card mv-stats-card" aria-labelledby="key-title">
+      <h2 class="visually-hidden" id="key-title">Ключові показники</h2>
+      <div class="mv-stats">
+        <div class="mv-stat"><span class="mv-stat__num">{{ total_requests }}</span><span class="mv-stat__label">{{ total_requests|uk_plural:"запит,запити,запитів" }} усього</span></div>
+        {% for value, label, count, color in status_summary %}{% if value == 'completed' %}
+        <div class="mv-stat"><span class="mv-stat__num">{{ count }}</span><span class="mv-stat__label">виконано</span></div>
+        {% endif %}{% endfor %}
+        <div class="mv-stat"><span class="mv-stat__num">{{ total_reviews }}</span><span class="mv-stat__label">{{ total_reviews|uk_plural:"оцінка,оцінки,оцінок" }} опубліковано</span></div>
+        <div class="mv-stat">
+          <span class="mv-stat__num">{% if total_reviews %}{{ avg_rating|floatformat:1 }}<i class="bi bi-star-fill" aria-hidden="true"></i>{% else %}—{% endif %}</span>
+          <span class="mv-stat__label">середня оцінка{% if total_reviews %} з 5{% endif %}</span>
+        </div>
+      </div>
+    </section>
 
-  <!-- Key stats -->
-  <div class="stat-grid-3 mb-4" aria-label="Ключові показники платформи">
-    <article class="mini-stat" aria-label="Всього запитів: {{ total_requests }}">
-      <div class="n">{{ total_requests }}</div>
-      <div class="l">Всього запитів</div>
-    </article>
-    <article class="mini-stat" aria-label="Всього відгуків: {{ total_reviews }}">
-      <div class="n">{{ total_reviews }}</div>
-      <div class="l">Всього відгуків</div>
-    </article>
-    <article class="mini-stat" aria-label="Середня оцінка: {{ avg_rating|floatformat:1 }} з 5">
-      <div class="n">{{ avg_rating|floatformat:1 }} <span class="rating-star-sm">★</span></div>
-      <div class="l">Середня оцінка</div>
-    </article>
-  </div>
-
-  <!-- Charts -->
-  <div class="grid-2-lg mb-4">
-    <div class="card-panel">
-      <div class="card-panel-title">
-        <i class="bi bi-pie-chart-fill text-primary"></i> Запити за статусом
-      </div>
-      <p class="visually-hidden" id="status-chart-summary">Завантаження текстового опису діаграми статусів.</p>
-      <div class="chart-wrap">
-        <canvas id="statusChart" role="img" aria-label="Діаграма розподілу запитів за статусом" aria-describedby="status-chart-summary">Діаграма запитів за статусом.</canvas>
-      </div>
-    </div>
-    <div class="card-panel">
-      <div class="card-panel-title">
-        <i class="bi bi-bar-chart-fill icon-success"></i> Запити за категорією
-      </div>
-      <p class="visually-hidden" id="category-chart-summary">Завантаження текстового опису діаграми категорій.</p>
-      <div class="chart-wrap">
-        <canvas id="categoryChart" role="img" aria-label="Стовпчикова діаграма кількості запитів за категоріями" aria-describedby="category-chart-summary">Діаграма запитів за категоріями.</canvas>
-      </div>
-    </div>
-  </div>
-
-  <!-- Top volunteers table -->
-  <div class="card-panel">
-    <div class="card-panel-title">
-      <i class="bi bi-trophy-fill icon-warning"></i> Топ волонтерів
-    </div>
-    <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead class="table-light">
-          <tr>
-            <th scope="col" class="col-num">#</th>
-            <th scope="col">Ім'я</th>
-            <th scope="col" class="col-num-right">К-сть відгуків</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for vol in top_volunteers %}
-          <tr>
-            <td class="col-num">{{ forloop.counter }}</td>
-            <td>
-              <i class="bi bi-person-circle me-2 text-muted"></i>
-              {{ vol.get_full_name|default:vol.username }}
-            </td>
-            <td class="col-num-right">
-              <span class="chip chip-blue">{{ vol.review_count }}</span>
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="3" class="empty-cell">
-              <i class="bi bi-person-x me-2"></i>Волонтерів ще немає
-            </td>
-          </tr>
+    <div class="mv-grid mv-grid--2">
+      <section class="mv-card" aria-labelledby="status-title">
+        <h2 class="mv-card__title" id="status-title"><i class="bi bi-diagram-3" aria-hidden="true"></i>Запити за статусом</h2>
+        <ul class="mv-bars">
+          {% for value, label, count, color in status_summary %}
+          <li class="mv-bar mv-bar--{{ color }}{% if not count %} is-zero{% endif %}">
+            <div class="mv-bar__head">
+              <span class="mv-bar__label"><i class="bi {% if value == 'draft' %}bi-pencil{% elif value == 'pending_moderation' %}bi-hourglass-split{% elif value == 'rejected' %}bi-x-octagon{% elif value == 'active' %}bi-circle{% elif value == 'in_progress' %}bi-circle-half{% elif value == 'awaiting_confirmation' %}bi-clock-history{% elif value == 'completed' %}bi-check-circle-fill{% elif value == 'cancelled' %}bi-x-circle{% else %}bi-calendar-x{% endif %}" aria-hidden="true"></i>{{ label }}</span>
+              <span class="mv-bar__num">{{ count }}<span>{% widthratio count total_requests 100 %}%</span></span>
+            </div>
+            <progress max="{{ total_requests|default:1 }}" value="{{ count }}" aria-hidden="true"></progress>
+          </li>
           {% endfor %}
-        </tbody>
-      </table>
+        </ul>
+      </section>
+
+      <section class="mv-card" aria-labelledby="cat-title">
+        <h2 class="mv-card__title" id="cat-title"><i class="bi bi-grid" aria-hidden="true"></i>Запити за категорією</h2>
+        {% if requests_by_category %}
+        <ul class="mv-bars">
+          {% for name, count in requests_by_category.items|dictsortreversed:1 %}
+          <li class="mv-bar">
+            <div class="mv-bar__head">
+              <span class="mv-bar__label">{{ name }}</span>
+              <span class="mv-bar__num">{{ count }}<span>{% widthratio count total_requests 100 %}%</span></span>
+            </div>
+            <progress max="{{ total_requests|default:1 }}" value="{{ count }}" aria-hidden="true"></progress>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        {% include "partials/_empty.html" with icon="bi-grid" title="Запитів ще немає" %}
+        {% endif %}
+      </section>
     </div>
+
+    <section aria-labelledby="top-title">
+      <h2 class="mv-h3" id="top-title">Найактивніші волонтери</h2>
+      <p class="mv-muted">За кількістю опублікованих оцінок від отримувачів.</p>
+      {% if top_volunteers %}
+      <ol class="mv-rows mv-rows--joined">
+        {% for vol in top_volunteers %}
+        <li class="mv-row mv-top-row">
+          <span class="mv-rank" aria-hidden="true">{{ forloop.counter }}</span>
+          {% avatar vol 40 %}
+          <div class="mv-row__body">
+            <p class="mv-row__title mv-mb-0">
+              {% if is_moderator %}<a href="{% url 'accounts:public-profile' vol.pk %}">{{ vol.get_full_name|default:vol.username }}</a>{% else %}{{ vol.get_full_name|default:vol.username }}{% endif %}
+            </p>
+            {% if vol.is_verified %}<span class="mv-micro"><i class="bi bi-patch-check-fill me-1" aria-hidden="true"></i>Перевірений</span>{% endif %}
+          </div>
+          <div class="mv-row__side">
+            {% if vol.avg_rating %}<span class="mv-rating"><i class="bi bi-star-fill" aria-hidden="true"></i>{{ vol.avg_rating|floatformat:1 }}</span>{% endif %}
+            <span class="mv-muted mv-num">{{ vol.review_count }} {{ vol.review_count|uk_plural:"оцінка,оцінки,оцінок" }}</span>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <div class="mv-card mv-card--flat">
+        {% include "partials/_empty.html" with icon="bi-trophy" title="Оцінок поки немає" text="Волонтери з'являться тут, щойно отримають перші оцінки." %}
+      </div>
+      {% endif %}
+    </section>
   </div>
-
 </div>
-{% endblock %}
-
-
-{% block extra_js %}
-<!-- Chart data passed safely as JSON (auto-escaped, XSS-safe) -->
-{{ status_keys|json_script:"status-keys-data" }}
-{{ status_labels|json_script:"status-labels-data" }}
-{{ status_data|json_script:"status-data-data" }}
-{{ category_labels|json_script:"category-labels-data" }}
-{{ category_data|json_script:"category-data-data" }}
-
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-  if (!window.Chart) {
-    document.getElementById('statusChart').insertAdjacentHTML(
-      'beforebegin',
-      '<div class="alert alert-warning">Графіки тимчасово недоступні: Chart.js не завантажився.</div>'
-    );
-    document.getElementById('categoryChart').insertAdjacentHTML(
-      'beforebegin',
-      '<div class="alert alert-warning">Графік категорій тимчасово недоступний.</div>'
-    );
-  } else {
-  // Read Django data from json_script tags (auto-escaped, XSS-safe)
-  const statusKeys     = JSON.parse(document.getElementById('status-keys-data').textContent);
-  const statusLabels   = JSON.parse(document.getElementById('status-labels-data').textContent);
-  const statusData     = JSON.parse(document.getElementById('status-data-data').textContent);
-  const categoryLabels = JSON.parse(document.getElementById('category-labels-data').textContent);
-  const categoryData   = JSON.parse(document.getElementById('category-data-data').textContent);
-  const statusSummary = document.getElementById('status-chart-summary');
-  const categorySummary = document.getElementById('category-chart-summary');
-
-  function updateChartSummaries() {
-    if (statusSummary) {
-      statusSummary.textContent = statusLabels
-        .map((label, index) => `${label}: ${statusChart.data.datasets[0].data[index] || 0}`)
-        .join('; ');
-    }
-    if (categorySummary) {
-      categorySummary.textContent = categoryChart.data.labels
-        .map((label, index) => `${label}: ${categoryChart.data.datasets[0].data[index] || 0}`)
-        .join('; ');
-    }
-  }
-
-  // ── Doughnut chart: requests by status ──────────────────────────────────
-  const statusChart = new Chart(document.getElementById('statusChart'), {
-    type: 'doughnut',
-    data: {
-      labels: statusLabels,
-      datasets: [{
-        data: statusData,
-        backgroundColor: [
-          '#2563EB',  // MicroVolunteer blue — active / open
-          '#D97706',  // warning — in progress
-          '#16A34A',  // success — completed
-          '#DC2626',  // danger — cancelled
-          '#6B7280',  // neutral — other
-        ],
-        borderWidth: 2,
-        borderColor: '#fff',
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { padding: 16, font: { size: 13 } }
-        },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => ` ${ctx.label}: ${ctx.parsed}`
-          }
-        }
-      }
-    }
-  });
-
-  // ── Bar chart: requests by category ─────────────────────────────────────
-  const categoryChart = new Chart(document.getElementById('categoryChart'), {
-    type: 'bar',
-    data: {
-      labels: categoryLabels,
-      datasets: [{
-        label: 'Запити',
-        data: categoryData,
-        backgroundColor: 'rgba(22, 163, 74, 0.75)',   // MicroVolunteer success
-        borderColor:     'rgba(22, 163, 74, 1)',
-        borderWidth: 1,
-        borderRadius: 4,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { precision: 0 }   // integer ticks only
-        }
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => ` Запитів: ${ctx.parsed.y}`
-          }
-        }
-      }
-    }
-  });
-
-  updateChartSummaries();
-
-  function refreshStatsCharts() {
-    fetch('{% url "stats:stats-data" %}', { credentials: 'same-origin' })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((payload) => {
-        if (!payload) return;
-
-        statusChart.data.datasets[0].data = statusKeys.map(
-          (key) => payload.statuses[key] || 0
-        );
-        statusChart.update();
-
-        const categoryEntries = Object.entries(payload.categories || {});
-        categoryChart.data.labels = categoryEntries.map(([label]) => label);
-        categoryChart.data.datasets[0].data = categoryEntries.map(([, count]) => count);
-        categoryChart.update();
-        updateChartSummaries();
-      })
-      .catch(() => {});
-  }
-
-  refreshStatsCharts();
-  setInterval(refreshStatsCharts, 60000);
-  }
-</script>
 {% endblock %}

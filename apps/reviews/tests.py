@@ -53,7 +53,7 @@ class TestModel:
 
     def test_tag_labels(self, db):
         review = ReviewFactory(tags=["punctual", "unknown"])
-        assert review.get_tags_display() == ["Пунктуальний(а)"]
+        assert review.get_tags_display() == ["Пунктуальність"]
 
 
 class TestEligibility:
@@ -93,7 +93,7 @@ class TestBlindExchange:
         review = services.submit_review(recipient, done, volunteer, 5, ["punctual"], "Дякую!")
 
         assert review.published_at is None
-        assert Notification.objects.filter(user=volunteer, type="reminder").exists()
+        assert Notification.objects.filter(user=volunteer, type="review_reminder").exists()
         assert not Notification.objects.filter(type=Notification.Type.NEW_REVIEW).exists()
 
     def test_second_review_publishes_both(self, done, recipient, volunteer):
@@ -128,7 +128,7 @@ class TestSummaryAndReminders:
 
         assert summary.average == 3.0
         assert summary.count == 2
-        assert {t["label"] for t in summary.top_tags} == {"Ввічливий(а)", "Запізнився(лась)"}
+        assert {t["label"] for t in summary.top_tags} == {"Ввічливість", "Запізнення"}
         assert any(t["negative"] for t in summary.top_tags)
 
     def test_pending_reviews_lists_unrated_pairs(self, done, recipient, volunteer):
@@ -161,7 +161,7 @@ class TestViews:
     def test_form_page(self, client_logged_in_recipient, done, volunteer):
         page = client_logged_in_recipient.get(f"/reviews/create/{done.pk}/{volunteer.pk}/")
         assert page.status_code == 200
-        assert "Пунктуальний" in page.content.decode()
+        assert "Пунктуальність" in page.content.decode()
 
     def test_submit(self, client_logged_in_recipient, done, recipient, volunteer):
         page = client_logged_in_recipient.post(

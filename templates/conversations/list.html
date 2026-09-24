@@ -1,36 +1,54 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load static mv_ui %}
 
 {% block title %}Розмови — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/personal.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="page-hero">
+<section class="mv-page-head">
   <div class="container">
-    <h1 class="page-title">Розмови</h1>
-    <p class="page-sub">Розмова відкривається, коли волонтера прийнято на запит.</p>
+    <div class="mv-narrow">
+      <h1>Розмови</h1>
+      <p class="mv-lead">Приватне листування щодо запитів. Розмова відкривається, коли волонтера прийнято.</p>
+    </div>
   </div>
 </section>
 
-<div class="container page-shell chat-shell">
-  {% if conversations %}
-  <div class="chat-list">
-    {% for conversation in conversations %}
-    <a href="{% url 'conversations:detail' conversation.pk %}" class="chat-list-item{% if conversation.unread %} unread{% endif %}">
-      <span>
-        <strong>{{ conversation.partner.first_name|default:conversation.partner.username }} {{ conversation.partner.last_name|first }}.</strong>
-        <span class="d-block text-muted small">«{{ conversation.help_request.title }}»</span>
-      </span>
-      <span class="text-end small">
-        {% if conversation.unread %}<span class="badge rounded-pill text-bg-primary">нове</span>{% endif %}
-        <span class="d-block text-muted">{{ conversation.last_message_at|date:"d.m H:i" }}</span>
-      </span>
-    </a>
-    {% endfor %}
+<div class="container mv-page">
+  <div class="mv-narrow">
+    {% if conversations %}
+    {% now "Y-m-d" as today %}
+    <ul class="mv-rows mv-rows--joined mv-convs">
+      {% for conversation in conversations %}
+      {% with partner=conversation.partner last=conversation.last_message_at|default:conversation.created_at %}
+      <li class="mv-row{% if conversation.unread %} is-unread{% endif %}">
+        {% avatar partner 56 %}
+        <div class="mv-row__body">
+          <h2 class="mv-row__title"><a class="mv-stretched" href="{% url 'conversations:detail' conversation.pk %}">{{ partner|short_name }}{% if conversation.unread %}<span class="visually-hidden"> — є нові повідомлення</span>{% endif %}</a></h2>
+          <p class="mv-convs__req"><i class="bi bi-card-text" aria-hidden="true"></i><span>{{ conversation.help_request.title }}</span></p>
+        </div>
+        <div class="mv-row__side">
+          <time class="mv-micro" datetime="{{ last|date:'c' }}">{% if last|date:"Y-m-d" == today %}{{ last|date:"H:i" }}{% else %}{{ last|date:"j E" }}{% endif %}</time>
+          {% if conversation.unread %}
+          <span class="mv-status mv-status--blue" aria-hidden="true"><i class="bi bi-envelope-fill"></i>Нове</span>
+          {% elif not conversation.is_writable %}
+          <span class="mv-status mv-status--muted"><i class="bi bi-lock" aria-hidden="true"></i>Закрита</span>
+          {% endif %}
+        </div>
+      </li>
+      {% endwith %}
+      {% endfor %}
+    </ul>
+    {% else %}
+    {% if user.is_volunteer %}
+    {% url 'requests:list' as action_url %}
+    {% include "partials/_empty.html" with icon="bi-chat-dots" title="Розмов поки немає" text="Розмова з'являється, коли отримувач приймає вас на запит. Тут ви домовитеся про час і деталі." action_url=action_url action_label="Знайти запит" %}
+    {% elif user.is_recipient %}
+    {% url 'requests:my-requests' as action_url %}
+    {% include "partials/_empty.html" with icon="bi-chat-dots" title="Розмов поки немає" text="Розмова з'являється, коли ви приймаєте волонтера на свій запит. Тут ви домовитеся про час і деталі." action_url=action_url action_label="Мої запити" %}
+    {% else %}
+    {% include "partials/_empty.html" with icon="bi-chat-dots" title="Розмов поки немає" text="Розмова з'являється, коли отримувач приймає волонтера на запит." %}
+    {% endif %}
+    {% endif %}
   </div>
-  {% else %}
-  <div class="empty-state">
-    <i class="bi bi-chat-dots empty-icon"></i>
-    <p>Розмов поки немає.</p>
-  </div>
-  {% endif %}
 </div>
 {% endblock %}

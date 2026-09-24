@@ -131,6 +131,11 @@ class FilterForm(forms.Form):
         choices=[("", "Будь-яка"), *HelpRequest.Duration.choices],
         required=False,
     )
+    help_format = forms.ChoiceField(
+        label="Формат допомоги",
+        choices=[("", "Будь-який"), *HelpRequest.HelpFormat.choices],
+        required=False,
+    )
     city = forms.CharField(
         label="Місто",
         max_length=100,
@@ -145,6 +150,11 @@ class FilterForm(forms.Form):
     date_to = forms.DateField(
         label="Дата до",
         widget=forms.DateInput(attrs={"type": "date"}),
+        required=False,
+    )
+    # Only applied for signed-in volunteers (see HelpRequestListView)
+    can_take = forms.BooleanField(
+        label="Лише ті, на які я можу відгукнутися",
         required=False,
     )
 
@@ -174,4 +184,5 @@ class ReasonForm(forms.Form):
         max_length=300,
         required=False,
         widget=forms.Textarea(attrs={"rows": 2, "maxlength": 300}),
+        error_messages={"max_length": "Причина задовга — не більше %(limit_value)d символів."},
     )

@@ -1,96 +1,89 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load static mv_ui %}
 
-{% block title %}Розмова — MicroVolunteer{% endblock %}
+{% block title %}Розмова з {{ partner|short_name }} — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/personal.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="page-hero">
-  <div class="container chat-shell">
-    <a href="{% url 'requests:detail' conversation.help_request.pk %}" class="btn btn-muted btn-sm toolbar-row"><i class="bi bi-arrow-left"></i> До запиту</a>
-    <h1 class="page-title">{{ partner.first_name|default:partner.username }} {{ partner.last_name|first }}.</h1>
-    <p class="page-sub">Запит «{{ conversation.help_request.title }}»</p>
+{% with hr=conversation.help_request %}
+<section class="mv-page-head mv-page-head--compact">
+  <div class="container">
+    <div class="mv-narrow">
+      <a class="mv-back" href="{% url 'requests:detail' hr.pk %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад до запиту</a>
+      <div class="mv-chat-title">
+        {% avatar partner 56 %}
+        <div class="mv-chat-title__text">
+          <h1>{{ partner|short_name }}</h1>
+          <p class="mv-chat-title__req"><span class="mv-chat-title__name">{{ hr.title }}</span>{% request_status hr %}</p>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
-<div class="container page-shell chat-shell">
-  {% if as_moderator %}
-  <div class="alert alert-warning" role="status"><i class="bi bi-shield-exclamation me-2"></i>Ви переглядаєте розмову як модератор через скаргу. Писати тут не можна.</div>
-  {% endif %}
-
-  <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-label="Повідомлення"
-       data-url="{% url 'conversations:messages' conversation.pk %}" data-last-id="{{ last_id }}">
-    {% for message in history %}
-      {# Plain text only: links are never turned into clickable anchors (ADR 0007) #}
-      <div class="chat-msg {{ message.kind }}{% if message.sender_id == user.pk %} mine{% endif %}">{% if message.kind == 'phone' %}<i class="bi bi-telephone"></i> {% endif %}{{ message.body }}{% if message.kind != 'system' %}<span class="meta">{% if message.sender_id != user.pk %}{{ message.sender.first_name }} · {% endif %}{{ message.created_at|date:"d.m H:i" }}{% if not as_moderator and message.sender_id != user.pk %} · <a href="{% url 'moderation:report' 'message' message.pk %}?next={{ request.path|urlencode }}">поскаржитися</a>{% endif %}</span>{% endif %}</div>
-    {% empty %}
-      <p class="text-muted text-center my-auto">Повідомлень ще немає.</p>
-    {% endfor %}
-  </div>
-
-  {% if can_write %}
-  <form method="post" class="chat-form" id="chat-form">
-    {% csrf_token %}
-    <label for="chat-body" class="form-label">Ваше повідомлення</label>
-    <textarea name="body" id="chat-body" class="form-control" maxlength="{{ max_length }}" required
-              aria-describedby="chat-hint"></textarea>
-    <div id="chat-hint" class="text-muted small">Не надсилайте паролі, коди з SMS чи дані картки. Посилання в розмові не відкриваються — з міркувань безпеки.</div>
-    <div class="d-flex gap-2 flex-wrap">
-      <button type="submit" class="btn btn-solid"><i class="bi bi-send"></i> Надіслати</button>
+<div class="container mv-page mv-page--chat">
+  <div class="mv-narrow mv-stack">
+    {% if as_moderator %}
+    <div class="mv-note mv-note--warning" role="status">
+      <i class="bi bi-shield-exclamation" aria-hidden="true"></i>
+      <div class="mv-note__body"><span class="mv-note__title">Перегляд модератором</span>Ви бачите розмову через скаргу на повідомлення. Писати тут не можна.</div>
     </div>
-  </form>
-  {% if not phone_shared %}
-  <form method="post" action="{% url 'conversations:share-phone' conversation.pk %}" class="mt-2">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-ghost btn-sm" data-confirm-submit="Показати ваш номер телефону співрозмовнику?"><i class="bi bi-telephone"></i> Поділитися моїм номером</button>
-  </form>
-  {% endif %}
-  {% elif not as_moderator %}
-  <p class="text-muted mt-3"><i class="bi bi-lock"></i> Розмова закрита — запит завершено або участь волонтера припинено. Історія доступна для читання 14 днів.</p>
-  {% endif %}
+    {% endif %}
+
+    <section class="mv-chat" aria-label="Розмова з {{ partner|short_name }}">
+      <div class="mv-chat__head">
+        <span class="mv-tile mv-tile--sm" aria-hidden="true"><i class="bi bi-shield-lock"></i></span>
+        <p class="mv-chat__privacy"><strong>Приватна розмова</strong><span class="mv-hide-mobile">Її бачите лише ви та співрозмовник. Модератор — тільки якщо надійде скарга.</span></p>
+      </div>
+
+      {# Plain text only: bodies are escaped and links are never clickable (ADR 0007) #}
+      <div id="chat-log" class="mv-chat__log" role="log" aria-live="polite" aria-label="Повідомлення" tabindex="0"
+           data-url="{% url 'conversations:messages' conversation.pk %}" data-last-id="{{ last_id }}"
+           {% if not as_moderator %}data-report-url="{% url 'moderation:report' 'message' 0 %}"{% endif %}>
+        {% for message in history %}
+        {% if message.kind == 'system' %}
+        <p class="mv-chat__system"><i class="bi bi-info-circle" aria-hidden="true"></i><span>{{ message.body }}</span></p>
+        {% else %}
+        <div class="mv-bubble{% if message.sender_id == user.pk %} mv-bubble--mine{% endif %}{% if message.kind == 'phone' %} mv-bubble--phone{% endif %}"><span class="mv-bubble__text">{% if message.kind == 'phone' %}<i class="bi bi-telephone mv-bubble__icon" aria-hidden="true"></i>{% endif %}{{ message.body }}</span><span class="mv-bubble__meta">{% if message.sender_id != user.pk %}<span>{{ message.sender.first_name }}</span><span aria-hidden="true">·</span>{% endif %}<time datetime="{{ message.created_at|date:'c' }}">{{ message.created_at|date:"d.m H:i" }}</time>{% if not as_moderator and message.sender_id != user.pk %}<a class="mv-link-btn mv-link-btn--sm mv-bubble__report" href="{% url 'moderation:report' 'message' message.pk %}?next={{ request.path|urlencode }}"><i class="bi bi-flag" aria-hidden="true"></i>Поскаржитися</a>{% endif %}</span></div>
+        {% endif %}
+        {% empty %}
+        <p class="mv-chat__empty" id="chat-empty"><i class="bi bi-chat-dots" aria-hidden="true"></i>Повідомлень ще немає. Привітайтеся й домовтеся про час.</p>
+        {% endfor %}
+      </div>
+
+      {% if can_write %}
+      <form method="post" class="mv-chat__compose" id="chat-form">
+        {% csrf_token %}
+        <label for="chat-body" class="visually-hidden">Ваше повідомлення</label>
+        <textarea name="body" id="chat-body" class="form-control" rows="1" maxlength="{{ max_length }}" required
+                  placeholder="Напишіть повідомлення…" aria-describedby="chat-hint"></textarea>
+        <button type="submit" class="mv-btn mv-btn--primary mv-chat__send" aria-label="Надіслати повідомлення"><i class="bi bi-send-fill" aria-hidden="true"></i></button>
+      </form>
+      {% endif %}
+    </section>
+
+    {% if not as_moderator %}
+    <div class="mv-note mv-note--muted" id="chat-closed"{% if can_write %} hidden{% endif %}>
+      <i class="bi bi-lock" aria-hidden="true"></i>
+      <div class="mv-note__body"><span class="mv-note__title">Розмову закрито</span>Запит завершено або участь волонтера припинено. Історія доступна для читання 14 днів.</div>
+    </div>
+    {% endif %}
+
+    {% if can_write %}
+    <div class="mv-chat__below" id="chat-tools">
+      {% if phone_shared %}
+      <p class="mv-status mv-status--success mv-mb-0"><i class="bi bi-telephone" aria-hidden="true"></i>Ви вже поділилися своїм номером</p>
+      {% else %}
+      <form method="post" action="{% url 'conversations:share-phone' conversation.pk %}" class="m-0">
+        {% csrf_token %}
+        <button type="submit" class="mv-link-btn" data-confirm-submit="Показати ваш номер телефону співрозмовнику?"><i class="bi bi-telephone" aria-hidden="true"></i>Поділитися моїм номером</button>
+      </form>
+      {% endif %}
+      <p class="mv-chat__hint" id="chat-hint"><i class="bi bi-shield-check" aria-hidden="true"></i><span>Не надсилайте паролі, коди з SMS чи дані картки. Посилання в розмові не відкриваються — з міркувань безпеки.</span></p>
+    </div>
+    {% endif %}
+  </div>
 </div>
+{% endwith %}
 {% endblock %}
 
-{% block extra_js %}
-<script>
-(function () {
-  const log = document.getElementById('chat-log');
-  if (!log) return;
-  log.scrollTop = log.scrollHeight;
-  const url = log.dataset.url;
-  let lastId = parseInt(log.dataset.lastId, 10) || 0;
-
-  function render(m) {
-    // textContent only: message bodies are never interpreted as HTML
-    const el = document.createElement('div');
-    el.className = 'chat-msg ' + m.kind + (m.mine ? ' mine' : '');
-    el.textContent = (m.kind === 'phone' ? '☎ ' : '') + m.body;
-    if (m.kind !== 'system') {
-      const meta = document.createElement('span');
-      meta.className = 'meta';
-      meta.textContent = (m.mine ? '' : m.sender + ' · ') + m.time;
-      el.appendChild(meta);
-    }
-    log.appendChild(el);
-  }
-
-  async function poll() {
-    if (document.hidden) return;
-    try {
-      const response = await fetch(url + '?after=' + lastId, { credentials: 'same-origin' });
-      if (!response.ok) return;
-      const data = await response.json();
-      if (data.messages.length) {
-        const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
-        data.messages.forEach(function (m) { render(m); lastId = Math.max(lastId, m.id); });
-        if (nearBottom) log.scrollTop = log.scrollHeight;
-      }
-      if (!data.writable) {
-        const form = document.getElementById('chat-form');
-        if (form) form.remove();
-      }
-    } catch (e) { /* offline — try again later */ }
-  }
-  setInterval(poll, 5000);
-  document.addEventListener('visibilitychange', poll);
-})();
-</script>
-{% endblock %}
+{% block extra_js %}<script src="{% static 'js/chat.js' %}"></script>{% endblock %}

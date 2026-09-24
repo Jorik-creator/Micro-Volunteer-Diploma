@@ -1,36 +1,59 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load static mv_ui %}
 
-{% block title %}Email-сповіщення — MicroVolunteer{% endblock %}
+{% block title %}Листи на пошту — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/personal.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="page-hero">
+<section class="mv-page-head">
   <div class="container">
-    <a href="{% url 'accounts:profile' %}" class="btn btn-muted btn-sm toolbar-row"><i class="bi bi-arrow-left"></i> Профіль</a>
-    <h1 class="page-title">Email-сповіщення</h1>
-    <p class="page-sub">Усі сповіщення завжди видно на сайті. Тут можна обрати, які з них також надсилати на {{ user.email }}.</p>
+    <div class="mv-form-col">
+    <a class="mv-back" href="{% url 'notifications:notification-list' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад до сповіщень</a>
+    <h1>Листи на пошту</h1>
+    <p class="mv-lead">Усі сповіщення завжди видно на сайті. Оберіть, які з них також надсилати на <span class="mv-break">{{ user.email }}</span>.</p>
+    </div>
   </div>
 </section>
 
-<div class="container page-shell form-shell-sm">
-  {% if not user.email_verified_at %}
-  <div class="alert alert-warning" role="status">Листи надходитимуть після підтвердження email.</div>
-  {% endif %}
-  <form method="post" class="card-panel">
-    {% csrf_token %}
-    <fieldset>
-      <legend class="section-hd">Надсилати на пошту</legend>
-      <div class="settings-toggle-list">
-        {% for field in form %}
-        <label class="settings-toggle" for="{{ field.id_for_label }}">
-          <span>{{ field.label }}</span>
-          <span class="form-check form-switch m-0">{{ field }}</span>
-        </label>
-        {% endfor %}
+<div class="container mv-page">
+  <div class="mv-form-col mv-stack--lg">
+    {% if not user.email_verified_at %}
+    <div class="mv-note mv-note--warning" role="status">
+      <i class="bi bi-envelope-exclamation" aria-hidden="true"></i>
+      <div class="mv-note__body">
+        <span class="mv-note__title">Email ще не підтверджено</span>
+        <p>Листи почнуть надходити після підтвердження. Перевірте пошту або надішліть лист ще раз.</p>
+        <form method="post" action="{% url 'accounts:resend-confirmation' %}" class="m-0">
+          {% csrf_token %}
+          <button type="submit" class="mv-link-btn"><i class="bi bi-send" aria-hidden="true"></i>Надіслати лист ще раз</button>
+        </form>
       </div>
-    </fieldset>
-    <div class="form-actions">
-      <button type="submit" class="btn btn-solid">Зберегти</button>
     </div>
-  </form>
+    {% endif %}
+
+    <form method="post" class="mv-card" novalidate>
+      {% csrf_token %}
+      {% include "partials/_form_errors.html" %}
+      <fieldset class="mv-fieldset mv-mb-0">
+        <legend class="mv-card__title mv-toggles__legend"><i class="bi bi-envelope" aria-hidden="true"></i>Надсилати на пошту</legend>
+        <ul class="mv-toggles">
+          {% for field in form %}
+          <li>
+            <label class="mv-toggle" for="{{ field.id_for_label }}">
+              <span class="mv-tile{% if field.name == 'nearby' %} mv-tile--muted{% endif %}" aria-hidden="true"><i class="bi {% if field.name == 'responses' %}bi-people{% elif field.name == 'lifecycle' %}bi-arrow-repeat{% elif field.name == 'messages' %}bi-chat-dots{% elif field.name == 'reviews' %}bi-star{% elif field.name == 'nearby' %}bi-geo-alt{% else %}bi-shield-check{% endif %}"></i></span>
+              <span class="mv-toggle__text">
+                <span class="mv-toggle__title">{{ field.label }}</span>
+                <span class="mv-toggle__hint">{% if field.name == 'responses' %}Хтось відгукнувся на ваш запит, вас прийняли або обрали іншого волонтера.{% elif field.name == 'lifecycle' %}Волонтер вийшов чи позначив виконання, запит завершено, скасовано або прострочено.{% elif field.name == 'messages' %}Співрозмовник написав вам у розмові щодо запиту.{% elif field.name == 'reviews' %}Вам поставили оцінку або час оцінити допомогу.{% elif field.name == 'nearby' %}Може бути кілька листів на день, тому типово вимкнено.{% else %}Рішення щодо перевірки профілю, ваших запитів і скарг.{% endif %}</span>
+              </span>
+              <span class="form-check form-switch">{{ field }}</span>
+            </label>
+          </li>
+          {% endfor %}
+        </ul>
+      </fieldset>
+      <div class="mv-card__foot">
+        <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-check-lg" aria-hidden="true"></i>Зберегти</button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% load static %}
+
+{% block title %}Сторінку не знайдено — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/admin.css' %}" rel="stylesheet">{% endblock %}
+
+{% block content %}
+<div class="container">
+  <section class="mv-error">
+    <span class="mv-tile mv-tile--lg" aria-hidden="true"><i class="bi bi-signpost-split"></i></span>
+    <div class="mv-thread" aria-hidden="true"></div>
+    <span class="mv-error__code">Помилка 404</span>
+    <h1>Сторінку не знайдено</h1>
+    <p>Можливо, посилання застаріло, запит уже закрито або в адресі є помилка.</p>
+    <div class="mv-cluster">
+      <a class="mv-btn mv-btn--primary" href="{% url 'home' %}"><i class="bi bi-house-door" aria-hidden="true"></i>На головну</a>
+      <a class="mv-btn mv-btn--secondary" href="{% url 'requests:list' %}"><i class="bi bi-list-ul" aria-hidden="true"></i>До запитів</a>
+    </div>
+  </section>
+</div>
+{% endblock %}

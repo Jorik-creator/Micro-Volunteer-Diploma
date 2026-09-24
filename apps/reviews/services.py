@@ -79,7 +79,7 @@ def _publish(reviews, now):
             review.target,
             Notification.Type.NEW_REVIEW,
             "Нова оцінка про вас",
-            f"{_name(review.author)} оцінив(ла) вас на {review.rating}/5 "
+            f"Оцінка від {_name(review.author)}: {review.rating}/5 "
             f"за запитом «{review.help_request.title}».",
             review.help_request,
         )
@@ -87,6 +87,10 @@ def _publish(reviews, now):
 
 @transaction.atomic
 def submit_review(author, help_request, target, rating, tags=(), comment=""):
+    """
+    Save the review. Returns it; review.is_published tells whether the
+    counterpart had already rated, so both became visible right away.
+    """
     now = timezone.now()
     error = review_error(author, help_request, target, now)
     if error:
@@ -113,9 +117,9 @@ def submit_review(author, help_request, target, rating, tags=(), comment=""):
     else:
         notify(
             target,
-            Notification.Type.REMINDER,
+            Notification.Type.REVIEW_REMINDER,
             "Вас оцінили — оцініть і ви",
-            f"{_name(author)} залишив(ла) оцінку за запитом «{help_request.title}». "
+            f"Нова оцінка від {_name(author)} за запитом «{help_request.title}». "
             "Вона стане видимою, щойно ви залишите свою, або через 14 днів.",
             help_request,
         )

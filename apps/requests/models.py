@@ -187,9 +187,11 @@ class HelpRequest(models.Model):
 
     @property
     def is_editable(self):
+        # A rejected request is fixed by editing it; saving sends it back to moderation
         return self.status in (
             self.Status.DRAFT,
             self.Status.PENDING_MODERATION,
+            self.Status.REJECTED,
             self.Status.ACTIVE,
         )
 
@@ -225,6 +227,7 @@ class Response(models.Model):
     status_reason = models.CharField("Причина зміни статусу", max_length=300, blank=True)
     done_at = models.DateTimeField("Позначено виконаним", null=True, blank=True)
     created_at = models.DateTimeField("Дата відгуку", auto_now_add=True)
+    status_changed_at = models.DateTimeField("Статус змінено", default=timezone.now)
 
     class Meta:
         verbose_name = "Відгук волонтера"

@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 
 
 class Notification(models.Model):
@@ -46,6 +47,8 @@ class Notification(models.Model):
         related_name="notifications",
         verbose_name="Пов'язаний запит",
     )
+    # Where the next step happens when it is not the request page (e.g. a conversation)
+    link = models.CharField("Посилання", max_length=300, blank=True)
     is_read = models.BooleanField("Прочитано", default=False)
     created_at = models.DateTimeField("Дата створення", auto_now_add=True)
 
@@ -57,6 +60,15 @@ class Notification(models.Model):
     def __str__(self):
         status = "✓" if self.is_read else "●"
         return f"{status} {self.title} → {self.user}"
+
+    @property
+    def url(self):
+        """Site-relative URL of the page where the user acts on this notification."""
+        if self.link:
+            return self.link
+        if self.related_request_id:
+            return reverse("requests:detail", args=[self.related_request_id])
+        return reverse("notifications:notification-list")
 
 
 class EmailPreferences(models.Model):

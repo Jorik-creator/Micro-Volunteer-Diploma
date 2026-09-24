@@ -1,25 +1,58 @@
-{% extends "base.html" %}
-{% load crispy_forms_tags %}
+{% extends "base.html" %}{% load static crispy_forms_tags %}
 
 {% block title %}Поскаржитися — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/admin.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="page-hero">
+<section class="mv-page-head">
   <div class="container">
-    <h1 class="page-title">Поскаржитися</h1>
-    <p class="page-sub">Скаргу бачить лише модератор. Автор не дізнається, хто її надіслав.</p>
+    {% if next %}<a class="mv-back" href="{{ next }}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад</a>{% endif %}
+    <h1>Поскаржитися</h1>
+    <p class="mv-lead">Скаргу бачить лише модератор. Автор не дізнається, хто її надіслав.</p>
   </div>
 </section>
-<div class="container page-shell form-shell-sm">
-  <form method="post" class="card-panel">
+
+<div class="container mv-page">
+  <form method="post" class="mv-card mv-form-col" novalidate>
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ next }}">
-    <p class="mb-3"><strong>Про що скарга:</strong> {{ target_label }}</p>
-    {{ form|crispy }}
-    <div class="info-banner"><i class="bi bi-exclamation-octagon-fill"></i><span>Якщо комусь загрожує небезпека — телефонуйте <strong>102</strong> або <strong>112</strong>.</span></div>
-    <div class="form-actions">
-      <button type="submit" class="btn btn-solid"><i class="bi bi-flag"></i> Надіслати скаргу</button>
-      <a href="{% if next %}{{ next }}{% else %}{% url 'home' %}{% endif %}" class="btn btn-muted">Скасувати</a>
+    {% include "partials/_form_errors.html" %}
+
+    <div class="mv-report-target">
+      <span class="mv-tile mv-tile--warning" aria-hidden="true"><i class="bi bi-flag"></i></span>
+      <div><span class="mv-muted">Про що скарга</span><strong>{{ target_label }}</strong></div>
+    </div>
+
+    <fieldset class="mv-fieldset" id="{{ form.reason.id_for_label }}"{% if form.reason.errors %} aria-describedby="reason-error"{% endif %}>
+      <legend>{{ form.reason.label }} <span class="asteriskField" aria-hidden="true">*</span></legend>
+      <div class="mv-choices mv-choices--2">
+        {% for value, label in form.fields.reason.choices %}
+        <label class="mv-choice" for="reason-{{ value }}">
+          <input type="radio" name="{{ form.reason.html_name }}" value="{{ value }}" id="reason-{{ value }}" required{% if form.reason.value == value %} checked{% endif %}>
+          <span class="mv-tile mv-tile--sm" aria-hidden="true"><i class="bi {% if value == 'fraud' %}bi-cash-coin{% elif value == 'unsafe' %}bi-exclamation-triangle{% elif value == 'offensive' %}bi-emoji-angry{% elif value == 'spam' %}bi-megaphone{% elif value == 'false_info' %}bi-question-octagon{% else %}bi-three-dots{% endif %}"></i></span>
+          <span class="mv-choice__text">
+            <span class="mv-choice__title">{{ label }}</span>
+            <span class="mv-choice__hint">{% if value == 'fraud' %}Просять гроші, передоплату чи дані картки{% elif value == 'unsafe' %}Загроза здоров'ю чи безпеці людини{% elif value == 'offensive' %}Образи, погрози, дискримінація{% elif value == 'spam' %}Реклама чи однакові повідомлення{% elif value == 'false_info' %}Опис чи профіль не відповідають дійсності{% else %}Опишіть нижче, що сталося{% endif %}</span>
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+      {% for error in form.reason.errors %}<div class="invalid-feedback d-block" id="reason-error">{{ error }}</div>{% endfor %}
+    </fieldset>
+
+    {{ form.comment|as_crispy_field }}
+
+    <div class="mv-note mv-note--danger mt-4">
+      <i class="bi bi-telephone-fill" aria-hidden="true"></i>
+      <div class="mv-note__body">
+        <strong class="mv-note__title">Комусь загрожує небезпека?</strong>
+        <p>Не чекайте на модератора — телефонуйте <a href="tel:112">112</a> або в поліцію <a href="tel:102">102</a>.</p>
+      </div>
+    </div>
+
+    <div class="mv-card__foot mv-cluster">
+      <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-flag" aria-hidden="true"></i>Надіслати скаргу</button>
+      <a class="mv-btn mv-btn--ghost" href="{% if next %}{{ next }}{% else %}{% url 'home' %}{% endif %}">Скасувати</a>
     </div>
   </form>
 </div>

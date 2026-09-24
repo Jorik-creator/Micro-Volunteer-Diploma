@@ -1,379 +1,150 @@
 {% extends "base.html" %}
-{% load crispy_forms_tags %}
+{% load static crispy_forms_tags %}
 
 {% block title %}{{ form_title }} — MicroVolunteer{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link href="{% static 'css/pages/request.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<section class="page-hero">
+<section class="mv-page-head">
   <div class="container">
-    <a href="{{ cancel_url }}" class="btn btn-muted btn-sm toolbar-row">
-      <i class="bi bi-arrow-left"></i> Назад
-    </a>
-    <h1 class="page-title">{{ form_title }}</h1>
-    <p class="page-sub">Напишіть простими словами, яка допомога потрібна. Волонтери поруч побачать ваш запит.</p>
+    <div class="mv-form-col">
+      <a class="mv-back" href="{{ cancel_url }}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад</a>
+      <h1>{{ form_title }}</h1>
+      <p class="mv-lead">Опишіть простими словами, яка допомога потрібна. Точну адресу побачить лише волонтер, якого ви приймете.</p>
+    </div>
   </div>
 </section>
 
-<div class="container page-shell form-shell-lg">
-  <form method="post" enctype="multipart/form-data" novalidate>
-    {% csrf_token %}
-    <div class="card-panel">
-      {% if form.non_field_errors %}
-      <div class="alert alert-danger" role="alert">
-        {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
-      </div>
-      {% endif %}
-      <div class="form-help-card" role="note">
-        <i class="bi bi-lightbulb"></i>
-        <div>
-          <p><strong>Підказка:</strong> коротко опишіть дію, місце і час.</p>
-          <ul>
-            <li>Наприклад: “Потрібно купити ліки сьогодні після 16:00”.</li>
-            <li>Точну адресу побачить лише прийнятий волонтер.</li>
-          </ul>
+<div class="container mv-page">
+  <div class="mv-form-col">
+    {% include "partials/_form_errors.html" %}
+
+    <ol class="mv-stepper mv-rq-wizard-steps" id="wizard-stepper" aria-label="Кроки" hidden>
+      <li data-step-marker="0"><span class="mv-step__dot" aria-hidden="true">1</span>Що потрібно</li>
+      <li data-step-marker="1"><span class="mv-step__dot" aria-hidden="true">2</span>Коли й де</li>
+      <li data-step-marker="2"><span class="mv-step__dot" aria-hidden="true">3</span>Перевірка</li>
+    </ol>
+    <p class="visually-hidden" id="wizard-progress" aria-live="polite"></p>
+
+    <form method="post" enctype="multipart/form-data" novalidate id="request-form" class="mv-rq-form">
+      {% csrf_token %}
+
+      {# ---------- Step 1 ---------- #}
+      <section class="mv-card mv-rq-step" data-step="0" aria-labelledby="step1-title">
+        <h2 class="mv-card__title mv-rq-step__title" id="step1-title" tabindex="-1">Що потрібно</h2>
+        <div class="mv-note mv-rq-tip">
+          <i class="bi bi-lightbulb" aria-hidden="true"></i>
+          <div class="mv-note__body">Коротко опишіть дію, місце й час. Наприклад: «Купити ліки в аптеці сьогодні після 16:00».</div>
         </div>
-      </div>
 
-      <p class="wizard-progress" id="wizard-progress" aria-live="polite" hidden></p>
+        {{ form.title|as_crispy_field }}
+        {{ form.description|as_crispy_field }}
+        {{ form.category|as_crispy_field }}
 
-      <section class="wizard-step" data-step="1" aria-labelledby="step1-title">
-      <h2 class="wizard-title" id="step1-title">Що потрібно зробити</h2>
-      {{ form.title|as_crispy_field }}
-      {{ form.description|as_crispy_field }}
+        <fieldset class="mv-fieldset" id="id_help_format">
+          <legend>Формат допомоги<span class="asteriskField">*</span></legend>
+          <div class="mv-choices mv-rq-formats">
+            {% for choice in form.help_format %}
+            <label class="mv-choice" for="{{ choice.id_for_label }}">
+              <input type="radio" name="{{ form.help_format.html_name }}" id="{{ choice.id_for_label }}" value="{{ choice.data.value }}"
+                     {% if choice.data.selected %}checked{% endif %} required
+                     {% if form.help_format.errors %}aria-invalid="true"{% endif %}>
+              <span class="mv-tile" aria-hidden="true"><i class="bi {% if choice.data.value == 'home_visit' %}bi-house-door{% elif choice.data.value == 'doorstep' %}bi-door-closed{% elif choice.data.value == 'public_place' %}bi-signpost-2{% else %}bi-telephone{% endif %}"></i></span>
+              <span class="mv-choice__text">
+                <span class="mv-choice__title">{{ choice.choice_label }}</span>
+                <span class="mv-choice__hint">{% for key, hint in help_format_hints.items %}{% if key == choice.data.value %}{{ hint }}{% endif %}{% endfor %}</span>
+              </span>
+            </label>
+            {% endfor %}
+          </div>
+          {% for error in form.help_format.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+          <p class="form-text"><i class="bi bi-patch-check-fill mv-rq-verified me-1" aria-hidden="true"></i>На візит додому можуть відгукнутися лише перевірені волонтери.</p>
+        </fieldset>
 
-      <fieldset class="help-format-picker mb-3">
-        <legend class="form-label">Формат допомоги <span class="asteriskField">*</span></legend>
-        {% for choice in form.help_format %}
-        <label class="help-format-option">
-          <input type="radio" name="{{ form.help_format.html_name }}" value="{{ choice.data.value }}"
-                 {% if choice.data.selected %}checked{% endif %} required>
-          <span>
-            <strong>{{ choice.choice_label }}</strong>
-            <small>{% for key, hint in help_format_hints.items %}{% if key == choice.data.value %}{{ hint }}{% endif %}{% endfor %}</small>
-          </span>
-        </label>
-        {% endfor %}
-        {% for error in form.help_format.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-        <p class="text-muted small mt-2 mb-0"><i class="bi bi-shield-check"></i> На візит додому можуть відгукнутися лише перевірені волонтери.</p>
-      </fieldset>
+        {{ form.urgency|as_crispy_field }}
+        {{ form.photo|as_crispy_field }}
 
-      <div class="row">
-        <div class="col-md-6">{{ form.category|as_crispy_field }}</div>
-        <div class="col-md-6">{{ form.urgency|as_crispy_field }}</div>
-      </div>
-
-      {{ form.photo|as_crispy_field }}
-      <div class="wizard-nav"><button type="button" class="btn btn-solid btn-lg" data-next>Далі: коли й де <i class="bi bi-arrow-right" aria-hidden="true"></i></button></div>
+        <div class="mv-rq-nav" data-js-only hidden>
+          <span></span>
+          <button type="button" class="mv-btn mv-btn--primary" data-next>Далі: коли й де<i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+        </div>
       </section>
 
-      <section class="wizard-step" data-step="2" aria-labelledby="step2-title">
-      <h2 class="wizard-title" id="step2-title">Коли й де</h2>
-      <div class="row">
-        <div class="col-md-6">{{ form.needed_date|as_crispy_field }}</div>
-        <div class="col-md-6">{{ form.duration|as_crispy_field }}</div>
-      </div>
+      {# ---------- Step 2 ---------- #}
+      <section class="mv-card mv-rq-step" data-step="1" aria-labelledby="step2-title">
+        <h2 class="mv-card__title mv-rq-step__title" id="step2-title" tabindex="-1">Коли й де</h2>
 
-      {{ form.volunteers_needed|as_crispy_field }}
-
-      <fieldset class="on-behalf-box mb-3">
-        <legend class="visually-hidden">Для кого запит</legend>
-        {{ form.on_behalf|as_crispy_field }}
-        <div id="beneficiary-fields" class="row">
-          <p class="text-muted small">Контакт цієї людини побачить лише прийнятий волонтер — щоб зателефонувати перед візитом.</p>
-          <div class="col-md-6">{{ form.beneficiary_name|as_crispy_field }}</div>
-          <div class="col-md-6">{{ form.beneficiary_phone|as_crispy_field }}</div>
+        <div class="row">
+          <div class="col-md-6">{{ form.needed_date|as_crispy_field }}</div>
+          <div class="col-md-6">{{ form.duration|as_crispy_field }}</div>
         </div>
-      </fieldset>
+        {{ form.volunteers_needed|as_crispy_field }}
 
-      <div id="city-wrapper">{{ form.city|as_crispy_field }}</div>
+        <fieldset class="mv-fieldset mv-rq-behalf">
+          <legend class="visually-hidden">Для кого запит</legend>
+          {{ form.on_behalf|as_crispy_field }}
+          <div id="beneficiary-fields" class="mv-rq-behalf__fields">
+            <p class="form-text mt-0">Контакт цієї людини побачить лише прийнятий волонтер — щоб зателефонувати перед візитом.</p>
+            <div class="row">
+              <div class="col-md-6">{{ form.beneficiary_name|as_crispy_field }}</div>
+              <div class="col-md-6">{{ form.beneficiary_phone|as_crispy_field }}</div>
+            </div>
+          </div>
+        </fieldset>
 
-      <!-- Address with Nominatim autocomplete -->
-      <div class="mb-3 position-relative" id="address-wrapper">
-        {{ form.address|as_crispy_field }}
-        <div id="address-suggestions" class="address-suggestions" role="listbox" aria-label="Підказки адрес"></div>
-      </div>
-      {{ form.latitude }}
-      {{ form.longitude }}
-      <div class="mb-3 text-muted small" id="address-hint">
-        <i class="bi bi-info-circle me-1"></i>
-        Почніть вводити адресу — з'являться підказки для вибору точного місця
-      </div>
+        <div id="place-fields">
+          {{ form.city|as_crispy_field }}
 
-      <!-- Leaflet mini-map: shown after a suggestion is selected -->
-      <div id="map-container" class="mb-3 mini-map-panel" hidden>
-        <div id="mini-map" class="mini-map-canvas" aria-label="Міні-мапа для уточнення адреси"></div>
-        <div class="text-muted small mt-1">
-          <i class="bi bi-arrows-move me-1"></i>
-          Перетягніть маркер для уточнення координат
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.address.id_for_label }}">{{ form.address.label }}<span class="asteriskField">*</span></label>
+            <input type="text" name="{{ form.address.html_name }}" id="{{ form.address.id_for_label }}"
+                   value="{{ form.address.value|default_if_none:'' }}" maxlength="255" autocomplete="off"
+                   class="form-control{% if form.address.errors %} is-invalid{% endif %}"
+                   aria-describedby="address-hint{% if form.address.errors %} address-error{% endif %}"
+                   {% if form.address.errors %}aria-invalid="true"{% endif %}
+                   data-address-autocomplete data-lat="#{{ form.latitude.id_for_label }}" data-lon="#{{ form.longitude.id_for_label }}"
+                   data-city="#{{ form.city.id_for_label }}" data-map="#mini-map">
+            {% for error in form.address.errors %}<div class="invalid-feedback d-block" id="address-error">{{ error }}</div>{% endfor %}
+            <p class="form-text" id="address-hint">Почніть вводити — з'являться підказки. Адресу побачить лише прийнятий волонтер.</p>
+          </div>
+          {{ form.latitude }}
+          {{ form.longitude }}
+
+          <div id="mini-map" class="mv-rq-map" role="region" aria-label="Міні-карта для уточнення місця" hidden></div>
+          <p class="form-text mv-rq-map-hint"><i class="bi bi-arrows-move me-1" aria-hidden="true"></i>Перетягніть маркер, щоб уточнити місце.</p>
         </div>
-      </div>
-      <div id="map-unavailable" class="alert alert-warning py-2 small map-unavailable" hidden>
-        <i class="bi bi-exclamation-triangle me-1"></i>
-        Не вдалося завантажити мапу. Координати буде збережено за вибраною адресою без уточнення маркером.
-      </div>
 
-      <div class="wizard-nav">
-        <button type="button" class="btn btn-muted btn-lg" data-back><i class="bi bi-arrow-left" aria-hidden="true"></i> Назад</button>
-        <button type="button" class="btn btn-solid btn-lg" data-next>Далі: перевірити <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
-      </div>
+        <div class="mv-rq-nav" data-js-only hidden>
+          <button type="button" class="mv-btn mv-btn--ghost" data-back><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад</button>
+          <button type="button" class="mv-btn mv-btn--primary" data-next>Далі: перевірити<i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+        </div>
       </section>
 
-      <section class="wizard-step" data-step="3" aria-labelledby="step3-title">
-      <h2 class="wizard-title" id="step3-title">Перевірте запит</h2>
-      <dl class="wizard-summary" id="wizard-summary"></dl>
-      <div class="form-actions">
-        <button type="button" class="btn btn-muted btn-lg" data-back><i class="bi bi-arrow-left" aria-hidden="true"></i> Назад</button>
-        <button type="submit" class="btn btn-solid btn-lg">
-          <i class="bi bi-send"></i> {{ submit_label }}
-        </button>
-        <a href="{{ cancel_url }}" class="btn btn-link">Скасувати</a>
-      </div>
+      {# ---------- Step 3 ---------- #}
+      <section class="mv-card mv-rq-step" data-step="2" aria-labelledby="step3-title">
+        <h2 class="mv-card__title mv-rq-step__title" id="step3-title" tabindex="-1">Перевірка</h2>
+        <div id="wizard-summary" class="mv-rq-review" data-js-only hidden></div>
+        <div class="mv-rq-nav">
+          <button type="button" class="mv-btn mv-btn--ghost" data-back data-js-only hidden><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад</button>
+          <div class="mv-rq-nav__end">
+            <a href="{{ cancel_url }}" class="mv-link-btn mv-link-btn--muted">Скасувати</a>
+            <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-send" aria-hidden="true"></i>{{ submit_label }}</button>
+          </div>
+        </div>
       </section>
-    </div>
-  </form>
+    </form>
+  </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<!-- Leaflet JS for the mini-map -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script>
-(function () {
-  const addressInput = document.getElementById('id_address');
-  const latInput     = document.getElementById('id_latitude');
-  const lonInput     = document.getElementById('id_longitude');
-  const suggestionsBox = document.getElementById('address-suggestions');
-  const mapContainer   = document.getElementById('map-container');
-  const mapUnavailable = document.getElementById('map-unavailable');
-
-  if (!addressInput) return;
-  addressInput.setAttribute('aria-autocomplete', 'list');
-  addressInput.setAttribute('aria-controls', 'address-suggestions');
-  addressInput.setAttribute('aria-expanded', 'false');
-
-  // ── Leaflet mini-map (lazy-initialised on first suggestion pick) ──
-  let map    = null;
-  let marker = null;
-
-  function showMapUnavailable() {
-    if (mapContainer) mapContainer.hidden = true;
-    if (mapUnavailable) mapUnavailable.hidden = false;
-  }
-
-  function hideMapUnavailable() {
-    if (mapUnavailable) mapUnavailable.hidden = true;
-  }
-
-  function initMap(lat, lon) {
-    if (!window.L) {
-      console.error('Leaflet failed to load for request mini-map');
-      showMapUnavailable();
-      return;
-    }
-
-    hideMapUnavailable();
-
-    if (!map) {
-      map = L.map('mini-map').setView([lat, lon], 15);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 19,
-      }).addTo(map);
-
-      marker = L.marker([lat, lon], { draggable: true }).addTo(map);
-
-      // Update hidden fields when the marker is dragged
-      marker.on('dragend', function () {
-        const pos = marker.getLatLng();
-        if (latInput) latInput.value = pos.lat.toFixed(6);
-        if (lonInput) lonInput.value = pos.lng.toFixed(6);
-      });
-    } else {
-      map.setView([lat, lon], 15);
-      marker.setLatLng([lat, lon]);
-    }
-    mapContainer.hidden = false;
-    // Leaflet needs a size recalc after the container becomes visible
-    setTimeout(() => map.invalidateSize(), 50);
-  }
-
-  // ── Nominatim autocomplete ──
-  let debounceTimer = null;
-
-  addressInput.addEventListener('input', function () {
-    clearTimeout(debounceTimer);
-    const query = this.value.trim();
-    if (query.length < 3) {
-      suggestionsBox.classList.remove('is-open');
-      addressInput.setAttribute('aria-expanded', 'false');
-      return;
-    }
-    debounceTimer = setTimeout(() => fetchSuggestions(query), 400);
-  });
-
-  function fetchSuggestions(query) {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=ua&format=json&limit=5&addressdetails=1`;
-    fetch(url, { headers: { 'Accept-Language': 'uk' } })
-      .then(r => r.json())
-      .then(results => renderSuggestions(results))
-      .catch(() => {});
-  }
-
-  function renderSuggestions(results) {
-    suggestionsBox.innerHTML = '';
-    if (!results.length) {
-      suggestionsBox.classList.remove('is-open');
-      addressInput.setAttribute('aria-expanded', 'false');
-      return;
-    }
-    results.forEach((item, index) => {
-      const div = document.createElement('div');
-      div.className = 'address-suggestion';
-      div.setAttribute('role', 'option');
-      div.setAttribute('tabindex', '0');
-      div.id = `address-suggestion-${index}`;
-      div.textContent = item.display_name;
-      div.addEventListener('click', () => selectSuggestion(item));
-      div.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          selectSuggestion(item);
-        }
-      });
-      suggestionsBox.appendChild(div);
-    });
-    suggestionsBox.classList.add('is-open');
-    addressInput.setAttribute('aria-expanded', 'true');
-  }
-
-  function selectSuggestion(item) {
-    const lat = parseFloat(item.lat);
-    const lon = parseFloat(item.lon);
-
-    addressInput.value = item.display_name;
-    if (latInput) latInput.value = lat.toFixed(6);
-    if (lonInput) lonInput.value = lon.toFixed(6);
-    suggestionsBox.classList.remove('is-open');
-    addressInput.setAttribute('aria-expanded', 'false');
-
-    // Show / update the mini-map
-    initMap(lat, lon);
-  }
-
-  // ── If coordinates are already populated (edit form), show the map immediately ──
-  window.addEventListener('DOMContentLoaded', function () {
-    const existingLat = latInput && latInput.value ? parseFloat(latInput.value) : null;
-    const existingLon = lonInput && lonInput.value ? parseFloat(lonInput.value) : null;
-    if (existingLat && existingLon) {
-      initMap(existingLat, existingLon);
-    }
-  });
-
-  // ── Close suggestions when clicking outside the address wrapper ──
-  document.addEventListener('click', function (e) {
-    const wrapper = document.getElementById('address-wrapper');
-    if (wrapper && !wrapper.contains(e.target)) {
-      suggestionsBox.classList.remove('is-open');
-      addressInput.setAttribute('aria-expanded', 'false');
-    }
-  });
-})();
-</script>
-<script>
-(function () {
-  // Online help needs no address: hide the address block and the mini-map
-  const radios = document.querySelectorAll('input[name="help_format"]');
-  const blocks = [document.getElementById('city-wrapper'), document.getElementById('address-wrapper'), document.getElementById('address-hint')];
-  function sync() {
-    const chosen = document.querySelector('input[name="help_format"]:checked');
-    const remote = chosen && chosen.value === 'remote';
-    blocks.forEach(function (el) { if (el) el.hidden = remote; });
-  }
-  radios.forEach(function (r) { r.addEventListener('change', sync); });
-  sync();
-
-  const onBehalf = document.getElementById('id_on_behalf');
-  const beneficiary = document.getElementById('beneficiary-fields');
-  function syncBehalf() { if (onBehalf && beneficiary) beneficiary.hidden = !onBehalf.checked; }
-  if (onBehalf) onBehalf.addEventListener('change', syncBehalf);
-  syncBehalf();
-})();
-</script>
-<script>
-(function () {
-  const form = document.querySelector('form[enctype]');
-  const steps = Array.from(document.querySelectorAll('.wizard-step'));
-  const progress = document.getElementById('wizard-progress');
-  if (!form || steps.length < 2) return;
-  const titles = steps.map(function (s) { return s.querySelector('.wizard-title').textContent; });
-  let current = 0;
-
-  function fieldLabel(el) {
-    const label = form.querySelector('label[for="' + el.id + '"]');
-    return label ? label.textContent.replace('*', '').trim() : el.name;
-  }
-
-  function buildSummary() {
-    const summary = document.getElementById('wizard-summary');
-    summary.innerHTML = '';
-    const names = ['title', 'help_format', 'category', 'urgency', 'needed_date', 'duration', 'volunteers_needed', 'city', 'address'];
-    names.forEach(function (name) {
-      let value = '';
-      const radio = form.querySelector('input[name="' + name + '"]:checked');
-      const el = form.elements[name];
-      if (radio) value = radio.closest('label').querySelector('strong').textContent;
-      else if (el && el.tagName === 'SELECT') value = el.options[el.selectedIndex] ? el.options[el.selectedIndex].text : '';
-      else if (el && el.value !== undefined) value = el.value;
-      if (name === 'needed_date' && value) {
-        const m = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/);
-        if (m) value = m[3] + '.' + m[2] + '.' + m[1] + ', ' + m[4];
-      }
-      // Skip fields hidden inside their step (address for online help), not whole steps
-      if (!value || (el && el.closest && el.closest('[hidden]:not(.wizard-step)'))) return;
-      const dt = document.createElement('dt');
-      dt.textContent = name === 'help_format' ? 'Формат допомоги' : fieldLabel(el || radio);
-      const dd = document.createElement('dd');
-      dd.textContent = value;
-      summary.append(dt, dd);
-    });
-  }
-
-  function show(index, focus) {
-    current = index;
-    steps.forEach(function (step, i) { step.hidden = i !== index; });
-    progress.hidden = false;
-    progress.textContent = 'Крок ' + (index + 1) + ' з ' + steps.length + ': ' + titles[index];
-    if (index === steps.length - 1) buildSummary();
-    if (focus) { steps[index].querySelector('.wizard-title').setAttribute('tabindex', '-1'); steps[index].querySelector('.wizard-title').focus(); }
-  }
-
-  function stepIsValid(step) {
-    const fields = Array.from(step.querySelectorAll('input, select, textarea'))
-      .filter(function (el) { return !el.closest('[hidden]') && el.type !== 'hidden'; });
-    for (const el of fields) {
-      if (!el.checkValidity()) { el.reportValidity(); return false; }
-    }
-    return true;
-  }
-
-  form.addEventListener('click', function (event) {
-    if (event.target.closest('[data-next]')) {
-      if (stepIsValid(steps[current])) show(current + 1, true);
-    } else if (event.target.closest('[data-back]')) {
-      show(current - 1, true);
-    }
-  });
-
-  // After a failed submit, open the step with the first server-side error
-  const firstError = form.querySelector('.is-invalid, .invalid-feedback.d-block, .alert-danger');
-  const errorStep = firstError ? steps.findIndex(function (s) { return s.contains(firstError); }) : -1;
-  show(errorStep >= 0 ? errorStep : 0, false);
-})();
-</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{% static 'js/address-autocomplete.js' %}"></script>
+<script src="{% static 'js/request-form.js' %}"></script>
 {% endblock %}

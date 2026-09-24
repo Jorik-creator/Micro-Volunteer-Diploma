@@ -309,6 +309,8 @@ def act_on_report(report, moderator, note=""):
             revoke_verification(target, moderator, reason)
         target.is_active = False
         target.save(update_fields=["is_active"])
+        # People waiting on a blocked user must not be left hanging
+        request_services.close_open_work_of(target, "Акаунт користувача заблоковано модератором.")
     elif isinstance(target, Review):
         target.hidden_at = timezone.now()
         target.save(update_fields=["hidden_at"])

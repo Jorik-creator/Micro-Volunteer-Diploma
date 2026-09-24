@@ -65,8 +65,8 @@ class TestStatsViews:
 
     @pytest.mark.django_db
     def test_dashboard_category_labels_are_json_escaped(self):
-        """Chart data is emitted via json_script so labels with HTML/JS
-        special characters cannot break out of the <script> context (XSS-safe)."""
+        """Category names are rendered as auto-escaped text in the bar list,
+        so labels with HTML/JS special characters cannot inject markup (XSS-safe)."""
         # Arrange — a malicious category name containing a closing script tag
         staff_user = UserFactory(is_staff=True)
         malicious_name = "</script><img src=x onerror=alert(1)>"
@@ -81,8 +81,8 @@ class TestStatsViews:
         # Assert
         assert response.status_code == 200
         content = response.content.decode()
-        # json_script renders a dedicated, escaped data island
-        assert 'id="category-labels-data"' in content
+        # The name is shown, but escaped
+        assert "&lt;/script&gt;&lt;img src=x onerror=alert(1)&gt;" in content
         # The raw closing tag must never appear unescaped in the response
         assert "</script><img src=x onerror=alert(1)>" not in content
 

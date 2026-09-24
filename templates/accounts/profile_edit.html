@@ -1,180 +1,157 @@
 {% extends "base.html" %}
-{% load crispy_forms_tags %}
+{% load static crispy_forms_tags mv_ui %}
 
 {% block title %}Редагувати профіль — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/account.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="page-hero">
-  <div class="container">
-    <a href="{% url 'accounts:profile' %}" class="btn btn-muted btn-sm toolbar-row">
-      <i class="bi bi-arrow-left"></i> До профілю
-    </a>
-    <h1 class="page-title">Редагувати профіль</h1>
-    <p class="page-sub">Оновіть контакти, адресу та налаштування профілю. Заповнюйте тільки те, що хочете показати в межах платформи.</p>
+<section class="mv-page-head">
+  <div class="container mv-form-col">
+    <a class="mv-back" href="{% url 'accounts:profile' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>До профілю</a>
+    <h1>Редагувати профіль</h1>
+    <p class="mv-lead">Заповнюйте лише те, чим готові поділитися. Контакти й адресу інші користувачі у вашому профілі не бачать.</p>
   </div>
 </section>
 
-<div class="container page-shell form-shell-md">
-  <form method="post" enctype="multipart/form-data" novalidate>
-    {% csrf_token %}
-    {% if form.errors or role_form.errors %}
-    <div class="form-alert" role="alert">
-      Не всі зміни можна зберегти. Перевірте повідомлення під полями та виправте помилки.
-    </div>
-    {% endif %}
+<div class="container mv-page">
+  <div class="mv-form-col">
+    {% include "partials/_form_errors.html" %}
+    {% if role_form.errors and not form.errors %}{% include "partials/_form_errors.html" with form=role_form %}{% endif %}
 
-    <!-- Core user fields -->
-    <div class="card-panel mb-4">
-      <div class="card-panel-title">
-        <i class="bi bi-person-vcard"></i> Особиста інформація
-      </div>
+    <form method="post" enctype="multipart/form-data" novalidate class="mv-stack--lg">
+      {% csrf_token %}
 
-      <div class="grid-2">
-        <div>{{ form.first_name|as_crispy_field }}</div>
-        <div>{{ form.last_name|as_crispy_field }}</div>
-      </div>
+      <section class="mv-card" aria-labelledby="basic-title">
+        <h2 class="mv-card__title" id="basic-title"><i class="bi bi-person" aria-hidden="true"></i>Основне</h2>
 
-      {{ form.email|as_crispy_field }}
+        <div class="mv-avatar-field">
+          <span id="avatar-preview">{% avatar form.instance 96 False %}</span>
+          <div class="mv-avatar-field__body">
+            <label class="form-label" for="{{ form.avatar.id_for_label }}">Фото профілю</label>
+            <input type="file" name="{{ form.avatar.html_name }}" id="{{ form.avatar.id_for_label }}" accept="image/*"
+                   class="form-control{% if form.avatar.errors %} is-invalid{% endif %}" aria-describedby="avatar-help">
+            <p class="form-text mv-mb-0" id="avatar-help">JPG або PNG до 5 МБ. Обличчя на фото додає довіри.</p>
+            {% for error in form.avatar.errors %}<p class="mv-field-error">{{ error }}</p>{% endfor %}
+            {% if form.instance.avatar %}
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="{{ form.avatar.html_name }}-clear" id="{{ form.avatar.html_name }}-clear_id">
+              <label class="form-check-label" for="{{ form.avatar.html_name }}-clear_id">Видалити поточне фото</label>
+            </div>
+            {% endif %}
+          </div>
+        </div>
 
-      <div class="grid-2">
-        <div>{{ form.phone|as_crispy_field }}</div>
-        <div>{{ form.date_of_birth|as_crispy_field }}</div>
-      </div>
+        <div class="row g-3">
+          <div class="col-sm-6">{{ form.first_name|as_crispy_field }}</div>
+          <div class="col-sm-6">{{ form.last_name|as_crispy_field }}</div>
+        </div>
+        {{ form.date_of_birth|as_crispy_field }}
+      </section>
 
-      <!-- Address with Nominatim autocomplete; coordinates are stored in hidden fields. -->
-      <div class="mb-3 position-relative" id="profile-address-wrapper">
-        {{ form.address|as_crispy_field }}
-        <div id="profile-address-suggestions" class="address-suggestions" role="listbox" aria-label="Підказки адрес"></div>
-      </div>
-      {{ form.latitude }}
-      {{ form.longitude }}
-      <div class="mb-3 text-muted small">
-        <i class="bi bi-info-circle me-1"></i>
-        Почніть вводити адресу — з'являться підказки для вибору точного місця. Координати збережуться автоматично.
-      </div>
+      <section class="mv-card" aria-labelledby="contacts-title">
+        <h2 class="mv-card__title" id="contacts-title"><i class="bi bi-telephone" aria-hidden="true"></i>Контакти й адреса</h2>
+        {{ form.email|as_crispy_field }}
+        {% if form.email.field.disabled %}<p class="form-text mb-3"><i class="bi bi-lock me-1" aria-hidden="true"></i>Email демо-акаунта змінити не можна.</p>{% endif %}
+        {{ form.phone|as_crispy_field }}
 
-      {{ form.avatar|as_crispy_field }}
-      {% if user.avatar %}
-      <div class="mb-3">
-        <small class="text-muted">Поточне фото:</small><br>
-        <img src="{{ user.avatar.url }}" alt="Аватар" class="avatar-preview">
-      </div>
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
+          <input type="text" name="{{ form.address.html_name }}" id="{{ form.address.id_for_label }}"
+                 value="{{ form.address.value|default_if_none:'' }}" maxlength="255" autocomplete="street-address"
+                 class="form-control{% if form.address.errors %} is-invalid{% endif %}" aria-describedby="address-help"
+                 data-address-autocomplete data-lat="#{{ form.latitude.id_for_label }}" data-lon="#{{ form.longitude.id_for_label }}">
+          <p class="form-text" id="address-help"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Почніть вводити адресу й оберіть підказку — точка на карті збережеться автоматично.</p>
+          {% for error in form.address.errors %}<p class="mv-field-error">{{ error }}</p>{% endfor %}
+        </div>
+        {{ form.latitude }}{{ form.longitude }}
+      </section>
+
+      {% if role_form and user.is_volunteer %}
+      <section class="mv-card" id="role-section" aria-labelledby="role-title">
+        <h2 class="mv-card__title" id="role-title"><i class="bi bi-hand-thumbs-up" aria-hidden="true"></i>Волонтерський профіль</h2>
+
+        <div class="mv-switch-row">
+          <label for="{{ role_form.is_available.id_for_label }}">
+            <span class="mv-choice__title d-block">Готовий допомагати</span>
+            <span class="mv-choice__hint d-block">Вимкніть, якщо якийсь час не можете брати запити.</span>
+          </label>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" name="{{ role_form.is_available.html_name }}"
+                   id="{{ role_form.is_available.id_for_label }}"{% if role_form.is_available.value %} checked{% endif %}>
+          </div>
+        </div>
+
+        <fieldset class="mv-fieldset">
+          <legend>{{ role_form.radius_km.label }}</legend>
+          <div class="mv-choices mv-choices--compact">
+            {% for choice in role_form.radius_km %}
+            <label class="mv-choice">
+              <input type="radio" name="{{ role_form.radius_km.html_name }}" value="{{ choice.data.value }}"{% if choice.data.selected %} checked{% endif %}>
+              <span class="mv-choice__text">
+                <span class="mv-choice__title">{{ choice.choice_label }}</span>
+                <span class="mv-choice__hint">{% if choice.data.value|stringformat:"s" == "5" %}Пішки поруч{% elif choice.data.value|stringformat:"s" == "10" %}Свій район{% else %}Усе місто{% endif %}</span>
+              </span>
+            </label>
+            {% endfor %}
+          </div>
+          {% for error in role_form.radius_km.errors %}<p class="mv-field-error">{{ error }}</p>{% endfor %}
+        </fieldset>
+
+        <fieldset class="mv-fieldset">
+          <legend>{{ role_form.categories.label }}</legend>
+          <p class="form-text mt-0 mb-3">Оберіть, з чим можете допомогти.</p>
+          <div class="mv-choices">
+            {% for choice in role_form.categories %}
+            <label class="mv-choice">
+              <input type="checkbox" name="{{ role_form.categories.html_name }}" value="{{ choice.data.value }}"{% if choice.data.selected %} checked{% endif %}>
+              <span class="mv-tile mv-tile--sm" aria-hidden="true">{% category_icon choice.data.value.instance %}</span>
+              <span class="mv-choice__text"><span class="mv-choice__title">{{ choice.choice_label }}</span></span>
+            </label>
+            {% endfor %}
+          </div>
+          {% for error in role_form.categories.errors %}<p class="mv-field-error">{{ error }}</p>{% endfor %}
+        </fieldset>
+
+        {{ role_form.bio|as_crispy_field }}
+      </section>
+      {% elif role_form %}
+      <section class="mv-card" id="role-section" aria-labelledby="role-title">
+        <h2 class="mv-card__title" id="role-title"><i class="bi bi-heart" aria-hidden="true"></i>Ваша ситуація</h2>
+        <p class="mv-card__lead">Усі поля необов'язкові.</p>
+        {{ role_form.situation_type|as_crispy_field }}
+        <div class="row g-3">
+          <div class="col-sm-6">{{ role_form.emergency_contact_name|as_crispy_field }}</div>
+          <div class="col-sm-6">{{ role_form.emergency_contact_phone|as_crispy_field }}</div>
+        </div>
+      </section>
       {% endif %}
-    </div>
 
-    <!-- Role-specific fields -->
-    {% if role_form %}
-    <div class="card-panel mb-4">
-      <div class="card-panel-title">
-        {% if user.is_volunteer %}
-          <i class="bi bi-hand-thumbs-up"></i> Налаштування волонтера
-        {% else %}
-          <i class="bi bi-heart"></i> Додаткова інформація
-        {% endif %}
+      <div class="mv-form-actions">
+        <button type="submit" class="mv-btn mv-btn--primary mv-btn--lg"><i class="bi bi-check-lg" aria-hidden="true"></i>Зберегти зміни</button>
+        <a href="{% url 'accounts:profile' %}" class="mv-btn mv-btn--ghost mv-btn--lg">Скасувати</a>
       </div>
-      {{ role_form|crispy }}
-    </div>
-    {% endif %}
-
-    <div class="form-actions">
-      <button type="submit" class="btn btn-solid">
-        <i class="bi bi-check-lg"></i> Зберегти зміни
-      </button>
-      <a href="{% url 'accounts:profile' %}" class="btn btn-muted">Скасувати</a>
-    </div>
-  </form>
+    </form>
+  </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/address-autocomplete.js' %}"></script>
 <script>
-(function () {
-  const addressInput = document.getElementById('id_address');
-  const latInput = document.getElementById('id_latitude');
-  const lonInput = document.getElementById('id_longitude');
-  const suggestionsBox = document.getElementById('profile-address-suggestions');
-  const wrapper = document.getElementById('profile-address-wrapper');
-
-  if (!addressInput || !suggestionsBox) return;
-  addressInput.setAttribute('aria-autocomplete', 'list');
-  addressInput.setAttribute('aria-controls', 'profile-address-suggestions');
-  addressInput.setAttribute('aria-expanded', 'false');
-
-  let debounceTimer = null;
-
-  addressInput.addEventListener('input', function () {
-    clearTimeout(debounceTimer);
-    const query = this.value.trim();
-
-    if (latInput) latInput.value = '';
-    if (lonInput) lonInput.value = '';
-
-    if (query.length < 3) {
-      suggestionsBox.classList.remove('is-open');
-      addressInput.setAttribute('aria-expanded', 'false');
-      return;
-    }
-
-    debounceTimer = setTimeout(() => fetchSuggestions(query), 400);
-  });
-
-  function fetchSuggestions(query) {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=ua&format=json&limit=5&addressdetails=1`;
-    fetch(url, { headers: { 'Accept-Language': 'uk' } })
-      .then(response => response.json())
-      .then(results => renderSuggestions(results))
-      .catch(() => {
-        suggestionsBox.classList.remove('is-open');
-        addressInput.setAttribute('aria-expanded', 'false');
-      });
-  }
-
-  function renderSuggestions(results) {
-    suggestionsBox.innerHTML = '';
-    if (!results.length) {
-      suggestionsBox.classList.remove('is-open');
-      addressInput.setAttribute('aria-expanded', 'false');
-      return;
-    }
-
-    results.forEach((item, index) => {
-      const div = document.createElement('div');
-      div.className = 'address-suggestion';
-      div.setAttribute('role', 'option');
-      div.setAttribute('tabindex', '0');
-      div.id = `profile-address-suggestion-${index}`;
-      div.textContent = item.display_name;
-      div.addEventListener('click', () => selectSuggestion(item));
-      div.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          selectSuggestion(item);
-        }
-      });
-      suggestionsBox.appendChild(div);
+  // Show the chosen photo in the avatar circle before saving
+  (function () {
+    var input = document.getElementById('{{ form.avatar.id_for_label }}');
+    var preview = document.getElementById('avatar-preview');
+    if (!input || !preview) return;
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      var circle = preview.querySelector('.mv-avatar');
+      var img = document.createElement('img');
+      img.alt = '';
+      img.src = URL.createObjectURL(file);
+      circle.replaceChildren(img);
     });
-
-    suggestionsBox.classList.add('is-open');
-    addressInput.setAttribute('aria-expanded', 'true');
-  }
-
-  function selectSuggestion(item) {
-    const lat = parseFloat(item.lat);
-    const lon = parseFloat(item.lon);
-
-    addressInput.value = item.display_name;
-    if (latInput && Number.isFinite(lat)) latInput.value = lat.toFixed(6);
-    if (lonInput && Number.isFinite(lon)) lonInput.value = lon.toFixed(6);
-    suggestionsBox.classList.remove('is-open');
-    addressInput.setAttribute('aria-expanded', 'false');
-  }
-
-  document.addEventListener('click', function (event) {
-    if (wrapper && !wrapper.contains(event.target)) {
-      suggestionsBox.classList.remove('is-open');
-      addressInput.setAttribute('aria-expanded', 'false');
-    }
-  });
-})();
+  })();
 </script>
 {% endblock %}

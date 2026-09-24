@@ -1,0 +1,8 @@
+{# Empty state: icon, title, text and one action. Params: icon, title, text, action_url, action_label #}
+<div class="mv-empty">
+  <span class="mv-tile mv-tile--lg" aria-hidden="true"><i class="bi {{ icon|default:'bi-inbox' }}"></i></span>
+  <div class="mv-thread" aria-hidden="true"></div>
+  <h2>{{ title }}</h2>
+  {% if text %}<p>{{ text }}</p>{% endif %}
+  {% if action_url %}<a class="mv-btn mv-btn--primary" href="{{ action_url }}">{{ action_label }}</a>{% endif %}
+</div>

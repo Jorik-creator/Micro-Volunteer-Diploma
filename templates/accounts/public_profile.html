@@ -1,89 +1,106 @@
 {% extends "base.html" %}
+{% load static mv_ui %}
 
-{% block title %}{{ profile_user.first_name|default:profile_user.username }} — MicroVolunteer{% endblock %}
+{# Public profile: only the first name and initial — full names, contacts and address stay private #}
+{% block title %}{{ profile_user|short_name }} — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/account.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="profile-hero">
-  <div class="container">
-    <nav class="profile-breadcrumb" aria-label="Шлях сторінки">
-      <a href="{% url 'home' %}">Головна</a>
-      <span aria-hidden="true">/</span>
-      <span>{{ profile_user.get_user_type_display }}</span>
-    </nav>
-  </div>
-</section>
+<div class="mv-profile-band" aria-hidden="true"></div>
 
-<div class="profile-card-wrap">
-  <div class="profile-card">
-    {% if profile_user.avatar %}
-      <img src="{{ profile_user.avatar.url }}" alt="" class="avatar avatar-xl avatar-cover">
-    {% else %}
-      <div class="avatar avatar-xl" aria-hidden="true">{{ profile_user.first_name|first|upper }}{{ profile_user.last_name|first|upper }}</div>
-    {% endif %}
+<div class="container mv-page pt-0">
+  <section class="mv-profile-card" aria-labelledby="profile-name">
+    {% avatar profile_user 128 %}
     <div>
-      {# Only first name and initial — full names and contacts stay private #}
-      <h1 class="profile-name">{{ profile_user.first_name|default:profile_user.username }} {{ profile_user.last_name|first }}.</h1>
-      <div class="profile-handle">{{ profile_user.get_user_type_display }} · на платформі з {{ profile_user.created_at|date:"F Y" }}</div>
-      <div class="profile-chips">
+      <h1 id="profile-name">{{ profile_user|short_name }}</h1>
+      <ul class="mv-meta mv-meta--inline" aria-label="Коротко про користувача">
+        <li><i class="bi {% if profile_user.is_volunteer %}bi-hand-thumbs-up{% else %}bi-heart{% endif %}" aria-hidden="true"></i>{{ profile_user.get_user_type_display }}</li>
         {% if profile_user.is_verified %}
-          <span class="chip chip-green"><i class="bi bi-patch-check-fill"></i> Перевірений{% if verified_organization %} · {{ verified_organization }}{% endif %}</span>
+        <li><i class="bi bi-patch-check-fill" aria-hidden="true"></i>Перевірений{% if verified_organization %} · {{ verified_organization }}{% endif %}</li>
         {% else %}
-          <span class="chip chip-gray"><i class="bi bi-patch-question"></i> Не перевірений</span>
+        <li class="is-off"><i class="bi bi-patch-question" aria-hidden="true"></i>Не перевірений</li>
         {% endif %}
-        {% if rating.average %}
-          <span class="chip chip-yellow"><i class="bi bi-star-fill"></i> {{ rating.average }}/5</span>
+        {% if rating.count %}
+        <li><i class="bi bi-star-fill" aria-hidden="true"></i>{{ rating.average }} · {{ rating.count }} {{ rating.count|uk_plural:"оцінка,оцінки,оцінок" }}</li>
+        {% else %}
+        <li class="is-off"><i class="bi bi-star" aria-hidden="true"></i>Оцінок поки немає</li>
         {% endif %}
-      </div>
-    </div>
-  </div>
-
-  <div class="stat-grid-3">
-    {% if profile_user.is_volunteer %}
-      <div class="mini-stat"><div class="n">{{ helped_count }}</div><div class="l">Допоміг(ла)</div></div>
-      <div class="mini-stat"><div class="n">{{ responses_count }}</div><div class="l">Відгуків на запити</div></div>
-    {% else %}
-      <div class="mini-stat"><div class="n">{{ completed_count }}</div><div class="l">Отримано допомоги</div></div>
-      <div class="mini-stat"><div class="n">{{ requests_count }}</div><div class="l">Усього запитів</div></div>
-    {% endif %}
-    <div class="mini-stat"><div class="n">{{ review_count }}</div><div class="l">Оцінок</div></div>
-  </div>
-
-  <section class="card-panel tab-panel-spaced" aria-labelledby="rating-title">
-    <div class="section-hd" id="rating-title">Рейтинг</div>
-    {% include "partials/_rating_summary.html" %}
-  </section>
-
-  {% if profile_user.is_volunteer and volunteer_profile %}
-  <section class="card-panel tab-panel-spaced" aria-labelledby="about-title">
-    <div class="section-hd" id="about-title">Про волонтера</div>
-    {% if volunteer_profile.bio %}<div class="detail-desc">{{ volunteer_profile.bio }}</div>{% endif %}
-    {% if volunteer_profile.categories.exists %}
-    <div class="profile-chip-list mt-2">
-      {% for cat in volunteer_profile.categories.all %}<span class="chip chip-blue">{{ cat.name }}</span>{% endfor %}
-    </div>
-    {% endif %}
-  </section>
-
-  {% if reviews %}
-  <section class="tab-panel-spaced" aria-labelledby="reviews-title">
-    <div class="section-hd" id="reviews-title">Що кажуть отримувачі</div>
-    <div class="activity-list">
-      {% for review in reviews %}{% include "partials/_review.html" %}{% endfor %}
+        <li><i class="bi bi-calendar3" aria-hidden="true"></i>На платформі з {{ profile_user.created_at|date:"E Y" }}</li>
+      </ul>
     </div>
   </section>
-  {% endif %}
-  {% endif %}
 
-  <div class="tab-panel-spaced d-flex gap-3 flex-wrap align-items-start">
-    <a href="{% url 'moderation:report' 'user' profile_user.pk %}?next={{ request.path|urlencode }}" class="text-muted small"><i class="bi bi-flag"></i> Поскаржитися на користувача</a>
-    {% if is_moderator and profile_user.is_verified %}
-    <form method="post" action="{% url 'moderation:revoke' profile_user.pk %}" class="d-flex gap-2 flex-wrap">
-      {% csrf_token %}
-      <label class="visually-hidden" for="revoke-note">Причина відкликання</label>
-      <input name="note" id="revoke-note" class="form-control form-control-sm" placeholder="Причина відкликання" required>
-      <button class="btn btn-danger-ghost btn-sm" data-confirm-submit="Відкликати статус «Перевірений»?">Відкликати перевірку</button>
-    </form>
-    {% endif %}
+  <section class="mv-card mv-profile-stats" aria-label="Активність">
+    <div class="mv-stats mv-stats--compact">
+      {% if profile_user.is_volunteer %}
+      <div class="mv-stat"><span class="mv-stat__num">{{ helped_count }}</span><span class="mv-stat__label">{{ helped_count|uk_plural:"виконаний запит,виконані запити,виконаних запитів" }}</span></div>
+      <div class="mv-stat"><span class="mv-stat__num">{{ responses_count }}</span><span class="mv-stat__label">{{ responses_count|uk_plural:"відгук на запит,відгуки на запити,відгуків на запити" }}</span></div>
+      {% else %}
+      <div class="mv-stat"><span class="mv-stat__num">{{ completed_count }}</span><span class="mv-stat__label">{{ completed_count|uk_plural:"виконаний запит,виконані запити,виконаних запитів" }}</span></div>
+      <div class="mv-stat"><span class="mv-stat__num">{{ requests_count }}</span><span class="mv-stat__label">{{ requests_count|uk_plural:"запит,запити,запитів" }} усього</span></div>
+      {% endif %}
+      <div class="mv-stat"><span class="mv-stat__num">{{ review_count }}</span><span class="mv-stat__label">{{ review_count|uk_plural:"оцінка,оцінки,оцінок" }}</span></div>
+    </div>
+  </section>
+
+  <div class="mv-layout-aside mv-profile-grid">
+    <div class="mv-stack--lg">
+      {% if profile_user.is_volunteer and volunteer_profile %}
+      <section class="mv-card" aria-labelledby="about-title">
+        <h2 class="mv-card__title" id="about-title"><i class="bi bi-person" aria-hidden="true"></i>Про волонтера</h2>
+        <ul class="mv-meta">
+          {% if volunteer_profile.is_available %}
+          <li class="is-good"><i class="bi bi-check-circle" aria-hidden="true"></i><span>Готовий допомагати</span></li>
+          {% else %}
+          <li class="is-off"><i class="bi bi-pause-circle" aria-hidden="true"></i><span>Зараз не бере нових запитів</span></li>
+          {% endif %}
+        </ul>
+        {% if volunteer_profile.bio %}
+        <p class="mv-mb-0 mt-3">{{ volunteer_profile.bio|linebreaksbr }}</p>
+        {% endif %}
+        {% with categories=volunteer_profile.categories.all %}
+        {% if categories %}
+        <h3 class="mv-card__sub">Допомагає з</h3>
+        <ul class="mv-meta mv-meta--cols">
+          {% for cat in categories %}<li>{% category_icon cat %}<span>{{ cat.name }}</span></li>{% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
+      </section>
+      {% endif %}
+
+      <section class="mv-card" aria-labelledby="rating-title">
+        <h2 class="mv-card__title" id="rating-title"><i class="bi bi-star-half" aria-hidden="true"></i>Рейтинг</h2>
+        {% include "partials/_rating_summary.html" %}
+        {% if profile_user.is_volunteer and reviews %}
+        <h3 class="mv-card__sub">Що кажуть отримувачі</h3>
+        <ul class="mv-rows">
+          {% for review in reviews %}{% include "partials/_review.html" %}{% endfor %}
+        </ul>
+        {% endif %}
+      </section>
+    </div>
+
+    <div class="mv-stack--lg">
+      <section class="mv-card mv-card--canvas mv-profile-safety" aria-labelledby="safety-title">
+        <h2 class="mv-card__title" id="safety-title"><i class="bi bi-shield-lock" aria-hidden="true"></i>Приватність і безпека</h2>
+        <p>Прізвище, контакти й адресу ми не показуємо. Домовляйтеся в розмові на платформі.</p>
+        <a href="{% url 'moderation:report' 'user' profile_user.pk %}?next={{ request.path|urlencode }}" class="mv-link-btn mv-link-btn--muted"><i class="bi bi-flag" aria-hidden="true"></i>Поскаржитися на користувача</a>
+        {% if is_moderator and profile_user.is_verified %}
+        <details class="mv-disclosure mv-disclosure--danger">
+          <summary><i class="bi bi-shield-x" aria-hidden="true"></i>Відкликати перевірку</summary>
+          <div class="mv-disclosure__body">
+            <form method="post" action="{% url 'moderation:revoke' profile_user.pk %}">
+              {% csrf_token %}
+              <label class="form-label" for="revoke-note">Причина відкликання</label>
+              <input name="note" id="revoke-note" class="form-control mb-3" required>
+              <button type="submit" class="mv-btn mv-btn--danger mv-btn--sm" data-confirm-submit="Відкликати статус «Перевірений»?"><i class="bi bi-shield-x" aria-hidden="true"></i>Відкликати перевірку</button>
+            </form>
+          </div>
+        </details>
+        {% endif %}
+      </section>
+    </div>
   </div>
 </div>
 {% endblock %}

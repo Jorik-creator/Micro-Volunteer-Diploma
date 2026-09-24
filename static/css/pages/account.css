@@ -1,0 +1,175 @@
+/* =========================================================================
+   Account area: login, registration, password pages, profile, profile edit,
+   account deletion and the review form. Builds on mv.css (docs/DESIGN.md).
+   ========================================================================= */
+
+/* ---------- Auth layout ---------- */
+/* The form comes first in the DOM (h1 before the panel's h2); the panel is shown on the left */
+@media (min-width: 992px) { .mv-auth__panel { order: -1; } }
+.mv-auth__panel { justify-content: flex-start; padding-top: 88px; overflow: clip; }
+.mv-auth__panel-inner { position: sticky; top: calc(var(--mv-nav-h) + 48px); z-index: 1; max-width: 480px; }
+.mv-auth__panel p { color: #C7D2E3; font-size: 18px; margin-bottom: 32px; }
+.mv-auth__panel .mv-meta { gap: 18px; }
+.mv-auth__panel .mv-meta li { align-items: center; gap: 14px; }
+.mv-auth__panel .mv-meta li > .mv-tile { width: 44px; margin: 0; font-size: 20px; color: #fff;
+  background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.16); }
+.mv-auth__panel .mv-meta strong { display: block; color: #fff; font-weight: 600; }
+.mv-auth__panel .mv-meta span span { color: #B9C6DB; font-size: 15px; }
+.mv-auth__panel .mv-eyebrow { color: #93B4FF; }
+.mv-auth__panel::after { opacity: .1; }
+
+.mv-auth__card.mv-card { padding: 40px; }
+.mv-auth__card--wide { max-width: 580px; }
+.mv-auth__card h1 { margin-bottom: 8px; }
+.mv-auth__card > .mv-muted { margin-bottom: 28px; }
+.mv-auth__head { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; margin-bottom: 4px; }
+.mv-auth__card--center { text-align: center; }
+.mv-auth__card--center .mv-auth__head { align-items: center; }
+.mv-auth__card--center .mv-muted { margin-inline: auto; }
+.mv-auth__foot { margin: 24px 0 0; text-align: center; color: var(--mv-muted); }
+.mv-auth__foot a { font-weight: 600; }
+.mv-auth__row { display: flex; justify-content: flex-end; margin: -8px 0 16px; }
+.mv-auth .mv-divider { margin: 28px 0 20px; }
+.mv-auth h2.mv-auth__sub { font-size: 18px; margin-bottom: 12px; }
+
+/* Single-purpose pages (password reset / change): no panel, centred card */
+.mv-auth--single { grid-template-columns: 1fr; min-height: 0; }
+.mv-auth--single .mv-auth__form { padding: 64px 16px 96px; }
+
+@media (max-width: 575.98px) {
+  .mv-auth__form { padding: 24px 12px 48px; }
+  .mv-auth--single .mv-auth__form { padding: 32px 12px 64px; }
+  .mv-auth__card.mv-card { padding: 24px 20px; }
+}
+
+/* ---------- Option button: a whole-row button with tile, title, hint (demo login) ---------- */
+.mv-option-list { display: grid; gap: 10px; }
+.mv-option-list form { margin: 0; }
+.mv-option-btn {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 64px; padding: 10px 16px 10px 10px;
+  border: 1.5px solid var(--mv-line); border-radius: var(--mv-r-md); background: #fff; text-align: left; cursor: pointer;
+  font: inherit; color: var(--mv-ink); transition: border-color .15s, background-color .15s;
+}
+.mv-option-btn:hover { border-color: var(--mv-blue-600); background: var(--mv-blue-50); }
+.mv-option-btn__text { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.mv-option-btn__title { font-weight: 600; color: var(--mv-navy-900); line-height: 1.3; }
+.mv-option-btn__hint { font-size: 15px; color: var(--mv-muted); line-height: 1.35; }
+.mv-option-btn > .bi-chevron-right { color: var(--mv-muted); font-size: 16px; }
+
+/* ---------- Form helpers ---------- */
+/* Crispy wraps each error in <p><strong>: keep the icon on the same line */
+.invalid-feedback > p { display: inline; margin: 0; }
+.invalid-feedback strong { font-weight: 600; }
+/* Vertical choice card: tile on top (role choice) */
+.mv-choice--vertical { flex-direction: column; gap: 10px; }
+.mv-choice--vertical .mv-choice__text { padding-right: 0; }
+.mv-form-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 8px; }
+.mv-choices--compact { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
+.mv-choices--compact .mv-choice { padding: 12px 40px 12px 14px; }
+.mv-choices--compact .mv-choice:has(input:checked) { padding: 11.5px 39.5px 11.5px 13.5px; }
+.mv-choices .mv-choice__text { padding-right: 24px; }
+.mv-fieldset .invalid-feedback, .mv-field-error { display: block; font-size: 15px; color: var(--mv-danger-ink); font-weight: 500; margin-top: 8px; }
+.mv-field-error::before { content: "\F333"; font-family: "bootstrap-icons"; margin-right: 6px; }
+.mv-switch-row { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between;
+  padding: 16px; border: 1px solid var(--mv-line); border-radius: var(--mv-r-md); background: var(--mv-canvas); margin-bottom: 24px; }
+.mv-switch-row .form-check { margin: 0; padding-left: 0; min-height: 0; }
+.mv-switch-row .form-check-input { margin: 2px 0 0; float: none; width: 3em; height: 1.6em; cursor: pointer; }
+.mv-switch-row label { cursor: pointer; }
+
+/* Avatar field with live preview */
+.mv-avatar-field { display: flex; gap: 20px; align-items: center; margin-bottom: 24px; }
+.mv-avatar-field__body { flex: 1; min-width: 0; }
+.mv-avatar-field .form-control { min-height: 48px; padding: 10px 12px; }
+.mv-avatar-field .form-check { margin-top: 8px; }
+@media (max-width: 479.98px) { .mv-avatar-field { flex-direction: column; align-items: flex-start; } }
+
+/* ---------- Profile ---------- */
+.mv-profile-card__actions { display: grid; gap: 8px; justify-items: stretch; min-width: 220px; }
+.mv-profile-card__actions .mv-link-btn { justify-content: center; }
+.mv-profile-card .mv-muted { margin: 0; }
+.mv-profile-card .mv-meta--inline li { font-size: 16px; }
+.mv-profile-card .mv-meta--inline li > i { font-size: 17px; }
+.mv-meta li.is-good > i { color: var(--mv-success); }
+.mv-meta li.is-off > i { color: var(--mv-muted); }
+.mv-meta li > .bi-star-fill { color: var(--mv-star); }
+@media (max-width: 767.98px) {
+  .mv-profile-card__actions { min-width: 0; display: flex; flex-wrap: wrap; gap: 8px 12px; }
+}
+@media (max-width: 575.98px) { .mv-profile-card .mv-avatar--128 { width: 96px; height: 96px; font-size: 32px; } }
+
+.mv-profile-stats { margin-top: 24px; padding: 20px 8px; }
+.mv-profile-grid { margin-top: 24px; }
+.mv-profile-grid > * { min-width: 0; }
+.mv-step__cta .mv-btn { white-space: normal; text-align: left; }
+@media (max-width: 575.98px) {
+  .mv-profile-stats { padding: 16px 4px; }
+  .mv-profile-stats .mv-stats { grid-template-columns: none; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; }
+  .mv-profile-stats .mv-stat { padding: 4px 12px; }
+  .mv-profile-stats .mv-stat + .mv-stat { border-top: 0; border-left: 1px solid var(--mv-line); }
+  .mv-profile-stats .mv-stat__num { font-size: 24px; }
+}
+.mv-profile-grid .mv-card__title { font-size: 21px; }
+.mv-card__title .mv-card__title-aside { margin-left: auto; font-size: 15px; font-weight: 500; color: var(--mv-muted); }
+@media (max-width: 575.98px) { .mv-card__title .mv-card__title-aside { display: none; } }
+.mv-card__sub { font-size: 17px; margin: 24px 0 12px; }
+.mv-card__lead { color: var(--mv-muted); margin-top: -8px; }
+
+/* Summary stacked: labels above values, for narrow columns */
+.mv-summary--stacked { grid-template-columns: 1fr; }
+.mv-summary--stacked > dt { border-bottom: 0; padding: 14px 0 0; font-size: 15px; }
+.mv-summary--stacked > dd { padding: 2px 0 14px 28px; }
+.mv-summary--stacked > dt:first-of-type { padding-top: 0; }
+.mv-summary--stacked > dd:last-of-type { padding-bottom: 0; }
+.mv-summary .is-empty { color: var(--mv-muted); font-weight: 400; }
+
+/* Categories as icon rows in columns */
+.mv-meta--cols { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px 20px; }
+
+/* Trust stepper: call to action inside the current step */
+.mv-step__cta { margin-top: 12px; font-size: 16px; font-weight: 400; color: var(--mv-ink); display: grid; gap: 12px; justify-items: start; }
+.mv-step__cta form { margin: 0; }
+.mv-stepper--rail li:last-child { padding-bottom: 0; }
+.mv-stepper--rail li { font-size: 17px; }
+.mv-stepper--rail small { font-size: 15px; }
+
+.mv-profile-safety .mv-disclosure { margin-top: 8px; }
+
+/* ---------- Review form: star rating ---------- */
+.mv-rate__stars { display: flex; gap: 4px; flex-wrap: wrap; }
+.mv-rate__input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.mv-rate__star {
+  width: 52px; height: 52px; display: grid; place-items: center; border-radius: 12px; cursor: pointer;
+  font-size: 34px; line-height: 1; color: var(--mv-line-strong);
+}
+.mv-rate__star:hover { background: var(--mv-canvas); }
+.mv-rate__star { --star-on: none; --star-off: inline-block; }
+.mv-rate__star .bi-star { display: var(--star-off); }
+.mv-rate__star .bi-star-fill { display: var(--star-on); color: var(--mv-star); }
+.mv-rate__star i { pointer-events: none; }
+.mv-rate__input:focus-visible + .mv-rate__star { outline: 3px solid var(--mv-navy-900); outline-offset: 2px; box-shadow: 0 0 0 6px var(--mv-flag); }
+
+/* Fill every star up to the checked one */
+.mv-rate:has(.mv-rate__input[value="1"]:checked) .mv-rate__star:nth-of-type(-n+1),
+.mv-rate:has(.mv-rate__input[value="2"]:checked) .mv-rate__star:nth-of-type(-n+2),
+.mv-rate:has(.mv-rate__input[value="3"]:checked) .mv-rate__star:nth-of-type(-n+3),
+.mv-rate:has(.mv-rate__input[value="4"]:checked) .mv-rate__star:nth-of-type(-n+4),
+.mv-rate:has(.mv-rate__input[value="5"]:checked) .mv-rate__star:nth-of-type(-n+5) { --star-on: inline-block; --star-off: none; }
+
+.mv-rate__word { margin: 10px 0 0; font-weight: 600; color: var(--mv-navy-900); min-height: 1.6em; }
+.mv-rate__word::before { content: "Оберіть від 1 до 5 зірок"; color: var(--mv-muted); font-weight: 500; }
+.mv-rate:has(.mv-rate__input[value="1"]:checked) .mv-rate__word::before { content: "1 з 5 — Погано"; color: var(--mv-navy-900); font-weight: 600; }
+.mv-rate:has(.mv-rate__input[value="2"]:checked) .mv-rate__word::before { content: "2 з 5 — Слабко"; color: var(--mv-navy-900); font-weight: 600; }
+.mv-rate:has(.mv-rate__input[value="3"]:checked) .mv-rate__word::before { content: "3 з 5 — Нормально"; color: var(--mv-navy-900); font-weight: 600; }
+.mv-rate:has(.mv-rate__input[value="4"]:checked) .mv-rate__word::before { content: "4 з 5 — Добре"; color: var(--mv-navy-900); font-weight: 600; }
+.mv-rate:has(.mv-rate__input[value="5"]:checked) .mv-rate__word::before { content: "5 з 5 — Відмінно"; color: var(--mv-navy-900); font-weight: 600; }
+
+.mv-review-req { display: flex; gap: 14px; align-items: center; }
+.mv-review-req p { margin: 0; }
+.mv-review-req__title { font-weight: 700; color: var(--mv-navy-900); font-size: 18px; line-height: 1.35; }
+.mv-review-req .mv-avatar { margin-left: auto; }
+
+/* ---------- Danger card (account deletion) ---------- */
+.mv-card--danger { border-color: #FAD2D2; box-shadow: inset 0 4px 0 var(--mv-danger), var(--mv-sh-2); }
+.mv-card--danger .mv-meta li > i { color: var(--mv-danger); }
+.mv-card--danger .mv-card__title .mv-tile i { color: inherit; }
+.mv-card--danger .mv-meta { gap: 12px; margin-bottom: 28px; }

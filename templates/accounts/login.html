@@ -1,50 +1,54 @@
 {% extends "base.html" %}
-{% load crispy_forms_tags %}
+{% load static crispy_forms_tags %}
 
 {% block title %}Вхід — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/account.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<div class="auth-shell">
-  <div class="auth-card">
-    <div class="auth-logo-wrap">
-      <span class="auth-logo">
-        <i class="bi bi-heart-pulse-fill"></i>
-      </span>
-    </div>
-    <h1 class="auth-title">З поверненням!</h1>
-    <p class="auth-sub" id="login-help">Увійдіть, щоб переглядати свої запити, відгуки та сповіщення.</p>
+<div class="mv-auth">
+  <div class="mv-auth__form">
+    <div class="mv-auth__card mv-card">
+      <h1>З поверненням!</h1>
+      <p class="mv-muted" id="login-help">Увійдіть, щоб бачити свої запити, відгуки та сповіщення.</p>
 
-    <form method="post" novalidate autocomplete="on" aria-describedby="login-help">
-      {% csrf_token %}
-      {% if form.errors %}
-      <div class="form-alert" role="alert">
-        Перевірте ім’я користувача та пароль. Якщо помилка повторюється, спробуйте ввести дані ще раз повільно.
-      </div>
+      {% include "partials/_form_errors.html" %}
+      <form method="post" novalidate autocomplete="on" aria-describedby="login-help">
+        {% csrf_token %}
+        {{ form.username|as_crispy_field }}
+        {{ form.password|as_crispy_field }}
+        <div class="mv-auth__row">
+          <a class="mv-link-btn mv-link-btn--sm" href="{% url 'accounts:password-reset' %}">Забули пароль?</a>
+        </div>
+        <button type="submit" class="mv-btn mv-btn--primary mv-btn--lg mv-btn--block">
+          <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Увійти
+        </button>
+      </form>
+
+      {% if demo_mode %}
+      <div class="mv-divider">або</div>
+      <section aria-labelledby="demo-login-title">
+        <h2 class="mv-auth__sub" id="demo-login-title">Подивитися демо без реєстрації</h2>
+        <div class="mv-option-list">
+          {% for role, label, icon in demo_roles %}
+          <form method="post" action="{% url 'accounts:demo-login' role %}">
+            {% csrf_token %}
+            <button type="submit" class="mv-option-btn">
+              <span class="mv-tile{% if role == 'moderator' %} mv-tile--navy{% endif %}" aria-hidden="true"><i class="bi {{ icon }}"></i></span>
+              <span class="mv-option-btn__text">
+                <span class="mv-option-btn__title">{{ label }}</span>
+                <span class="mv-option-btn__hint">{% if role == 'volunteer' %}Відгукуйтеся на запити поруч{% elif role == 'recipient' %}Створіть запит і оберіть волонтера{% else %}Перевіряйте запити, заявки й скарги{% endif %}</span>
+              </span>
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+          </form>
+          {% endfor %}
+        </div>
+      </section>
+      {% else %}
+      <p class="mv-auth__foot">Немає акаунту? <a href="{% url 'accounts:register' %}">Зареєструватися</a></p>
       {% endif %}
-      {{ form|crispy }}
-      <button type="submit" class="btn btn-solid btn-block btn-lg auth-submit">
-        <i class="bi bi-door-open"></i> Увійти
-      </button>
-      <p class="auth-footer-text mt-2"><a href="{% url 'accounts:password-reset' %}">Забули пароль?</a></p>
-    </form>
-
-    {% if demo_mode %}
-    <section class="demo-login" aria-labelledby="demo-login-title">
-      <h2 class="demo-login-title" id="demo-login-title">Подивитися демо без реєстрації</h2>
-      <div class="demo-login-buttons">
-        {% for role, label, icon in demo_roles %}
-        <form method="post" action="{% url 'accounts:demo-login' role %}">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-ghost btn-block"><i class="bi {{ icon }}"></i> {{ label }}</button>
-        </form>
-        {% endfor %}
-      </div>
-    </section>
-    {% endif %}
-
-    <p class="auth-footer-text">
-      Немає акаунту? <a href="{% url 'accounts:register' %}">Зареєструватися</a>
-    </p>
+    </div>
   </div>
+  {% include "accounts/_auth_panel.html" %}
 </div>
 {% endblock %}

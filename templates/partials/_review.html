@@ -1,17 +1,14 @@
-<article class="activity-row activity-row-top">
-  <div class="avatar" aria-hidden="true">{{ review.author.first_name|first|upper }}{{ review.author.last_name|first|upper }}</div>
-  <div class="body">
-    <div class="t">
-      {{ review.author.first_name|default:review.author.username }} {{ review.author.last_name|first }}.
-      {% include "partials/_stars.html" with value=review.rating %}
-    </div>
+{% load mv_ui %}<li class="mv-row">
+  {% avatar review.author 40 %}
+  <div class="mv-row__body">
+    <p class="mv-row__title">{{ review.author|short_name }}</p>
+    <div class="mv-cluster mv-cluster--tight">{% include "partials/_stars.html" with value=review.rating %}<span class="mv-micro">{{ review.published_at|date:"j E Y" }}</span></div>
     {% if review.tags %}
-    <div class="tag-count-list">
-      {% for label in review.get_tags_display %}<span class="tag-count">{{ label }}</span>{% endfor %}
-    </div>
+    <ul class="mv-meta mv-meta--inline mt-2">{% for label in review.get_tags_display %}<li><i class="bi bi-check2" aria-hidden="true"></i>{{ label }}</li>{% endfor %}</ul>
     {% endif %}
-    {% if review.comment %}<div class="s">{{ review.comment }}</div>{% endif %}
-    {% if user.is_authenticated and user != review.author %}<a href="{% url 'moderation:report' 'review' review.pk %}?next={{ request.path|urlencode }}" class="text-muted small"><i class="bi bi-flag"></i> Поскаржитися</a>{% endif %}
+    {% if review.comment %}<p class="mv-row__text">{{ review.comment }}</p>{% endif %}
+    {% if user.is_authenticated and user != review.author %}
+    <a href="{% url 'moderation:report' 'review' review.pk %}?next={{ request.path|urlencode }}" class="mv-link-btn mv-link-btn--muted mv-link-btn--sm"><i class="bi bi-flag" aria-hidden="true"></i>Поскаржитися</a>
+    {% endif %}
   </div>
-  <div class="when">{{ review.published_at|date:"d.m.Y" }}</div>
-</article>
+</li>

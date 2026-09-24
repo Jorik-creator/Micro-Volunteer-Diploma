@@ -20,7 +20,7 @@ from .models import EMAIL_GROUPS, EmailPreferences, Notification
 logger = logging.getLogger(__name__)
 
 
-def notify(user, type, title, message, help_request=None):
+def notify(user, type, title, message, help_request=None, link=None):
     """Create an in-app notification and, if the user wants it, an email."""
     notification = Notification.objects.create(
         user=user,
@@ -28,12 +28,13 @@ def notify(user, type, title, message, help_request=None):
         title=title,
         message=message,
         related_request=help_request,
+        link=link or "",
     )
     _queue_email(user, notification)
     return notification
 
 
-def notify_many(users, type, title, message, help_request=None):
+def notify_many(users, type, title, message, help_request=None, link=None):
     """Create the same notification for several users in one query."""
     created = Notification.objects.bulk_create(
         Notification(
@@ -42,6 +43,7 @@ def notify_many(users, type, title, message, help_request=None):
             title=title,
             message=message,
             related_request=help_request,
+            link=link or "",
         )
         for user in users
     )
@@ -69,15 +71,10 @@ def _queue_email(user, notification):
 
 def _send_email(user, notification):
     site = settings.SITE_URL.rstrip("/")
-    link = site + (
-        reverse("requests:detail", args=[notification.related_request_id])
-        if notification.related_request_id
-        else reverse("notifications:notification-list")
-    )
     context = {
         "user": user,
         "notification": notification,
-        "link": link,
+        "link": site + notification.url,
         "settings_link": site + reverse("notifications:email-settings"),
     }
     try:

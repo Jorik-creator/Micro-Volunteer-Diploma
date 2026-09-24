@@ -1,41 +1,56 @@
 {% extends "base.html" %}
-{% load crispy_forms_tags %}
+{% load static crispy_forms_tags %}
 
 {% block title %}Реєстрація — MicroVolunteer{% endblock %}
-{% block body_class %}auth-no-footer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/account.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<div class="auth-shell">
-  <div class="auth-card wide">
-    <div class="auth-logo-wrap">
-      <span class="auth-logo">
-        <i class="bi bi-heart-pulse-fill"></i>
-      </span>
+<div class="mv-auth">
+  <div class="mv-auth__form">
+    <div class="mv-auth__card mv-auth__card--wide mv-card">
+      <h1>Створити акаунт</h1>
+      <p class="mv-muted" id="register-help">Кілька полів — і ви на платформі. Адресу й телефон можна додати пізніше в профілі.</p>
+
+      {% include "partials/_form_errors.html" %}
+      <form method="post" novalidate autocomplete="on" aria-describedby="register-help">
+        {% csrf_token %}
+
+        <fieldset class="mv-fieldset" id="id_user_type"{% if form.user_type.errors %} aria-describedby="user-type-error"{% endif %}>
+          <legend>Як ви хочете користуватися платформою?</legend>
+          <div class="mv-choices">
+            {% for value, label in form.fields.user_type.choices %}
+            <label class="mv-choice mv-choice--vertical">
+              <input type="radio" name="{{ form.user_type.html_name }}" value="{{ value }}" required
+                     {% if form.user_type.value == value %}checked{% endif %}>
+              <span class="mv-tile" aria-hidden="true"><i class="bi {% if value == 'volunteer' %}bi-hand-thumbs-up{% else %}bi-heart{% endif %}"></i></span>
+              <span class="mv-choice__text">
+                <span class="mv-choice__title">{% if value == 'volunteer' %}Я хочу допомагати{% elif value == 'recipient' %}Мені потрібна допомога{% else %}{{ label }}{% endif %}</span>
+                <span class="mv-choice__hint">{% if value == 'volunteer' %}Волонтер: відгукуйтеся на запити поруч{% elif value == 'recipient' %}Створюйте запити на побутову допомогу{% endif %}</span>
+              </span>
+            </label>
+            {% endfor %}
+          </div>
+          {% for error in form.user_type.errors %}<p class="mv-field-error" id="user-type-error">{{ error }}</p>{% endfor %}
+        </fieldset>
+
+        <div class="row g-3">
+          <div class="col-sm-6">{{ form.first_name|as_crispy_field }}</div>
+          <div class="col-sm-6">{{ form.last_name|as_crispy_field }}</div>
+        </div>
+        {{ form.email|as_crispy_field }}
+        {{ form.username|as_crispy_field }}
+        {{ form.password1|as_crispy_field }}
+        {{ form.password2|as_crispy_field }}
+        {{ form.accept_terms|as_crispy_field }}
+
+        <button type="submit" class="mv-btn mv-btn--primary mv-btn--lg mv-btn--block mt-3">
+          <i class="bi bi-person-plus" aria-hidden="true"></i>Зареєструватися
+        </button>
+      </form>
+
+      <p class="mv-auth__foot">Вже маєте акаунт? <a href="{% url 'accounts:login' %}">Увійти</a></p>
     </div>
-    <h1 class="auth-title">Створити акаунт</h1>
-    <p class="auth-sub" id="register-help">Оберіть роль: отримувати допомогу або допомагати іншим як волонтер.</p>
-
-    <div class="form-help-card form-help-card-compact" role="note">
-      <i class="bi bi-info-circle"></i>
-      <p>Після реєстрації ви зможете відредагувати профіль і додати адресу, телефон та інші деталі.</p>
-    </div>
-
-    <form method="post" novalidate autocomplete="on" aria-describedby="register-help">
-      {% csrf_token %}
-      {% if form.errors %}
-      <div class="form-alert" role="alert">
-        Деякі поля заповнені неправильно. Перегляньте повідомлення під полями та виправте їх.
-      </div>
-      {% endif %}
-      {{ form|crispy }}
-      <button type="submit" class="btn btn-solid btn-block btn-lg auth-submit">
-        <i class="bi bi-check-circle"></i> Зареєструватися
-      </button>
-    </form>
-
-    <p class="auth-footer-text">
-      Вже маєте акаунт? <a href="{% url 'accounts:login' %}">Увійти</a>
-    </p>
   </div>
+  {% include "accounts/_auth_panel.html" %}
 </div>
 {% endblock %}

@@ -72,9 +72,11 @@ class Conversation(models.Model):
     @property
     def is_writable(self):
         """Open while the volunteer is still accepted on an open request."""
+        return self._writable(self.response)
+
+    def _writable(self, response):
         from apps.requests.models import Response
 
-        response = self.response
         return (
             self.help_request.is_open
             and response is not None
@@ -83,10 +85,21 @@ class Conversation(models.Model):
 
     @property
     def closed_since(self):
-        """When the conversation became read-only (None while writable)."""
-        if self.is_writable:
+        """
+        When the conversation became read-only (None while writable): the
+        volunteer leaving and/or the request closing, whichever came last.
+        """
+        from apps.requests.models import Response
+
+        response = self.response
+        if self._writable(response):
             return None
-        return self.help_request.status_changed_at
+        moments = []
+        if response is not None and response.status != Response.Status.ACCEPTED:
+            moments.append(response.status_changed_at)
+        if not self.help_request.is_open or not moments:
+            moments.append(self.help_request.status_changed_at)
+        return max(moments)
 
     @property
     def is_archived(self):

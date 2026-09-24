@@ -1,49 +1,128 @@
-{% extends "base.html" %}
-{% load crispy_forms_tags %}
+{% extends "base.html" %}{% load static crispy_forms_tags mv_ui %}
 
 {% block title %}Коди організацій — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/admin.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="page-hero">
+<section class="mv-page-head">
   <div class="container">
-    <a href="{% url 'moderation:queue' %}" class="btn btn-muted btn-sm toolbar-row"><i class="bi bi-arrow-left"></i> Модерація</a>
-    <h1 class="page-title">Коди організацій</h1>
-    <p class="page-sub">Код одразу надає статус «Перевірений». Видавайте його лише перевіреним партнерам.</p>
+    <a class="mv-back" href="{% url 'moderation:queue' %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад до модерації</a>
+    <h1>Коди організацій</h1>
+    <p class="mv-lead">Код одразу надає статус «Перевірений». Видавайте його лише партнерам, яким довіряєте.</p>
   </div>
 </section>
 
-<div class="container page-shell">
-  <form method="post" class="card-panel mb-4">
-    {% csrf_token %}
-    <div class="section-hd">Новий код</div>
-    <div class="row">
-      <div class="col-md-6">{{ form.organization|as_crispy_field }}</div>
-      <div class="col-md-3">{{ form.max_uses|as_crispy_field }}</div>
-      <div class="col-md-3">{{ form.expires_at|as_crispy_field }}</div>
-    </div>
-    <button type="submit" class="btn btn-solid"><i class="bi bi-plus-lg"></i> Створити</button>
-  </form>
+<div class="container mv-page">
+  <div class="mv-stack--lg">
+    <form method="post" class="mv-card mv-codes-form" novalidate>
+      {% csrf_token %}
+      <h2 class="mv-card__title"><i class="bi bi-plus-circle" aria-hidden="true"></i>Новий код</h2>
+      {% include "partials/_form_errors.html" %}
+      <div class="row g-3 align-items-start">
+        <div class="col-lg-6">{{ form.organization|as_crispy_field }}</div>
+        <div class="col-sm-6 col-lg-3">{{ form.max_uses|as_crispy_field }}</div>
+        <div class="col-sm-6 col-lg-3">{{ form.expires_at|as_crispy_field }}</div>
+      </div>
+      <button type="submit" class="mv-btn mv-btn--primary"><i class="bi bi-key" aria-hidden="true"></i>Створити код</button>
+    </form>
 
-  <div class="card-panel">
-    <div class="table-responsive">
-      <table class="table align-middle">
-        <thead><tr><th scope="col">Код</th><th scope="col">Організація</th><th scope="col">Використано</th><th scope="col">Діє до</th><th scope="col">Стан</th><th scope="col"><span class="visually-hidden">Дії</span></th></tr></thead>
-        <tbody>
+    <section aria-labelledby="codes-title">
+      <div class="mv-spread mb-3">
+        <h2 class="mv-h3 mv-mb-0" id="codes-title">Видані коди</h2>
+        {% if codes %}<span class="mv-muted">{{ codes|length }} {{ codes|length|uk_plural:"код,коди,кодів" }}</span>{% endif %}
+      </div>
+      {% if codes %}
+      <ul class="mv-rows mv-rows--joined">
         {% for code in codes %}
-          <tr>
-            <td><code>{{ code.code }}</code></td>
-            <td>{{ code.organization }}</td>
-            <td>{{ code.uses_count }} / {{ code.max_uses }}</td>
-            <td>{{ code.expires_at|date:"d.m.Y"|default:"—" }}</td>
-            <td>{% if code.is_usable %}<span class="chip chip-green">Діє</span>{% else %}<span class="chip chip-gray">Неактивний</span>{% endif %}</td>
-            <td>{% if code.is_active %}<form method="post" action="{% url 'moderation:deactivate-code' code.pk %}">{% csrf_token %}<button class="btn btn-muted btn-sm">Вимкнути</button></form>{% endif %}</td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="6" class="text-muted">Кодів ще немає.</td></tr>
+        <li class="mv-row mv-code-row{% if not code.is_usable %} is-off{% endif %}">
+          <div class="mv-code-row__code">
+            <code class="mv-code">{{ code.code }}</code>
+            <button type="button" class="mv-icon-btn" data-copy="{{ code.code }}" aria-label="Скопіювати код {{ code.code }}" title="Скопіювати">
+              <i class="bi bi-clipboard" aria-hidden="true"></i>
+            </button>
+            <span class="mv-copy-flash" aria-hidden="true" hidden>Скопійовано</span>
+          </div>
+          <div class="mv-row__body">
+            <p class="mv-row__title">{{ code.organization }}</p>
+            <ul class="mv-meta mv-meta--inline">
+              <li><i class="bi bi-people" aria-hidden="true"></i><span class="mv-num">Використано {{ code.uses_count }} з {{ code.max_uses }}</span></li>
+              <li><i class="bi bi-calendar-event" aria-hidden="true"></i>{% if code.expires_at %}Діє до {{ code.expires_at|date:"j E Y" }}{% else %}Без терміну{% endif %}</li>
+            </ul>
+          </div>
+          <div class="mv-row__side">
+            {% if code.is_usable %}
+            <span class="mv-status mv-status--success"><i class="bi bi-check-circle-fill" aria-hidden="true"></i>Діє</span>
+            {% elif not code.is_active %}
+            <span class="mv-status mv-status--muted"><i class="bi bi-slash-circle" aria-hidden="true"></i>Вимкнено</span>
+            {% elif code.uses_count >= code.max_uses %}
+            <span class="mv-status mv-status--muted"><i class="bi bi-check2-all" aria-hidden="true"></i>Вичерпано</span>
+            {% else %}
+            <span class="mv-status mv-status--muted"><i class="bi bi-calendar-x" aria-hidden="true"></i>Термін минув</span>
+            {% endif %}
+            {% if code.is_active %}
+            <form method="post" action="{% url 'moderation:deactivate-code' code.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="mv-link-btn mv-link-btn--danger" data-confirm-submit="Вимкнути код {{ code.code }}? Його більше не можна буде використати.">
+                <i class="bi bi-slash-circle" aria-hidden="true"></i>Вимкнути<span class="visually-hidden"> код {{ code.code }}</span>
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </li>
         {% endfor %}
-        </tbody>
-      </table>
-    </div>
+      </ul>
+      {% else %}
+      <div class="mv-card mv-card--flat">
+        {% include "partials/_empty.html" with icon="bi-key" title="Кодів ще немає" text="Створіть перший код для волонтерського центру чи соцслужби — їхні люди стануть перевіреними одразу." %}
+      </div>
+      {% endif %}
+    </section>
   </div>
+  <p class="visually-hidden" id="copy-status" role="status" aria-live="polite"></p>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    'use strict';
+    var status = document.getElementById('copy-status');
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+      return new Promise(function (resolve, reject) {
+        var area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        try { document.execCommand('copy') ? resolve() : reject(); } catch (e) { reject(e); } finally { area.remove(); }
+      });
+    }
+    document.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-copy]');
+      if (!button) return;
+      var code = button.getAttribute('data-copy');
+      var icon = button.querySelector('i');
+      copyText(code).then(function () {
+        status.textContent = '';
+        status.textContent = 'Скопійовано: ' + code;
+        var flash = button.parentNode.querySelector('.mv-copy-flash');
+        if (flash) flash.hidden = false;
+        button.classList.add('is-done');
+        icon.className = 'bi bi-check2';
+        button.setAttribute('title', 'Скопійовано');
+        setTimeout(function () {
+          if (flash) flash.hidden = true;
+          button.classList.remove('is-done');
+          icon.className = 'bi bi-clipboard';
+          button.setAttribute('title', 'Скопіювати');
+        }, 2000);
+      }, function () {
+        status.textContent = 'Не вдалося скопіювати. Виділіть код вручну.';
+      });
+    });
+  })();
+</script>
 {% endblock %}

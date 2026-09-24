@@ -1,487 +1,199 @@
-{% load static %}
-<!DOCTYPE html>
+{% load static mv_ui %}<!DOCTYPE html>
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}MicroVolunteer{% endblock %}</title>
+  <meta name="description" content="{% block description %}Допомога з побутовими справами від волонтерів поруч: ліки, покупки, супровід, допомога з телефоном.{% endblock %}">
 
-  <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
-
-  <!-- Bootstrap 5 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- Bootstrap Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-
-  <!-- Project CSS (cache-bust via version param) -->
-  <link href="{% static 'css/style.css' %}" rel="stylesheet">
+  <link href="{% static 'css/mv.css' %}" rel="stylesheet">
+  <style>:root { --mv-map-url: url("{% static 'img/ukraine-map-light.svg' %}"); }</style>
   <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
-
   {% block extra_css %}{% endblock %}
 </head>
 <body class="d-flex flex-column min-vh-100 {% block body_class %}{% endblock %}">
-
   <a class="skip-link" href="#main-content">Перейти до основного вмісту</a>
 
-  <!-- ===== NAVBAR ===== -->
-  <nav class="navbar navbar-expand-lg navbar-light mv-navbar sticky-top" aria-label="Головна навігація">
-    <div class="container">
+  <header class="mv-nav">
+    <nav class="navbar navbar-expand-lg" aria-label="Головна навігація">
+      <div class="container">
+        <a class="mv-brand" href="{% url 'home' %}" aria-label="MicroVolunteer — на головну">
+          <i class="bi bi-heart-pulse-fill" aria-hidden="true"></i><span>Micro<b>Volunteer</b></span>
+        </a>
 
-      <!-- Brand -->
-      <a class="navbar-brand" href="{% url 'home' %}" aria-label="MicroVolunteer — на головну">
-        <span class="logo-mark"><i class="bi bi-heart-pulse-fill"></i></span>
-        MicroVolunteer
-      </a>
-
-      <!-- Mobile toggler -->
-      <button class="navbar-toggler border-0" type="button"
-              data-bs-toggle="collapse" data-bs-target="#mainNav"
-              aria-controls="mainNav" aria-expanded="false"
-              aria-label="Відкрити меню навігації">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-
-      <div class="collapse navbar-collapse" id="mainNav">
-
-        <!-- Center nav links -->
-        <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-1">
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'home' %}">Головна</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'requests:list' %}">Запити</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'requests:map' %}">Карта</a>
-          </li>
-          {% if user.is_authenticated and user.is_recipient %}
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'requests:my-requests' %}">Мої запити</a>
-          </li>
-          {% elif user.is_authenticated and user.is_volunteer %}
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'requests:my-responses' %}">Мої відгуки</a>
-          </li>
-          {% endif %}
-          {% if user.is_authenticated %}
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'conversations:list' %}">Розмови{% if unread_conversations %} <span class="badge rounded-pill text-bg-primary" aria-label="непрочитаних: {{ unread_conversations }}">{{ unread_conversations }}</span>{% endif %}</a>
-          </li>
-          {% endif %}
-          {% if is_moderator %}
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'moderation:queue' %}"><i class="bi bi-shield-check"></i> Модерація</a>
-          </li>
-          {% endif %}
-        </ul>
-
-        <!-- Right side actions -->
-        <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-2">
-          {% if user.is_authenticated %}
-
-            <!-- Notifications bell -->
-            <li class="nav-item">
-              <a class="icon-btn" href="{% url 'notifications:notification-list' %}" title="Сповіщення" aria-label="Сповіщення{% if unread_count %}: {{ unread_count }} непрочитаних{% endif %}">
-                <i class="bi bi-bell"></i>
-                <span id="notification-badge" class="badge-dot{% if not unread_count %} d-none{% endif %}" aria-live="polite">
-                  {{ unread_count|default:0 }}
-                </span>
-              </a>
-            </li>
-
-            <!-- Profile dropdown -->
-            <li class="nav-item dropdown">
-              <button type="button" class="dropdown-trigger" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Меню профілю користувача">
-                <span class="avatar">{{ user.get_full_name|default:user.username|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}</span>
-                <span>{{ user.get_full_name|default:user.username }}</span>
-                <i class="bi bi-chevron-down dropdown-chevron"></i>
+        <div class="d-flex align-items-center gap-1 order-lg-3 ms-auto ms-lg-0">
+          <div class="dropdown">
+            <button type="button" class="mv-icon-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                    aria-expanded="false" aria-label="Налаштування зручності" title="Зручність">
+              <i class="bi bi-universal-access-circle" aria-hidden="true"></i>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end mv-dropdown mv-a11y-panel" id="a11y-panel">
+              <h2>Зручність сайту</h2>
+              <p>Оберіть те, що вам допомагає. Налаштування збережуться на цьому пристрої.</p>
+              <button type="button" class="mv-a11y-option" data-a11y-toggle="largeText" aria-pressed="false">
+                <i class="bi bi-type" aria-hidden="true"></i><span><strong>Більший текст</strong><span>Збільшує шрифт на всіх сторінках.</span></span>
               </button>
-              <ul class="dropdown-panel dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">
-                  <i class="bi bi-person"></i> Мій профіль
-                </a></li>
-                <li><a class="dropdown-item" href="{% url 'accounts:profile-edit' %}">
-                  <i class="bi bi-pencil-square"></i> Редагувати профіль
-                </a></li>
-                <li><a class="dropdown-item" href="{% url 'accounts:password-change' %}">
-                  <i class="bi bi-key"></i> Змінити пароль
-                </a></li>
-                {% if user.is_staff %}
-                <li><a class="dropdown-item" href="{% url 'stats:dashboard' %}">
-                  <i class="bi bi-bar-chart-line"></i> Статистика
-                </a></li>
-                {% endif %}
-                <li><div class="dropdown-divider"></div></li>
-                <li>
-                  <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
-                    {% csrf_token %}
-                    <button type="submit" class="dropdown-item danger w-100">
-                      <i class="bi bi-box-arrow-right"></i> Вийти
-                    </button>
-                  </form>
-                </li>
-              </ul>
-            </li>
+              <button type="button" class="mv-a11y-option" data-a11y-toggle="highContrast" aria-pressed="false">
+                <i class="bi bi-circle-half" aria-hidden="true"></i><span><strong>Високий контраст</strong><span>Темніший текст, чіткі межі, підкреслені посилання.</span></span>
+              </button>
+              <button type="button" class="mv-a11y-option" data-a11y-toggle="calmMode" aria-pressed="false">
+                <i class="bi bi-pause-circle" aria-hidden="true"></i><span><strong>Без анімацій</strong><span>Прибирає рух і миготіння.</span></span>
+              </button>
+              <button type="button" class="mv-a11y-option" data-a11y-toggle="monochrome" aria-pressed="false">
+                <i class="bi bi-droplet-half" aria-hidden="true"></i><span><strong>Без кольорів</strong><span>Чорно-білий режим.</span></span>
+              </button>
+              <button type="button" class="mv-link-btn mv-link-btn--muted" id="a11y-reset">
+                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>Скинути
+              </button>
+            </div>
+          </div>
 
-          {% else %}
-            <li class="nav-item">
-              <a class="btn btn-ghost btn-sm" href="{% url 'accounts:login' %}">Увійти</a>
-            </li>
-            <li class="nav-item">
-              <a class="btn btn-solid btn-sm" href="{% url 'accounts:register' %}">Зареєструватись</a>
-            </li>
+          {% if user.is_authenticated %}
+          <a class="mv-icon-btn" href="{% url 'conversations:list' %}" title="Розмови"
+             aria-label="Розмови{% if unread_conversations %}: {{ unread_conversations }} з новими повідомленнями{% endif %}">
+            <i class="bi bi-chat-dots" aria-hidden="true"></i>
+            {% if unread_conversations %}<span class="mv-count mv-count--blue">{{ unread_conversations }}</span>{% endif %}
+          </a>
+          <a class="mv-icon-btn" href="{% url 'notifications:notification-list' %}" title="Сповіщення"
+             aria-label="Сповіщення{% if unread_count %}: {{ unread_count }} непрочитаних{% endif %}">
+            <i class="bi bi-bell" aria-hidden="true"></i>
+            <span class="mv-count{% if not unread_count %} d-none{% endif %}" id="notification-badge" aria-live="polite">{{ unread_count|default:0 }}</span>
+          </a>
+          <div class="dropdown ms-1">
+            <button type="button" class="mv-user-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Меню профілю">
+              {% avatar user 40 %}
+              <span class="d-none d-xl-inline">{{ user|short_name }}</span>
+              <i class="bi bi-chevron-down" aria-hidden="true"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end mv-dropdown">
+              <li class="mv-dropdown__head"><strong>{{ user.get_full_name|default:user.username }}</strong><span class="mv-micro">{{ user.get_user_type_display|default:"Адміністратор" }}</span></li>
+              <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="bi bi-person" aria-hidden="true"></i>Мій профіль</a></li>
+              {% if user.is_recipient %}
+              <li><a class="dropdown-item" href="{% url 'requests:my-requests' %}"><i class="bi bi-card-checklist" aria-hidden="true"></i>Мої запити</a></li>
+              {% elif user.is_volunteer %}
+              <li><a class="dropdown-item" href="{% url 'requests:my-responses' %}"><i class="bi bi-card-checklist" aria-hidden="true"></i>Мої відгуки</a></li>
+              {% endif %}
+              <li><a class="dropdown-item" href="{% url 'notifications:email-settings' %}"><i class="bi bi-envelope" aria-hidden="true"></i>Листи на пошту</a></li>
+              {% if not user.is_demo %}
+              <li><a class="dropdown-item" href="{% url 'accounts:password-change' %}"><i class="bi bi-key" aria-hidden="true"></i>Змінити пароль</a></li>
+              {% endif %}
+              {% if user.is_staff or is_moderator %}
+              <li><a class="dropdown-item" href="{% url 'stats:dashboard' %}"><i class="bi bi-bar-chart-line" aria-hidden="true"></i>Статистика</a></li>
+              {% endif %}
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <form method="post" action="{% url 'accounts:logout' %}" class="m-0">{% csrf_token %}
+                  <button type="submit" class="dropdown-item is-danger"><i class="bi bi-box-arrow-right" aria-hidden="true"></i>Вийти</button>
+                </form>
+              </li>
+            </ul>
+          </div>
           {% endif %}
-        </ul>
 
+          <button class="navbar-toggler ms-1" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+                  aria-controls="mainNav" aria-expanded="false" aria-label="Меню">
+            <i class="bi bi-list" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="collapse navbar-collapse order-lg-2" id="mainNav">
+          <ul class="navbar-nav mx-lg-auto">
+            <li class="nav-item"><a class="{% nav_class 'requests:list' exact=True %}" href="{% url 'requests:list' %}"><i class="bi bi-search d-lg-none" aria-hidden="true"></i>Запити</a></li>
+            <li class="nav-item"><a class="{% nav_class 'requests:map' %}" href="{% url 'requests:map' %}"><i class="bi bi-map d-lg-none" aria-hidden="true"></i>Карта</a></li>
+            {% if user.is_authenticated and user.is_recipient %}
+            <li class="nav-item"><a class="{% nav_class 'requests:my-requests' %}" href="{% url 'requests:my-requests' %}"><i class="bi bi-card-checklist d-lg-none" aria-hidden="true"></i>Мої запити</a></li>
+            {% elif user.is_authenticated and user.is_volunteer %}
+            <li class="nav-item"><a class="{% nav_class 'requests:my-responses' %}" href="{% url 'requests:my-responses' %}"><i class="bi bi-card-checklist d-lg-none" aria-hidden="true"></i>Мої відгуки</a></li>
+            {% endif %}
+            {% if is_moderator %}
+            <li class="nav-item"><a class="{% nav_class 'moderation:queue' %}" href="{% url 'moderation:queue' %}"><i class="bi bi-shield-check" aria-hidden="true"></i>Модерація</a></li>
+            {% endif %}
+          </ul>
+          {% if not user.is_authenticated %}
+          <div class="d-flex gap-2 py-2 py-lg-0 ms-lg-3">
+            <a class="mv-btn mv-btn--ghost mv-btn--sm" href="{% url 'accounts:login' %}">Увійти</a>
+            {% demo_mode as is_demo_site %}
+            {% if not is_demo_site %}
+            <a class="mv-btn mv-btn--primary mv-btn--sm" href="{% url 'accounts:register' %}">Зареєструватися</a>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
       </div>
-    </div>
-  </nav>
+    </nav>
+  </header>
 
-  <!-- ===== MESSAGES ===== -->
   {% if messages %}
-  <div class="container mt-3">
+  <div class="container mv-messages" role="status" aria-live="polite">
     {% for message in messages %}
-    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
-      {{ message }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрити"></button>
+    {% with tone=message.tags|default:'info' %}
+    <div class="mv-note mv-note--{% if tone == 'error' %}danger{% elif tone == 'info' or tone == 'debug' %}info{% else %}{{ tone }}{% endif %}">
+      <i class="bi {% if tone == 'success' %}bi-check-circle-fill{% elif tone == 'error' %}bi-exclamation-octagon-fill{% elif tone == 'warning' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %}" aria-hidden="true"></i>
+      <div class="mv-note__body">{{ message }}</div>
+      <button type="button" class="mv-note__close" data-dismiss-note aria-label="Закрити повідомлення"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
     </div>
+    {% endwith %}
     {% endfor %}
   </div>
   {% endif %}
 
-  <!-- ===== MAIN CONTENT ===== -->
-  <main id="main-content" class="flex-grow-1" tabindex="-1">
+  <main id="main-content" class="mv-main" tabindex="-1">
     {% block content %}{% endblock %}
   </main>
 
-  <!-- ===== ACCESSIBILITY PREFERENCES ===== -->
-  <section class="a11y-widget" aria-label="Налаштування доступності">
-    <button type="button" class="a11y-open" id="a11y-open" aria-expanded="false" aria-controls="a11y-panel">
-      <i class="bi bi-universal-access-circle"></i>
-      <span>Зручність</span>
-    </button>
-
-    <div class="a11y-panel" id="a11y-panel" role="dialog" aria-modal="false" aria-labelledby="a11y-title" aria-hidden="true" hidden>
-      <div class="a11y-panel-head">
-        <div>
-          <h2 id="a11y-title">Зручність сайту</h2>
-          <p>Оберіть лише те, що вам допомагає. Налаштування збережуться на цьому пристрої.</p>
-        </div>
-        <button type="button" class="a11y-close" id="a11y-close" aria-label="Закрити налаштування">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-
-      <div class="a11y-options" role="group" aria-label="Перемикачі доступності">
-        <button type="button" class="a11y-option" data-a11y-toggle="highContrast" aria-pressed="false">
-          <span class="a11y-option-title">Контраст і посилання</span>
-          <span class="a11y-option-desc">Темніший текст, чіткі межі й підкреслені посилання.</span>
-        </button>
-        <button type="button" class="a11y-option" data-a11y-toggle="monochrome" aria-pressed="false">
-          <span class="a11y-option-title">Монохромний режим</span>
-          <span class="a11y-option-desc">Прибирає кольори, щоб важливим був текст.</span>
-        </button>
-        <button type="button" class="a11y-option" data-a11y-toggle="largeText" aria-pressed="false">
-          <span class="a11y-option-title">Більший текст</span>
-          <span class="a11y-option-desc">Збільшує текст без зміни структури сторінки.</span>
-        </button>
-        <button type="button" class="a11y-option" data-a11y-toggle="calmMode" aria-pressed="false">
-          <span class="a11y-option-title">Спокійний режим</span>
-          <span class="a11y-option-desc">Менше руху, миготіння й декоративних ефектів.</span>
-        </button>
-      </div>
-
-      <button type="button" class="btn btn-muted btn-sm a11y-reset" id="a11y-reset">Скинути налаштування</button>
-    </div>
-  </section>
-
-  <!-- ===== FOOTER ===== -->
   <footer class="mv-footer">
     <div class="container">
-      <div class="footer-grid">
-
-        <!-- Col 1: Brand -->
+      <div class="mv-footer__grid">
         <div>
-          <a href="{% url 'home' %}" class="navbar-brand">
-            <span class="logo-mark"><i class="bi bi-heart-pulse-fill"></i></span>
-            MicroVolunteer
-          </a>
-          <p class="footer-tagline">Платформа, що з'єднує волонтерів з тими, хто потребує швидкої локальної допомоги.</p>
+          <a href="{% url 'home' %}" class="mv-brand"><i class="bi bi-heart-pulse-fill" aria-hidden="true"></i><span>Micro<b>Volunteer</b></span></a>
+          <p class="mv-footer__tagline">Допомога з побутовими справами від волонтерів поруч — безкоштовно й безпечно.</p>
         </div>
-
-        <!-- Col 2: Платформа -->
-        <div>
-          <div class="footer-col-title">Платформа</div>
-          <ul class="footer-links">
-            <li><a href="{% url 'requests:list' %}">Активні запити</a></li>
+        <nav aria-labelledby="footer-help">
+          <h2 id="footer-help">Допомога</h2>
+          <ul>
+            <li><a href="{% url 'requests:list' %}">Запити поруч</a></li>
             <li><a href="{% url 'requests:map' %}">Карта запитів</a></li>
-            <li><a href="{% url 'accounts:register' %}?role=volunteer">Стати волонтером</a></li>
-            <li><a href="{% url 'accounts:register' %}?role=recipient">Подати запит</a></li>
-          </ul>
-        </div>
-
-        <!-- Col 3: Спільнота -->
-        <div>
-          <div class="footer-col-title">Про платформу</div>
-          <ul class="footer-links">
-            <li><a href="{% url 'home' %}#how-it-works">Як це працює</a></li>
-            <li><a href="{% url 'rules' %}">Правила</a></li>
-            <li><a href="{% url 'privacy' %}">Політика конфіденційності</a></li>
-          </ul>
-        </div>
-
-        <!-- Col 4: Обліковий запис -->
-        <div>
-          <div class="footer-col-title">Обліковий запис</div>
-          <ul class="footer-links">
-            {% if user.is_authenticated %}
-            <li><a href="{% url 'accounts:profile' %}">Мій профіль</a></li>
-            <li><a href="{% url 'accounts:profile-edit' %}">Редагувати профіль</a></li>
-            <li><a href="{% url 'notifications:notification-list' %}">Сповіщення</a></li>
-            {% else %}
+            {% if user.is_authenticated and user.is_recipient %}
+            <li><a href="{% url 'requests:create' %}">Створити запит</a></li>
+            {% elif not user.is_authenticated %}
             <li><a href="{% url 'accounts:login' %}">Увійти</a></li>
-            <li><a href="{% url 'accounts:register' %}">Зареєструватись</a></li>
             {% endif %}
           </ul>
+        </nav>
+        <nav aria-labelledby="footer-about">
+          <h2 id="footer-about">Про платформу</h2>
+          <ul>
+            <li><a href="{% url 'home' %}#how-it-works">Як це працює</a></li>
+            <li><a href="{% url 'rules' %}">Правила</a></li>
+            <li><a href="{% url 'privacy' %}">Конфіденційність</a></li>
+          </ul>
+        </nav>
+        <div>
+          <h2>Екстрена допомога</h2>
+          <ul>
+            <li><a href="tel:112"><i class="bi bi-telephone me-2" aria-hidden="true"></i>112 — єдиний номер</a></li>
+            <li><a href="tel:102"><i class="bi bi-shield me-2" aria-hidden="true"></i>102 — поліція</a></li>
+            <li><a href="tel:103"><i class="bi bi-heart-pulse me-2" aria-hidden="true"></i>103 — швидка</a></li>
+          </ul>
         </div>
-
       </div>
-
-      <!-- Footer bottom -->
-      <div class="footer-bottom">
-        <span>© 2026 MicroVolunteer. Дипломний проект.</span>
-        <span>Зроблено з ❤️ в Україні</span>
+      <div class="mv-footer__bottom">
+        <span>© 2026 MicroVolunteer · дипломний проєкт</span>
+        <span>Зроблено в Україні</span>
       </div>
     </div>
   </footer>
 
-  <!-- Bootstrap 5 JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-  // Buttons with data-confirm-submit ask before submitting their form
-  document.addEventListener('click', function (event) {
-    const button = event.target.closest('[data-confirm-submit]');
-    if (button && !confirm(button.getAttribute('data-confirm-submit'))) event.preventDefault();
-  });
-  </script>
-
-  <!-- Auto-collapse mobile nav after a link is tapped -->
-  <script>
-  (function () {
-    const navEl = document.getElementById('mainNav');
-    if (!navEl) return;
-
-    navEl.addEventListener('click', function (e) {
-      const link = e.target.closest('a.nav-link, a.dropdown-item');
-      if (!link) return;
-      // Only when the menu is currently expanded (collapsed state on mobile)
-      if (!navEl.classList.contains('show')) return;
-      const collapse = bootstrap.Collapse.getInstance(navEl) || new bootstrap.Collapse(navEl, { toggle: false });
-      collapse.hide();
-    });
-  })();
-  </script>
-
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="{% static 'js/base.js' %}"
+          {% if user.is_authenticated %}data-count-url="{% url 'notifications:notification-count' %}"{% endif %}></script>
   {% block extra_js %}{% endblock %}
-
-  {% if user.is_authenticated %}
-  <!-- Оновлення лічильника сповіщень через lightweight polling -->
-  <script>
-  (function () {
-    const badge = document.getElementById('notification-badge');
-    if (!badge) return;
-
-    const COUNT_URL = '{% url "notifications:notification-count" %}';
-    const POLL_INTERVAL_MS = 15000;
-    const FETCH_TIMEOUT_MS = 5000;
-
-    function updateBadge(count) {
-      badge.textContent = count;
-      if (count > 0) {
-        badge.classList.remove('d-none');
-      } else {
-        badge.classList.add('d-none');
-      }
-    }
-
-    function showNotificationToast(count) {
-      const existing = document.getElementById('notif-toast');
-      if (existing) existing.remove();
-      const html = `
-        <div id="notif-toast" class="toast align-items-center text-bg-primary border-0 position-fixed bottom-0 end-0 m-3 notification-toast"
-             role="alert" aria-live="polite">
-          <div class="d-flex">
-            <div class="toast-body">
-              <i class="bi bi-bell-fill me-2"></i>
-              У вас ${count} непрочитаних сповіщень
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Закрити сповіщення"></button>
-          </div>
-        </div>`;
-      document.body.insertAdjacentHTML('beforeend', html);
-      new bootstrap.Toast(document.getElementById('notif-toast'), { delay: 4000 }).show();
-    }
-
-    let previousCount = parseInt(badge.textContent, 10) || 0;
-    let pollTimer = null;
-    let isPolling = false;
-
-    function scheduleNextPoll() {
-      window.clearTimeout(pollTimer);
-      if (!document.hidden) {
-        pollTimer = window.setTimeout(fetchNotificationCount, POLL_INTERVAL_MS);
-      }
-    }
-
-    async function fetchNotificationCount() {
-      if (isPolling || document.hidden) {
-        scheduleNextPoll();
-        return;
-      }
-
-      isPolling = true;
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(function () {
-        controller.abort();
-      }, FETCH_TIMEOUT_MS);
-
-      try {
-        const response = await fetch(COUNT_URL, {
-          credentials: 'same-origin',
-          headers: { 'Accept': 'application/json' },
-          signal: controller.signal
-        });
-
-        if (!response.ok) return;
-
-        const data = await response.json();
-        const newCount = Number(data.count) || 0;
-        if (newCount > previousCount) {
-          showNotificationToast(newCount);
-        }
-        previousCount = newCount;
-        updateBadge(newCount);
-      } catch (_) {
-        // Network/timeout errors are non-fatal; the next poll will retry.
-      } finally {
-        window.clearTimeout(timeoutId);
-        isPolling = false;
-        scheduleNextPoll();
-      }
-    }
-
-    function pollNow() {
-      window.clearTimeout(pollTimer);
-      fetchNotificationCount();
-    }
-
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden) {
-        window.clearTimeout(pollTimer);
-        return;
-      }
-      pollNow();
-    });
-    window.addEventListener('focus', pollNow);
-    window.addEventListener('pageshow', pollNow);
-    window.addEventListener('pagehide', function () {
-      window.clearTimeout(pollTimer);
-    });
-
-    pollNow();
-  })();
-  </script>
-  {% endif %}
-  <script>
-  (function () {
-    const root = document.documentElement;
-    const openButton = document.getElementById('a11y-open');
-    const panel = document.getElementById('a11y-panel');
-    const closeButton = document.getElementById('a11y-close');
-    const resetButton = document.getElementById('a11y-reset');
-    const storageKey = 'microvolunteer:a11y';
-    const classMap = {
-      highContrast: 'a11y-high-contrast',
-      monochrome: 'a11y-monochrome',
-      largeText: 'a11y-large-text',
-      calmMode: 'a11y-calm-mode'
-    };
-
-    if (!openButton || !panel) return;
-
-    function readState() {
-      try {
-        return JSON.parse(localStorage.getItem(storageKey)) || {};
-      } catch (_) {
-        return {};
-      }
-    }
-
-    function writeState(state) {
-      localStorage.setItem(storageKey, JSON.stringify(state));
-    }
-
-    function applyState(state) {
-      Object.entries(classMap).forEach(function ([key, className]) {
-        root.classList.toggle(className, Boolean(state[key]));
-        const option = panel.querySelector('[data-a11y-toggle="' + key + '"]');
-        if (option) option.setAttribute('aria-pressed', state[key] ? 'true' : 'false');
-      });
-    }
-
-    let state = readState();
-    if (state.underlineLinks) state.highContrast = true;
-    if (state.reducedMotion || state.simpleView) state.calmMode = true;
-    delete state.underlineLinks;
-    delete state.reducedMotion;
-    delete state.simpleView;
-    writeState(state);
-    applyState(state);
-
-    function openPanel() {
-      panel.hidden = false;
-      panel.setAttribute('aria-hidden', 'false');
-      openButton.setAttribute('aria-expanded', 'true');
-      const firstOption = panel.querySelector('.a11y-option');
-      if (firstOption) firstOption.focus();
-    }
-
-    function closePanel() {
-      panel.hidden = true;
-      panel.setAttribute('aria-hidden', 'true');
-      openButton.setAttribute('aria-expanded', 'false');
-      openButton.focus();
-    }
-
-    openButton.addEventListener('click', function () {
-      if (panel.hidden) openPanel(); else closePanel();
-    });
-    if (closeButton) closeButton.addEventListener('click', closePanel);
-
-    panel.addEventListener('click', function (event) {
-      const option = event.target.closest('[data-a11y-toggle]');
-      if (!option) return;
-      const key = option.getAttribute('data-a11y-toggle');
-      state[key] = !state[key];
-      writeState(state);
-      applyState(state);
-    });
-
-    if (resetButton) resetButton.addEventListener('click', function () {
-      state = {};
-      localStorage.removeItem(storageKey);
-      applyState(state);
-    });
-
-    document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && !panel.hidden) closePanel();
-    });
-  })();
-  </script>
 </body>
 </html>

@@ -1,77 +1,76 @@
 {% extends 'base.html' %}
+{% load static mv_ui %}
 
 {% block title %}Оцінити — MicroVolunteer{% endblock %}
+{% block extra_css %}<link href="{% static 'css/pages/account.css' %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<section class="page-hero">
-  <div class="container">
-    <a href="{% url 'requests:detail' help_request.pk %}" class="btn btn-muted btn-sm toolbar-row">
-      <i class="bi bi-arrow-left"></i> Назад до запиту
-    </a>
-    <h1 class="page-title">Оцінити: {{ target.first_name|default:target.username }}</h1>
-    <p class="page-sub" id="review-help">
-      Оцінку побачать, коли {{ target.first_name|default:"інша сторона" }} теж залишить свою, або після {{ deadline|date:"d.m.Y" }}.
+<section class="mv-page-head">
+  <div class="container mv-form-col">
+    <a class="mv-back" href="{% url 'requests:detail' help_request.pk %}"><i class="bi bi-arrow-left" aria-hidden="true"></i>Назад до запиту</a>
+    <h1>Оцінити: {{ target.first_name|default:target.username }}</h1>
+    <p class="mv-lead" id="review-help">
+      Оцінку побачать, коли {{ target.first_name|default:"інша сторона" }} теж залишить свою, або після {{ deadline|date:"j E" }}.
       Так ніхто не підлаштовує оцінку у відповідь.
     </p>
   </div>
 </section>
 
-<div class="container page-shell form-shell-sm">
-
-  <div class="card-panel mb-3">
-    <div class="card-panel-eyebrow"><i class="bi bi-file-earmark-text"></i> Запит</div>
-    <div class="card-panel-title">{{ help_request.title }}</div>
-    <div class="card-panel-meta">
-      <i class="bi bi-calendar-check"></i> Завершено {{ help_request.completed_at|date:"d.m.Y" }}
-    </div>
-  </div>
-
-  <form method="post" novalidate aria-describedby="review-help">
-    {% csrf_token %}
-    <div class="card-panel">
-      {% if form.errors %}
-      <div class="form-alert" role="alert">
-        {% for field in form %}{% for error in field.errors %}<p class="mb-0">{{ error }}</p>{% endfor %}{% endfor %}
+<div class="container mv-page">
+  <div class="mv-form-col mv-stack--lg">
+    <section class="mv-card mv-card--flat mv-review-req" aria-label="Запит">
+      <span class="mv-tile" aria-hidden="true">{% category_icon help_request.category %}</span>
+      <div>
+        <p class="mv-review-req__title">{{ help_request.title }}</p>
+        <p class="mv-micro"><i class="bi bi-check2-all me-1" aria-hidden="true"></i>Завершено {{ help_request.completed_at|date:"j E Y" }}</p>
       </div>
-      {% endif %}
+      <span class="mv-hide-mobile">{% avatar target 56 %}</span>
+    </section>
 
-      <fieldset class="star-rating">
-        <legend class="form-label">Загальне враження</legend>
-        <div class="star-rating-inputs">
-          {% for choice in form.rating %}
-          <input type="radio" name="{{ form.rating.html_name }}" value="{{ choice.data.value }}"
-                 id="rating-{{ choice.data.value }}" {% if choice.data.selected %}checked{% endif %} required>
-          <label for="rating-{{ choice.data.value }}" title="{{ choice.data.value }} з 5">
-            <i class="bi bi-star-fill" aria-hidden="true"></i>
-            <span class="visually-hidden">{{ choice.data.value }} з 5</span>
+    <form method="post" novalidate aria-describedby="review-help" class="mv-card">
+      {% csrf_token %}
+      {% include "partials/_form_errors.html" %}
+
+      <fieldset class="mv-fieldset mv-rate" id="{{ form.rating.auto_id }}">
+        <legend>Загальне враження</legend>
+        <div class="mv-rate__stars">
+          {% for choice in form.rating reversed %}
+          {% with value=choice.data.value|stringformat:"s" %}
+          <input class="mv-rate__input" type="radio" name="{{ form.rating.html_name }}" value="{{ value }}"
+                 id="rating-{{ value }}"{% if choice.data.selected %} checked{% endif %} required>
+          <label class="mv-rate__star" for="rating-{{ value }}" title="{{ value }} з 5">
+            <i class="bi bi-star" aria-hidden="true"></i><i class="bi bi-star-fill" aria-hidden="true"></i>
+            <span class="visually-hidden">{{ value }} з 5 — {% if value == "1" %}погано{% elif value == "2" %}слабко{% elif value == "3" %}нормально{% elif value == "4" %}добре{% else %}відмінно{% endif %}</span>
           </label>
+          {% endwith %}
           {% endfor %}
         </div>
-        <div class="star-rating-scale" aria-hidden="true"><span>1 — погано</span><span>5 — чудово</span></div>
+        <p class="mv-rate__word" aria-hidden="true"></p>
       </fieldset>
 
-      <fieldset class="review-tags">
-        <legend class="form-label">{{ form.tags.label }} <span class="text-muted">(необов'язково)</span></legend>
-        <div class="review-tag-list">
+      <fieldset class="mv-fieldset">
+        <legend>{{ form.tags.label }} <span class="mv-muted fw-normal">— необов'язково</span></legend>
+        <div class="mv-cluster mv-cluster--tight">
           {% for choice in form.tags %}
-          <label class="review-tag">
-            <input type="checkbox" name="{{ form.tags.html_name }}" value="{{ choice.data.value }}" {% if choice.data.selected %}checked{% endif %}>
+          <label class="mv-chip-check">
+            <input type="checkbox" name="{{ form.tags.html_name }}" value="{{ choice.data.value }}"{% if choice.data.selected %} checked{% endif %}>
             <span>{{ choice.choice_label }}</span>
           </label>
           {% endfor %}
         </div>
       </fieldset>
 
-      <div class="mb-3">
-        <label for="{{ form.comment.id_for_label }}" class="form-label">{{ form.comment.label }}</label>
-        <textarea name="{{ form.comment.html_name }}" id="{{ form.comment.id_for_label }}" class="form-control" rows="3" maxlength="1000">{{ form.comment.value|default:"" }}</textarea>
+      <div class="mb-4">
+        <label for="{{ form.comment.id_for_label }}" class="form-label">Коментар <span class="mv-muted fw-normal">— необов'язково</span></label>
+        <textarea name="{{ form.comment.html_name }}" id="{{ form.comment.id_for_label }}" class="form-control" rows="4" maxlength="1000"
+                  placeholder="Що було добре? Що можна покращити?">{{ form.comment.value|default:"" }}</textarea>
       </div>
 
-      <div class="form-actions">
-        <button type="submit" class="btn btn-solid"><i class="bi bi-send"></i> Надіслати оцінку</button>
-        <a href="{% url 'requests:detail' help_request.pk %}" class="btn btn-muted">Скасувати</a>
+      <div class="mv-form-actions">
+        <button type="submit" class="mv-btn mv-btn--primary mv-btn--lg"><i class="bi bi-send" aria-hidden="true"></i>Надіслати оцінку</button>
+        <a href="{% url 'requests:detail' help_request.pk %}" class="mv-btn mv-btn--ghost mv-btn--lg">Скасувати</a>
       </div>
-    </div>
-  </form>
+    </form>
+  </div>
 </div>
 {% endblock %}

@@ -25,23 +25,6 @@ class DeletionError(Exception):
     pass
 
 
-def _close_open_work(user):
-    """Cancel own open requests and leave requests the user volunteers on."""
-    for help_request in HelpRequest.objects.filter(
-        recipient=user, status__in=request_services.CANCELLABLE
-    ):
-        request_services.cancel(help_request, user)
-    for response in Response.objects.filter(
-        volunteer=user,
-        status__in=[Response.Status.PENDING, Response.Status.ACCEPTED],
-        help_request__status__in=HelpRequest.OPEN_STATUSES,
-    ):
-        try:
-            request_services.withdraw(response, user, "Волонтер видалив акаунт.")
-        except request_services.TransitionError:
-            request_services.remove_by_moderator(response, "Волонтер видалив акаунт.")
-
-
 def _delete_file(field):
     if field:
         field.delete(save=False)
@@ -55,7 +38,7 @@ def delete_account(user):
 
     with transaction.atomic():
         full_name = user.get_full_name()
-        _close_open_work(user)
+        request_services.close_open_work_of(user, "Користувач видалив акаунт.")
         if full_name.strip():
             # Other people's notifications mention the user by name
             for notification in Notification.objects.filter(
